@@ -278,3 +278,30 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 ---
 
 **Construido con ❤️ para la comunidad Android**
+
+
+
+Como puedo hacer el build del apk? con que comando?
+
+¡Excelente pregunta! Para generar el APK del teclado, puedes usar los siguientes comandos de Gradle:
+
+🔨 Comandos para Build del APK
+
+1. APK de Debug (Desarrollo):
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; ./gradlew assembleDebug --no-daemon
+
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; ./gradlew assembleDebug --no-daemon -x ktlintCheck -x detekt
+
+2. APK de Release (Producción):
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; ./gradlew assembleRelease --no-daemon
+
+3. Build Completo (Debug + Release):
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; ./gradlew build --no-daemon -x ktlintCheck -x detekt
+
+
+📍 Ubicación de los APKs generados:
+Después del build exitoso, encontrarás los APKs en:
+
+Debug APK: app/build/outputs/apk/debug/app-debug.apk
+Release APK: app/build/outputs/apk/release/app-release.apk
+
