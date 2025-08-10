@@ -36,6 +36,7 @@ espressoCore = "3.6.1"
 mockk = "1.13.13"
 turbine = "1.1.0"
 coroutinesTest = "1.9.0"
+robolectric = "4.11.1"
 
 # Quality
 ktlint = "12.1.0"
@@ -88,6 +89,7 @@ androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "j
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

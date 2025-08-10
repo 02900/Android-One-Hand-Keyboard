@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<input-method xmlns:android="http://schemas.android.com/apk/res/android"
+    android:settingsActivity="com.onehandkeyboard.ui.SettingsActivity"
+    android:supportsSwitchingToNextInputMethod="true">
+    
+    <!-- Define supported subtypes (languages) -->
+    <subtype
+        android:imeSubtypeExtraValue="TrySuppressingImeSwitcher,AsciiCapable,SupportTouchPositionCorrection"
+        android:imeSubtypeLocale="en_US"
+        android:imeSubtypeMode="keyboard"
+        android:label="@string/subtype_en_us" />
+        
+    <subtype
+        android:imeSubtypeExtraValue="TrySuppressingImeSwitcher,SupportTouchPositionCorrection"
+        android:imeSubtypeLocale="es_MX"
+        android:imeSubtypeMode="keyboard"
+        android:label="@string/subtype_es_mx" />
+        
+</input-method>

@@ -65,26 +65,130 @@ El proyecto sigue Clean Architecture con patrón MVI/UDF y está organizado en m
 ## 🏃‍♂️ Inicio Rápido
 
 ### Prerrequisitos
-- Android Studio Ladybug o superior
-- JDK 11+
+- **Android Studio**: Ladybug (2024.2.1) o superior
+- **JDK**: 11+ (recomendado usar el JDK incluido en Android Studio)
+- **Android SDK**: API 26+ (Android 8.0) como mínimo
+- **Git**: Para clonar el repositorio
 
-### Configuración
+### Configuración del Entorno
+
+#### Opción 1: Usando Android Studio (Recomendado)
+1. Clona el repositorio:
+   ```bash
+   git clone <repository-url>
+   cd OneHandKeyboard
+   ```
+
+2. Abre el proyecto en Android Studio
+3. Android Studio configurará automáticamente el JDK y SDK
+4. Sincroniza el proyecto (Sync Project with Gradle Files)
+
+#### Opción 2: Línea de Comandos
+1. Clona el repositorio:
+   ```bash
+   git clone <repository-url>
+   cd OneHandKeyboard
+   ```
+
+2. Configura JAVA_HOME (Windows):
+   ```bash
+   # Usando el JDK de Android Studio
+   $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+   
+   # O usando tu JDK instalado
+   $env:JAVA_HOME = "C:\Program Files\Java\jdk-11"
+   ```
+
+3. Verifica la configuración:
+   ```bash
+   java -version
+   ./gradlew --version
+   ```
+
+### Compilación
+
+#### Compilar Todo el Proyecto
 ```bash
-git clone <repository-url>
-cd OneHandKeyboard
+# Dry run para verificar configuración
+./gradlew build --dry-run
+
+# Compilación completa
 ./gradlew build
+```
+
+#### Compilar Solo el APK
+```bash
+# APK de debug
+./gradlew :app-ime:assembleDebug
+
+# APK de release
+./gradlew :app-ime:assembleRelease
+```
+
+#### Compilar Módulos Específicos
+```bash
+# Solo módulos core
+./gradlew :core:domain:build :core:gesture:build
+
+# Solo módulos feature
+./gradlew :feature:keyboard:build :feature:settings:build
 ```
 
 ### Ejecutar Tests
 ```bash
+# Tests unitarios
 ./gradlew test
+
+# Tests de un módulo específico
+./gradlew :core:gesture:test
+
+# Tests instrumentados (requiere dispositivo/emulador)
 ./gradlew connectedAndroidTest
+
+# Tests con reporte de cobertura
+./gradlew testDebugUnitTestCoverage
 ```
 
 ### Verificar Calidad de Código
 ```bash
+# Verificar formato de código
 ./gradlew ktlintCheck
+
+# Formatear código automáticamente
+./gradlew ktlintFormat
+
+# Análisis estático
 ./gradlew detekt
+
+# Verificar todo junto
+./gradlew check
+```
+
+### Solución de Problemas Comunes
+
+#### Error: "No Java compiler found"
+```bash
+# Windows - Configurar JAVA_HOME
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+
+# Linux/Mac - Configurar JAVA_HOME
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+```
+
+#### Error: "Unresolved reference: kapt"
+- Asegúrate de que todos los módulos que usan Hilt tengan `kotlin("kapt")` en sus plugins
+
+#### Error de Sincronización de Gradle
+```bash
+# Limpiar y reconstruir
+./gradlew clean
+./gradlew build --refresh-dependencies
+```
+
+#### Problemas de Memoria
+```bash
+# Aumentar memoria de Gradle (gradle.properties)
+org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
 ```
 
 ## 🧪 Testing
@@ -96,13 +200,49 @@ El proyecto incluye:
 - **Property-based testing**: Motor de gestos
 - **Golden tests**: Trayectorias de gestos
 
-## 📱 Instalación
+## 📱 Instalación y Configuración
 
-1. Compilar el APK: `./gradlew assembleDebug`
-2. Instalar en dispositivo: `adb install app/build/outputs/apk/debug/app-debug.apk`
-3. Ir a Configuración > Sistema > Idiomas e introducción de texto > Teclado en pantalla
-4. Activar "OneHandKeyboard"
-5. Seleccionar como teclado predeterminado
+### Paso 1: Compilar el APK
+```bash
+# Configurar JAVA_HOME si es necesario
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+
+# Compilar APK de debug
+./gradlew :app-ime:assembleDebug
+```
+
+El APK se generará en: `app/build/outputs/apk/debug/app-ime-debug.apk`
+
+### Paso 2: Instalar en Dispositivo
+```bash
+# Conectar dispositivo Android o iniciar emulador
+adb devices
+
+# Instalar el APK
+adb install app/build/outputs/apk/debug/app-ime-debug.apk
+```
+
+### Paso 3: Activar el Teclado
+1. Ve a **Configuración** → **Sistema** → **Idiomas e introducción de texto**
+2. Selecciona **Teclado en pantalla** (o **Virtual keyboard**)
+3. Activa **"OneHandKeyboard"** en la lista
+4. Confirma la activación cuando aparezca el diálogo de seguridad
+
+### Paso 4: Seleccionar como Teclado Activo
+1. Abre cualquier aplicación de texto (WhatsApp, Notas, etc.)
+2. Toca un campo de texto para que aparezca el teclado
+3. Toca el ícono de teclado en la barra de navegación
+4. Selecciona **"OneHandKeyboard"** de la lista
+
+### Paso 5: ¡Probar el Teclado!
+- **Toca las letras A-I** para escribir
+- **Usa el botón ⌫** para borrar
+- **Usa "Space"** para espacios
+- **Usa ↵** para Enter/Done
+
+### Configuración Adicional
+- Para acceder a configuraciones: Abre la app "OneHandKeyboard" desde el launcher
+- Para cambiar idioma: Configuración → Idiomas → Agregar idioma → Español/English
 
 ## 🤝 Contribuir
 
