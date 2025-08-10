@@ -1,7 +1,5 @@
 package com.onehandkeyboard
 
-import android.view.View
-import io.mockk.mockk
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
@@ -15,7 +13,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class OneHandKeyboardServiceTest {
-
     private lateinit var service: OneHandKeyboardService
 
     @Before

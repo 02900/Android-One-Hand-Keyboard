@@ -14,41 +14,41 @@ import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * Main InputMethodService for OneHandKeyboard
- * 
+ *
  * This service integrates Jetpack Compose with Android's IME framework,
  * providing a modern UI for the 3x3 gesture keyboard.
  */
 @AndroidEntryPoint
 class OneHandKeyboardService : InputMethodService() {
-
     private var composeView: ComposeView? = null
 
     override fun onCreateInputView(): View {
         // Create ComposeView for our keyboard UI
-        composeView = ComposeView(this).apply {
-            // Use DisposeOnViewTreeLifecycleDestroyed to properly handle composition lifecycle
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            
-            setContent {
-                OneHandKeyboardTheme {
-                    KeyboardContent(
-                        onTextInput = { text ->
-                            // Handle text input from keyboard
-                            currentInputConnection?.commitText(text, 1)
-                        },
-                        onBackspace = {
-                            // Handle backspace
-                            currentInputConnection?.deleteSurroundingText(1, 0)
-                        },
-                        onAction = { action ->
-                            // Handle IME actions (Done, Next, etc.)
-                            currentInputConnection?.performEditorAction(action)
-                        }
-                    )
+        composeView =
+            ComposeView(this).apply {
+                // Use DisposeOnViewTreeLifecycleDestroyed to properly handle composition lifecycle
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+
+                setContent {
+                    OneHandKeyboardTheme {
+                        KeyboardContent(
+                            onTextInput = { text ->
+                                // Handle text input from keyboard
+                                currentInputConnection?.commitText(text, 1)
+                            },
+                            onBackspace = {
+                                // Handle backspace
+                                currentInputConnection?.deleteSurroundingText(1, 0)
+                            },
+                            onAction = { action ->
+                                // Handle IME actions (Done, Next, etc.)
+                                currentInputConnection?.performEditorAction(action)
+                            },
+                        )
+                    }
                 }
             }
-        }
-        
+
         return composeView!!
     }
 
@@ -57,14 +57,17 @@ class OneHandKeyboardService : InputMethodService() {
         super.onDestroy()
     }
 
-    override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
+    override fun onStartInputView(
+        info: android.view.inputmethod.EditorInfo?,
+        restarting: Boolean,
+    ) {
         super.onStartInputView(info, restarting)
-        // TODO: Configure keyboard based on input type and IME options
+        // Configure keyboard based on input type and IME options
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
-        // TODO: Clean up any ongoing operations
+        // Clean up any ongoing operations
     }
 }
 
@@ -72,14 +75,12 @@ class OneHandKeyboardService : InputMethodService() {
  * Main theme wrapper for the keyboard
  */
 @Composable
-private fun OneHandKeyboardTheme(
-    content: @Composable () -> Unit
-) {
+private fun OneHandKeyboardTheme(content: @Composable () -> Unit) {
     MaterialTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.surface,
-            content = content
+            content = content,
         )
     }
 }
@@ -91,13 +92,13 @@ private fun OneHandKeyboardTheme(
 private fun KeyboardContent(
     onTextInput: (String) -> Unit,
     onBackspace: () -> Unit,
-    onAction: (Int) -> Unit
+    onAction: (Int) -> Unit,
 ) {
     // For now, we'll create a simple 3x3 grid placeholder
     // This will be replaced with the actual gesture keyboard in later stages
     SimpleKeyboardGrid(
         onTextInput = onTextInput,
         onBackspace = onBackspace,
-        onAction = onAction
+        onAction = onAction,
     )
 }

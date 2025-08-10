@@ -24,13 +24,12 @@ import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * Settings activity for OneHandKeyboard
- * 
+ *
  * This is a placeholder activity that will be expanded in later stages
  * to provide full configuration options for the keyboard.
  */
 @AndroidEntryPoint
 class SettingsActivity : ComponentActivity() {
-    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -42,14 +41,12 @@ class SettingsActivity : ComponentActivity() {
 }
 
 @Composable
-private fun OneHandKeyboardTheme(
-    content: @Composable () -> Unit
-) {
+private fun OneHandKeyboardTheme(content: @Composable () -> Unit) {
     MaterialTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
-            content = content
+            content = content,
         )
     }
 }
@@ -57,34 +54,35 @@ private fun OneHandKeyboardTheme(
 @Composable
 private fun SettingsScreen() {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(24.dp),
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = stringResource(R.string.settings_title),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
         )
-        
+
         Text(
             text = "Settings will be available in future updates",
             fontSize = 16.sp,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = 16.dp),
         )
-        
+
         Text(
             text = "For now, you can enable the keyboard in:\nSettings > System > Languages & input > On-screen keyboard",
             fontSize = 14.sp,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(top = 24.dp)
+            modifier = Modifier.padding(top = 24.dp),
         )
     }
 }

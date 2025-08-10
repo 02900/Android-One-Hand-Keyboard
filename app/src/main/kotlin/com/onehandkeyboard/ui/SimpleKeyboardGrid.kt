@@ -22,13 +22,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
 
 /**
  * Simple 3x3 keyboard grid for initial IME implementation
- * 
+ *
  * This is a temporary implementation that will be replaced with the full
  * gesture-based keyboard in later stages. For now, it provides basic
  * text input functionality to test the IME integration.
@@ -38,48 +38,49 @@ fun SimpleKeyboardGrid(
     onTextInput: (String) -> Unit,
     onBackspace: () -> Unit,
     onAction: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         // Main 3x3 grid
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             // Row 1: A, B, C
             KeyRow(
                 keys = listOf("A", "B", "C"),
                 onKeyClick = onTextInput,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
-            
+
             // Row 2: D, E, F
             KeyRow(
                 keys = listOf("D", "E", "F"),
                 onKeyClick = onTextInput,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
-            
+
             // Row 3: G, H, I
             KeyRow(
                 keys = listOf("G", "H", "I"),
                 onKeyClick = onTextInput,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         // Bottom action bar
         ActionBar(
             onBackspace = onBackspace,
             onSpace = { onTextInput(" ") },
-            onEnter = { onAction(android.view.inputmethod.EditorInfo.IME_ACTION_DONE) }
+            onEnter = { onAction(android.view.inputmethod.EditorInfo.IME_ACTION_DONE) },
         )
     }
 }
@@ -88,17 +89,17 @@ fun SimpleKeyboardGrid(
 private fun KeyRow(
     keys: List<String>,
     onKeyClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         keys.forEach { key ->
             KeyButton(
                 text = key,
                 onClick = { onKeyClick(key.lowercase()) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
     }
@@ -110,22 +111,23 @@ private fun KeyButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer,
-    textColor: Color = MaterialTheme.colorScheme.onPrimaryContainer
+    textColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
 ) {
     Box(
-        modifier = modifier
-            .aspectRatio(1f)
-            .clip(RoundedCornerShape(12.dp))
-            .background(backgroundColor)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(backgroundColor)
+                .clickable { onClick() },
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
             color = textColor,
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -135,13 +137,14 @@ private fun ActionBar(
     onBackspace: () -> Unit,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(48.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(48.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         // Backspace button
         KeyButton(
@@ -149,25 +152,25 @@ private fun ActionBar(
             onClick = onBackspace,
             modifier = Modifier.weight(1f),
             backgroundColor = MaterialTheme.colorScheme.errorContainer,
-            textColor = MaterialTheme.colorScheme.onErrorContainer
+            textColor = MaterialTheme.colorScheme.onErrorContainer,
         )
-        
+
         // Space button
         KeyButton(
             text = "Space",
             onClick = onSpace,
             modifier = Modifier.weight(3f),
             backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
-            textColor = MaterialTheme.colorScheme.onSecondaryContainer
+            textColor = MaterialTheme.colorScheme.onSecondaryContainer,
         )
-        
+
         // Enter button
         KeyButton(
             text = "↵",
             onClick = onEnter,
             modifier = Modifier.weight(1f),
             backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
-            textColor = MaterialTheme.colorScheme.onTertiaryContainer
+            textColor = MaterialTheme.colorScheme.onTertiaryContainer,
         )
     }
 }
@@ -179,7 +182,7 @@ private fun SimpleKeyboardGridPreview() {
         SimpleKeyboardGrid(
             onTextInput = { },
             onBackspace = { },
-            onAction = { }
+            onAction = { },
         )
     }
 }
