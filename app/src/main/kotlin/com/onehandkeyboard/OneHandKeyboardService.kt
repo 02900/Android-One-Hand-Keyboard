@@ -13,6 +13,7 @@ import android.widget.TextView
 import com.onehandkeyboard.core.domain.model.*
 import com.onehandkeyboard.core.gesture.GestureDetector
 import com.onehandkeyboard.core.gesture.CellBounds
+import com.onehandkeyboard.config.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
 import dagger.hilt.android.AndroidEntryPoint
@@ -67,11 +68,15 @@ class OneHandKeyboardService : InputMethodService() {
     private var gestureJob: Job? = null
     private val gestureScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     
+    // Sistema de configuración externa
+    private var keyboardConfiguration: KeyboardConfiguration = KeyboardConfiguration.createSpanishDefault()
+    
     // Estado para procesamiento directo de gestos
     private var gestureStartTime = 0L
     private var gestureStartX = 0f
     private var gestureStartY = 0f
     private var isLongPressDetected = false
+    private var gestureAlreadyEmitted = false // Prevenir repetición de gestos
     private val longPressThreshold = 500L // 500ms
     private val swipeThreshold = 50f // pixels
 
@@ -187,16 +192,26 @@ class OneHandKeyboardService : InputMethodService() {
     }
     
     /**
-     * Crea un botón con integración completa del sistema de gestos
+     * Crea un botón con integración completa del sistema de gestos usando configuración externa
      */
     private fun createGestureButton(keyData: KeyData, cellIndex: Int): Button {
         return Button(this).apply {
-            // Aplicar modo de mayúsculas al carácter
-            val displayChar = applyCase(keyData.primaryChar)
+            // Obtener configuración de la celda
+            val cellConfig = keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
+            val label = cellConfig?.label ?: "Cell $cellIndex"
+            
+            // Obtener el carácter principal (tap center) de la configuración
+            val tapAction = cellConfig?.getActionFor(GestureType.TAP, Direction.CENTER)
+            val displayChar = when (tapAction) {
+                is ActionConfig.Character -> applyCase(tapAction.char.toString())
+                is ActionConfig.Text -> applyCase(tapAction.text)
+                is ActionConfig.Action -> getActionSymbol(tapAction.keyAction)
+                null -> ""
+            }
             
             // Configuración del texto con información de gestos
-            val gestureHints = getGestureHints(cellIndex)
-            text = "${keyData.label}\n$displayChar$gestureHints"
+            val gestureHints = getConfigurationHints(cellIndex)
+            text = "$label\n$displayChar$gestureHints"
             textSize = 12f
             setTextColor(Color.parseColor("#FFFFFF"))
             gravity = Gravity.CENTER
@@ -277,7 +292,53 @@ class OneHandKeyboardService : InputMethodService() {
     }
     
     /**
-     * Obtiene hints visuales de los gestos disponibles para una celda
+     * Obtiene hints visuales de los gestos configurados para una celda
+     */
+    private fun getConfigurationHints(cellIndex: Int): String {
+        val cellConfig = keyboardConfiguration.cells.find { it.cellIndex == cellIndex } ?: return ""
+        
+        val hints = mutableListOf<String>()
+        
+        // Revisar todas las acciones configuradas (excluyendo tap center que ya se muestra)
+        cellConfig.actions.forEach { (gestureAction, actionConfig) ->
+            if (!(gestureAction.gestureType == GestureType.TAP && gestureAction.direction == Direction.CENTER)) {
+                val directionSymbol = getDirectionSymbol(gestureAction.direction)
+                val actionSymbol = when (actionConfig) {
+                    is ActionConfig.Character -> actionConfig.char.toString()
+                    is ActionConfig.Text -> actionConfig.text.take(1)
+                    is ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
+                }
+                val gestureSymbol = when (gestureAction.gestureType) {
+                    GestureType.SWIPE -> "→"
+                    GestureType.LONG_PRESS -> "⏱"
+                    else -> ""
+                }
+                hints.add("$directionSymbol$gestureSymbol$actionSymbol")
+            }
+        }
+        
+        return if (hints.isNotEmpty()) "\n${hints.take(3).joinToString(" ")}" else ""
+    }
+    
+    /**
+     * Obtiene el símbolo visual para una dirección
+     */
+    private fun getDirectionSymbol(direction: Direction): String {
+        return when (direction) {
+            Direction.N -> "↑"
+            Direction.NE -> "↗"
+            Direction.E -> "→"
+            Direction.SE -> "↘"
+            Direction.S -> "↓"
+            Direction.SW -> "↙"
+            Direction.W -> "←"
+            Direction.NW -> "↖"
+            Direction.CENTER -> "●"
+        }
+    }
+    
+    /**
+     * Obtiene hints visuales de los gestos disponibles para una celda (método legacy)
      */
     private fun getGestureHints(cellIndex: Int): String {
         val layout = currentKeyboardLayout ?: return ""
@@ -839,47 +900,71 @@ class OneHandKeyboardService : InputMethodService() {
                 gestureStartX = event.x
                 gestureStartY = event.y
                 isLongPressDetected = false
+                gestureAlreadyEmitted = false // Reset para nuevo gesto
                 Log.d("OneHandKeyboard", "🎯 DIRECT: Gesture started on cell $cellIndex")
                 return true
             }
             
             MotionEvent.ACTION_MOVE -> {
-                val deltaX = event.x - gestureStartX
-                val deltaY = event.y - gestureStartY
-                val distance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
-                
-                // Detectar swipe si se mueve más del threshold
-                if (distance > swipeThreshold) {
-                    val direction = getSwipeDirection(deltaX, deltaY)
-                    Log.d("OneHandKeyboard", "🎯 DIRECT: Swipe detected - direction: $direction, distance: $distance")
-                    handleDirectGesture(cellIndex, GestureType.SWIPE, direction)
-                    return true
+                // Solo procesar si no hemos emitido un gesto ya
+                if (!gestureAlreadyEmitted) {
+                    val deltaX = event.x - gestureStartX
+                    val deltaY = event.y - gestureStartY
+                    val distance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
+                    
+                    // Detectar swipe si se mueve más del threshold
+                    if (distance > swipeThreshold) {
+                        val direction = getSwipeDirection(deltaX, deltaY)
+                        Log.d("OneHandKeyboard", "🎯 DIRECT: Swipe detected - direction: $direction, distance: $distance")
+                        handleDirectGesture(cellIndex, GestureType.SWIPE, direction)
+                        gestureAlreadyEmitted = true // Marcar como emitido
+                        return true
+                    }
+                    
+                    // Detectar long press durante el movimiento
+                    val duration = System.currentTimeMillis() - gestureStartTime
+                    if (duration >= longPressThreshold && !isLongPressDetected) {
+                        Log.d("OneHandKeyboard", "🎯 DIRECT: Long press detected during move")
+                        handleDirectGesture(cellIndex, GestureType.LONG_PRESS, Direction.CENTER)
+                        isLongPressDetected = true
+                        gestureAlreadyEmitted = true // Marcar como emitido
+                        return true
+                    }
                 }
                 return true
             }
             
-            MotionEvent.ACTION_UP -> {
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 val duration = System.currentTimeMillis() - gestureStartTime
                 val deltaX = event.x - gestureStartX
                 val deltaY = event.y - gestureStartY
                 val distance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
                 
-                Log.d("OneHandKeyboard", "🎯 DIRECT: Gesture ended - duration: ${duration}ms, distance: $distance")
+                Log.d("OneHandKeyboard", "🎯 DIRECT: Gesture ended - duration: ${duration}ms, distance: $distance, alreadyEmitted: $gestureAlreadyEmitted")
                 
-                when {
-                    distance > swipeThreshold -> {
-                        // Ya manejado en ACTION_MOVE
-                        Log.d("OneHandKeyboard", "🎯 DIRECT: Swipe already handled")
-                    }
-                    duration >= longPressThreshold -> {
-                        Log.d("OneHandKeyboard", "🎯 DIRECT: Long press detected")
-                        handleDirectGesture(cellIndex, GestureType.LONG_PRESS, Direction.CENTER)
-                    }
-                    else -> {
-                        Log.d("OneHandKeyboard", "🎯 DIRECT: Tap detected")
-                        handleDirectGesture(cellIndex, GestureType.TAP, Direction.CENTER)
+                // Solo emitir si no hemos emitido nada aún
+                if (!gestureAlreadyEmitted) {
+                    when {
+                        distance > swipeThreshold -> {
+                            // Swipe tardío (no detectado en MOVE)
+                            val direction = getSwipeDirection(deltaX, deltaY)
+                            Log.d("OneHandKeyboard", "🎯 DIRECT: Late swipe detected - direction: $direction")
+                            handleDirectGesture(cellIndex, GestureType.SWIPE, direction)
+                        }
+                        duration >= longPressThreshold -> {
+                            Log.d("OneHandKeyboard", "🎯 DIRECT: Long press detected on release")
+                            handleDirectGesture(cellIndex, GestureType.LONG_PRESS, Direction.CENTER)
+                        }
+                        else -> {
+                            Log.d("OneHandKeyboard", "🎯 DIRECT: Tap detected")
+                            handleDirectGesture(cellIndex, GestureType.TAP, Direction.CENTER)
+                        }
                     }
                 }
+                
+                // Reset estado para próximo gesto
+                gestureAlreadyEmitted = false
+                isLongPressDetected = false
                 return true
             }
         }
@@ -906,38 +991,32 @@ class OneHandKeyboardService : InputMethodService() {
     }
     
     /**
-     * Maneja un gesto detectado directamente
+     * Maneja un gesto detectado directamente usando configuración externa
      */
     private fun handleDirectGesture(cellIndex: Int, gestureType: GestureType, direction: Direction) {
         Log.d("OneHandKeyboard", "🎯 DIRECT GESTURE: $gestureType on cell $cellIndex, direction $direction")
         
-        val layout = currentKeyboardLayout
-        if (layout == null) {
-            Log.e("OneHandKeyboard", "🎯 ERROR: currentKeyboardLayout is NULL!")
+        // Buscar la configuración de la celda
+        val cellConfig = keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
+        if (cellConfig == null) {
+            Log.w("OneHandKeyboard", "🎯 No configuration found for cell $cellIndex")
             return
         }
         
-        // Crear gesto sintético
-        val gesture = Gesture(
-            startCell = cellIndex,
-            endCell = cellIndex,
-            direction = direction,
-            durationMs = System.currentTimeMillis() - gestureStartTime,
-            speed = 0f,
-            distance = 0f,
-            startPosition = Position(gestureStartX, gestureStartY),
-            endPosition = Position(gestureStartX, gestureStartY),
-            type = gestureType
-        )
+        // Buscar la acción configurada para este gesto
+        val actionConfig = cellConfig.getActionFor(gestureType, direction)
+        if (actionConfig == null) {
+            Log.d("OneHandKeyboard", "🎯 No action configured for $gestureType + $direction on cell $cellIndex")
+            return
+        }
         
-        Log.d("OneHandKeyboard", "🎯 Processing synthetic gesture: $gesture")
-        val output = layout.processGesture(gesture)
-        Log.d("OneHandKeyboard", "🎯 Layout processGesture returned: $output")
+        Log.d("OneHandKeyboard", "🎯 Found action config: $actionConfig")
         
-        when (output) {
-            is KeyboardOutput.Character -> {
-                val char = applyCase(output.char.toString())
-                Log.d("OneHandKeyboard", "🎯 SENDING CHARACTER: '$char' (original: '${output.char}')")
+        // Ejecutar la acción configurada
+        when (actionConfig) {
+            is ActionConfig.Character -> {
+                val char = applyCase(actionConfig.char.toString())
+                Log.d("OneHandKeyboard", "🎯 SENDING CHARACTER: '$char' (original: '${actionConfig.char}')")
                 
                 val inputConnection = currentInputConnection
                 if (inputConnection == null) {
@@ -953,12 +1032,22 @@ class OneHandKeyboardService : InputMethodService() {
                     isCapitalizeNext = false
                 }
             }
-            is KeyboardOutput.Action -> {
-                Log.d("OneHandKeyboard", "🎯 EXECUTING ACTION: ${output.action}")
-                executeKeyAction(output.action)
+            is ActionConfig.Action -> {
+                Log.d("OneHandKeyboard", "🎯 EXECUTING ACTION: ${actionConfig.keyAction}")
+                executeKeyAction(actionConfig.keyAction)
             }
-            null -> {
-                Log.w("OneHandKeyboard", "🎯 No output for gesture: $gesture")
+            is ActionConfig.Text -> {
+                val text = applyCase(actionConfig.text)
+                Log.d("OneHandKeyboard", "🎯 SENDING TEXT: '$text'")
+                
+                val inputConnection = currentInputConnection
+                if (inputConnection == null) {
+                    Log.e("OneHandKeyboard", "🎯 ERROR: currentInputConnection is NULL!")
+                    return
+                }
+                
+                val result = inputConnection.commitText(text, 1)
+                Log.d("OneHandKeyboard", "🎯 commitText result: $result")
             }
         }
     }
