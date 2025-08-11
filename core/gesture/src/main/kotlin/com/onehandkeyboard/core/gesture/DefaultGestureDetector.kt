@@ -42,25 +42,56 @@ class DefaultGestureDetector @Inject constructor() : GestureDetector {
     private var directionLocked = false
     
     override fun onTouchEvent(event: MotionEvent, cellBounds: Array<CellBounds>): Boolean {
-        this.cellBounds = cellBounds
-        
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> handleActionDown(event)
-            MotionEvent.ACTION_MOVE -> handleActionMove(event)
-            MotionEvent.ACTION_UP -> handleActionUp(event)
-            MotionEvent.ACTION_CANCEL -> handleActionCancel()
+        return try {
+            this.cellBounds = cellBounds
+            
+            println("🎯 DETECTOR: onTouchEvent called - action: ${event.action}, cellBounds.size: ${cellBounds.size}")
+            
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    println("🎯 DETECTOR: About to call handleActionDown")
+                    handleActionDown(event)
+                    println("🎯 DETECTOR: handleActionDown completed")
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    println("🎯 DETECTOR: About to call handleActionMove")
+                    handleActionMove(event)
+                    println("🎯 DETECTOR: handleActionMove completed")
+                }
+                MotionEvent.ACTION_UP -> {
+                    println("🎯 DETECTOR: About to call handleActionUp")
+                    handleActionUp(event)
+                    println("🎯 DETECTOR: handleActionUp completed")
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    println("🎯 DETECTOR: About to call handleActionCancel")
+                    handleActionCancel()
+                    println("🎯 DETECTOR: handleActionCancel completed")
+                }
+                else -> {
+                    println("🎯 DETECTOR: Unknown action: ${event.action}")
+                }
+            }
+            
+            println("🎯 DETECTOR: onTouchEvent returning true")
+            true
+        } catch (e: Exception) {
+            println("🎯 DETECTOR: EXCEPTION in onTouchEvent: ${e.message}")
+            e.printStackTrace()
+            false
         }
-        
-        return true
     }
     
     private fun handleActionDown(event: MotionEvent) {
         val position = Position(event.x, event.y)
         val cell = findCellAt(position)
         
+        println("🎯 DETECTOR: handleActionDown - position: $position, cell: $cell")
+        
         if (cell == -1) {
             // Touch outside keyboard area
             currentState = GestureState.IDLE
+            println("🎯 DETECTOR: Touch outside keyboard area, setting IDLE")
             return
         }
         
@@ -74,6 +105,8 @@ class DefaultGestureDetector @Inject constructor() : GestureDetector {
         // Initialize velocity tracking
         velocityTracker.clear()
         addVelocityPoint(position, gestureStartTime)
+        
+        println("🎯 DETECTOR: State set to TRACKING, startCell: $startCell")
     }
     
     private fun handleActionMove(event: MotionEvent) {
@@ -98,13 +131,20 @@ class DefaultGestureDetector @Inject constructor() : GestureDetector {
     }
     
     private fun handleActionUp(event: MotionEvent) {
-        if (currentState == GestureState.IDLE) return
+        println("🎯 DETECTOR: handleActionUp called, currentState: $currentState")
+        
+        if (currentState == GestureState.IDLE) {
+            println("🎯 DETECTOR: State is IDLE, returning early")
+            return
+        }
         
         val endPosition = Position(event.x, event.y)
         val endTime = System.currentTimeMillis()
         val duration = endTime - gestureStartTime
         val distance = startPosition.distanceTo(endPosition)
         val velocity = calculateVelocity()
+        
+        println("🎯 DETECTOR: duration: $duration, distance: $distance, velocity: $velocity")
         
         // Determine gesture type and direction
         val gestureType = determineGestureType(distance, duration, velocity)
@@ -113,6 +153,8 @@ class DefaultGestureDetector @Inject constructor() : GestureDetector {
         } else {
             detectDirectionWithDeadZones(startPosition, endPosition)
         }
+        
+        println("🎯 DETECTOR: gestureType: $gestureType, direction: $direction")
         
         val gesture = Gesture(
             startCell = startCell,
@@ -127,7 +169,8 @@ class DefaultGestureDetector @Inject constructor() : GestureDetector {
         )
         
         // Emit the gesture
-        _gestures.trySend(gesture)
+        val result = _gestures.trySend(gesture)
+        println("🎯 GESTURE DETECTOR: Emitting gesture $gesture, result: $result")
         
         // Reset state
         currentState = GestureState.IDLE
