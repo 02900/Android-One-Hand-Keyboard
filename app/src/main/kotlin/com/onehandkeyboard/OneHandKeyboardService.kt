@@ -144,21 +144,29 @@ class OneHandKeyboardService : InputMethodService() {
             // Título con información de estado
             addView(createTitleView())
             
-            // Botones de control (layout y case)
-            addView(createControlButtons())
-            
-            // Crear grid 3x3 dinámico
-            val keyData = getCurrentKeyData()
-            
-            // Crear container para el grid
-            val gridContainer = LinearLayout(this@OneHandKeyboardService).apply {
-                orientation = LinearLayout.VERTICAL
+            // Crear fila principal que contendrá grid + controles laterales
+            val mainRow = LinearLayout(this@OneHandKeyboardService).apply {
+                orientation = LinearLayout.HORIZONTAL
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     0,
                     1f
                 )
                 setPadding(8, 8, 8, 8)
+            }
+            
+            // Crear grid 3x3 dinámico
+            val keyData = getCurrentKeyData()
+            
+            // Crear container para el grid (ocupa la mayor parte del espacio)
+            val gridContainer = LinearLayout(this@OneHandKeyboardService).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    3f // Peso 3 para el grid
+                )
+                setPadding(0, 0, 8, 0) // Padding derecho para separar de controles
             }
             
             for (row in 0..2) {
@@ -188,17 +196,45 @@ class OneHandKeyboardService : InputMethodService() {
                 gridContainer.addView(rowLayout)
             }
             
-            addView(gridContainer)
+            // Agregar grid al mainRow
+            mainRow.addView(gridContainer)
+            
+            // Crear columna de controles laterales
+            val controlsColumn = LinearLayout(this@OneHandKeyboardService).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    1f // Peso 1 para los controles
+                )
+                setPadding(8, 0, 0, 0) // Padding izquierdo para separar del grid
+                gravity = Gravity.CENTER_VERTICAL // Centrar verticalmente los controles
+            }
+            
+            // Crear controles individuales para la columna lateral
+            val layoutButton = createLayoutButton()
+            val caseButton = createCaseButton()
+            
+            controlsColumn.addView(layoutButton)
+            controlsColumn.addView(caseButton)
+            
+            // Agregar columna de controles al mainRow
+            mainRow.addView(controlsColumn)
+            
+            // Agregar la fila principal al layout principal
+            addView(mainRow)
         }
     }
     
     /**
-     * Calcula el tamaño de celda cuadrada basado en el ancho de pantalla
+     * Calcula el tamaño de celda cuadrada basado en el ancho disponible para el grid
      */
     private fun calculateSquareCellSize(): Int {
         val screenWidth = resources.displayMetrics.widthPixels
+        val controlsWidth = screenWidth / 4 // Los controles ocupan 1/4 del ancho (peso 1 de 4 total)
+        val gridAvailableWidth = screenWidth - controlsWidth // Ancho disponible para el grid
         val totalMargins = 60 // 6px * 2 (left+right) * 3 columns + padding extra
-        return (screenWidth - totalMargins) / 3
+        return (gridAvailableWidth - totalMargins) / 3
     }
 
     /**
@@ -686,6 +722,50 @@ class OneHandKeyboardService : InputMethodService() {
         }
     }
     
+    /**
+     * Crea el botón individual para cambiar layout (para columna lateral)
+     */
+    private fun createLayoutButton(): Button {
+        return Button(this).apply {
+            text = "Layout"
+            textSize = 12f
+            setTextColor(Color.parseColor("#4CAF50"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 4, 0, 4)
+            }
+            background = createButtonBackground(false, false, true)
+            
+            setOnClickListener {
+                switchLayout()
+            }
+        }
+    }
+    
+    /**
+     * Crea el botón individual para cambiar case (para columna lateral)
+     */
+    private fun createCaseButton(): Button {
+        return Button(this).apply {
+            text = "Aa"
+            textSize = 12f
+            setTextColor(Color.parseColor("#2196F3"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 4, 0, 4)
+            }
+            background = createButtonBackground(false, false, true)
+            
+            setOnClickListener {
+                switchCaseMode()
+            }
+        }
+    }
+
     /**
      * Crea los botones de control para cambiar layout y case
      */
