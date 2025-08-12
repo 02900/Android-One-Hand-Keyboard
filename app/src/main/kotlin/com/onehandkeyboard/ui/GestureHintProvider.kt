@@ -26,17 +26,19 @@ class GestureHintProvider(private val configManager: KeyboardConfigManager) {
         val hints = mutableListOf<String>()
         
         // Procesar cada acción de gesto configurada
-        for (gestureAction in cellConfig.gestureActions) {
+        cellConfig.actions.forEach { (gestureAction, actionConfig) ->
             val directionSymbol = getDirectionSymbol(gestureAction.direction)
-            val actionSymbol = when (val action = gestureAction.action) {
-                is com.onehandkeyboard.actions.ActionConfig.Character -> action.char.toString()
-                is com.onehandkeyboard.actions.ActionConfig.Text -> action.text
-                is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(action.keyAction)
+            val actionSymbol = when (actionConfig) {
+                is com.onehandkeyboard.actions.ActionConfig.Character -> actionConfig.char.toString()
+                is com.onehandkeyboard.actions.ActionConfig.Text -> actionConfig.text
+                is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.action)
             }
             val gestureSymbol = when (gestureAction.gestureType) {
                 GestureType.SWIPE -> "→"
                 GestureType.LONG_PRESS -> "⏱"
-                else -> ""
+                GestureType.TAP -> "●"
+                GestureType.FLICK -> "⚡"
+                GestureType.DRAG -> "↔"
             }
             hints.add("$directionSymbol$gestureSymbol$actionSymbol")
         }
@@ -102,13 +104,13 @@ class GestureHintProvider(private val configManager: KeyboardConfigManager) {
      * Obtiene el label para una dirección específica
      */
     fun getDirectionalLabel(cellConfig: CellConfiguration, direction: Direction): String {
-        val gestureAction = cellConfig.gestureActions.find { it.direction == direction }
+        val actionConfig = cellConfig.actions.entries.find { it.key.direction == direction }?.value
             ?: return ""
         
-        return when (val action = gestureAction.action) {
-            is com.onehandkeyboard.actions.ActionConfig.Character -> action.char.toString()
-            is com.onehandkeyboard.actions.ActionConfig.Text -> action.text
-            is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(action.keyAction)
+        return when (actionConfig) {
+            is com.onehandkeyboard.actions.ActionConfig.Character -> actionConfig.char.toString()
+            is com.onehandkeyboard.actions.ActionConfig.Text -> actionConfig.text
+            is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.action)
         }
     }
     
@@ -116,26 +118,27 @@ class GestureHintProvider(private val configManager: KeyboardConfigManager) {
      * Obtiene el label para el centro (combinando TAP y LONG_PRESS)
      */
     fun getCenterLabel(cellConfig: CellConfiguration): String {
-        val tapAction = cellConfig.gestureActions.find { 
-            it.direction == Direction.CENTER && it.gestureType == GestureType.TAP 
-        }
-        val longPressAction = cellConfig.gestureActions.find { 
-            it.direction == Direction.CENTER && it.gestureType == GestureType.LONG_PRESS 
-        }
+        val tapActionConfig = cellConfig.actions.entries.find { 
+            it.key.direction == Direction.CENTER && it.key.gestureType == GestureType.TAP 
+        }?.value
         
-        val tapLabel = tapAction?.let { gestureAction ->
-            when (val action = gestureAction.action) {
-                is com.onehandkeyboard.actions.ActionConfig.Character -> action.char.toString()
-                is com.onehandkeyboard.actions.ActionConfig.Text -> action.text
-                is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(action.keyAction)
+        val longPressActionConfig = cellConfig.actions.entries.find { 
+            it.key.direction == Direction.CENTER && it.key.gestureType == GestureType.LONG_PRESS 
+        }?.value
+        
+        val tapLabel = tapActionConfig?.let { actionConfig ->
+            when (actionConfig) {
+                is com.onehandkeyboard.actions.ActionConfig.Character -> actionConfig.char.toString()
+                is com.onehandkeyboard.actions.ActionConfig.Text -> actionConfig.text
+                is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.action)
             }
         } ?: ""
         
-        val longPressLabel = longPressAction?.let { gestureAction ->
-            when (val action = gestureAction.action) {
-                is com.onehandkeyboard.actions.ActionConfig.Character -> action.char.toString()
-                is com.onehandkeyboard.actions.ActionConfig.Text -> action.text
-                is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(action.keyAction)
+        val longPressLabel = longPressActionConfig?.let { actionConfig ->
+            when (actionConfig) {
+                is com.onehandkeyboard.actions.ActionConfig.Character -> actionConfig.char.toString()
+                is com.onehandkeyboard.actions.ActionConfig.Text -> actionConfig.text
+                is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.action)
             }
         } ?: ""
         
