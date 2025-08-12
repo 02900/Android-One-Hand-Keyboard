@@ -1,53 +1,51 @@
 package com.onehandkeyboard
 
 import android.content.Context
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.util.Log
-import android.view.Gravity
 import android.view.MotionEvent
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.TextView
-import com.onehandkeyboard.config.ActionConfig
-import com.onehandkeyboard.config.CellConfiguration
-import com.onehandkeyboard.core.domain.model.Direction
-import com.onehandkeyboard.core.domain.model.GestureType
-import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyData
+import com.onehandkeyboard.ui.ButtonStyleProvider
+import com.onehandkeyboard.ui.ControlButtonFactory
+import com.onehandkeyboard.ui.DirectionalLabelFactory
+import com.onehandkeyboard.ui.GestureHintProvider
+import com.onehandkeyboard.ui.LayoutCalculator
 
 /**
  * Factory class for creating keyboard UI components using Android Views.
  * 
- * This class centralizes all UI creation logic including:
- * - 3x3 grid layout creation with proper aspect ratios
- * - Button creation and modern styling with gradients
- * - Gesture hint labels positioned by direction
- * - Control buttons for layout and case mode switching
- * - Visual feedback and accessibility features
+ * This class coordinates UI creation by delegating to specialized components:
+ * - LayoutCalculator: Handles sizing and positioning calculations
+ * - ButtonStyleProvider: Manages visual styles and themes
+ * - GestureHintProvider: Generates gesture hints and symbols
+ * - ControlButtonFactory: Creates control buttons (layout, case, backspace)
+ * - DirectionalLabelFactory: Creates positioned directional labels
  * 
- * Extracted from OneHandKeyboardService for better separation of concerns.
+ * Refactored for better separation of concerns and modularity.
  * Uses manual initialization due to Context dependency requirements.
- * - Directional labels and text views
  */
 class KeyboardUiFactory(
     private val context: Context,
     private val configManager: KeyboardConfigManager
 ) {
     
+    // Delegated components for specialized responsibilities
+    private val layoutCalculator = LayoutCalculator(context)
+    private val styleProvider = ButtonStyleProvider()
+    private val hintProvider = GestureHintProvider(configManager)
+    private val controlButtonFactory = ControlButtonFactory(context, styleProvider)
+    private val labelFactory = DirectionalLabelFactory(context, styleProvider, hintProvider)
+    
     // ============================================================================
-    // REGION: LAYOUT CALCULATIONS
+    // REGION: LAYOUT CALCULATIONS (Delegated)
     // ============================================================================
     
     /**
      * Calcula el tamaño de celda cuadrada basado en el ancho disponible para el grid
      */
     fun calculateSquareCellSize(): Int {
-        val displayMetrics = context.resources.displayMetrics
-        val screenWidth = displayMetrics.widthPixels
-        val gridWidth = (screenWidth * 0.75).toInt() // 75% del ancho para el grid (25% para controles)
-        val cellSize = (gridWidth - 60) / 3 // 60px para márgenes totales entre 3 celdas
-        return cellSize
+        return layoutCalculator.calculateSquareCellSize()
     }
     
     // ============================================================================
@@ -67,20 +65,21 @@ class KeyboardUiFactory(
             val cellConfig = configManager.keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
             
             // Layout parameters con aspect ratio 1:1
-            val squareSize = calculateSquareCellSize()
+            val squareSize = layoutCalculator.calculateSquareCellSize()
+            val margins = layoutCalculator.getStandardCellMargins()
             layoutParams = LinearLayout.LayoutParams(
                 0,
                 squareSize, // Altura fija para aspect ratio 1:1
                 1f
             ).apply {
-                setMargins(6, 6, 6, 6)
+                setMargins(margins, margins, margins, margins)
             }
             
             // Fondo con bordes redondeados
-            background = createButtonBackground(false)
+            background = styleProvider.createButtonBackground(false)
             
             // Crear labels posicionados para cada dirección
-            createDirectionalLabelsAbsolute(this, cellConfig, cellIndex)
+            labelFactory.createDirectionalLabelsAbsolute(this, cellConfig, cellIndex)
             
             // Configurar touch listener para gestos
             setOnTouchListener { _, event ->
@@ -100,338 +99,58 @@ class KeyboardUiFactory(
      * Crea el botón de backspace mejorado
      */
     fun createBackspaceButton(onClickListener: () -> Unit): FrameLayout {
-        return FrameLayout(context).apply {
-            // Layout parameters con aspect ratio 1:1
-            val squareSize = calculateSquareCellSize()
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                squareSize,
-                1f
-            ).apply {
-                setMargins(6, 6, 6, 6)
-            }
-            
-            // Fondo especial para backspace
-            background = createButtonBackground(false, isBackspace = true)
-            
-            // TextView centrado con símbolo de backspace
-            val textView = TextView(context).apply {
-                text = "⌫"
-                textSize = 20f
-                setTextColor(Color.WHITE)
-                gravity = Gravity.CENTER
-                layoutParams = FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-                )
-            }
-            
-            addView(textView)
-            
-            // Configurar click listener
-            setOnClickListener { onClickListener() }
-        }
+        return controlButtonFactory.createBackspaceButton(onClickListener)
     }
     
     /**
      * Crea un botón mejorado con diseño moderno (método legacy)
      */
     fun createLegacyButton(keyData: KeyData, onClickListener: (String) -> Unit): FrameLayout {
-        return FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                1f
-            ).apply {
-                setMargins(4, 4, 4, 4)
-            }
-            
-            // Fondo con bordes redondeados
-            background = createButtonBackground(false)
-            
-            // TextView principal
-            val mainTextView = TextView(context).apply {
-                text = keyData.primaryChar.uppercase()
-                textSize = 18f
-                setTextColor(Color.WHITE)
-                gravity = Gravity.CENTER
-                layoutParams = FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-                )
-            }
-            
-            addView(mainTextView)
-            
-            // Configurar click listeners
-            setOnClickListener {
-                val outputChar = configManager.applyCase(keyData.primaryChar)
-                Log.d("OneHandKeyboard", "Key clicked: $outputChar")
-                onClickListener(outputChar)
-                
-                // Manejar modo capitalize
-                configManager.onCharacterWritten()
-                
-                // Feedback visual
-                background = createButtonBackground(true)
-                postDelayed({
-                    background = createButtonBackground(false)
-                }, 100)
-            }
-        }
+        return controlButtonFactory.createLegacyButton(keyData, onClickListener)
     }
     
     // ============================================================================
     // REGION: VISUAL HELPERS & BACKGROUNDS
     // ============================================================================
     
-    /**
-     * Crea el fondo del botón con bordes redondeados
-     */
-    fun createButtonBackground(pressed: Boolean, isBackspace: Boolean = false, isControl: Boolean = false): GradientDrawable {
-        return GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            cornerRadius = 12f
-            
-            when {
-                isBackspace -> {
-                    setColor(if (pressed) Color.parseColor("#D32F2F") else Color.parseColor("#F44336"))
-                }
-                isControl -> {
-                    setColor(if (pressed) Color.parseColor("#1976D2") else Color.parseColor("#2196F3"))
-                }
-                else -> {
-                    setColor(if (pressed) Color.parseColor("#424242") else Color.parseColor("#616161"))
-                }
-            }
-            
-            // Borde sutil
-            setStroke(2, Color.parseColor("#FFFFFF33"))
-        }
-    }
+    // Removed: createButtonBackground - now handled by ButtonStyleProvider
     
     /**
      * Crea la vista del título con información de estado
      */
-    fun createTitleView(): TextView {
-        return TextView(context).apply {
-            text = configManager.getKeyboardTitle()
-            textSize = 14f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            setPadding(16, 8, 16, 8)
-            setBackgroundColor(Color.parseColor("#37474F"))
-        }
+    fun createTitleView(): android.widget.TextView {
+        return labelFactory.createTitleView()
     }
     
     // ============================================================================
     // REGION: DIRECTIONAL LABELS & TEXT VIEWS
     // ============================================================================
     
-    /**
-     * Crea labels posicionados absolutamente para cada dirección en un FrameLayout
-     */
-    fun createDirectionalLabelsAbsolute(container: FrameLayout, cellConfig: CellConfiguration?, cellIndex: Int) {
-        if (cellConfig == null) return
-        
-        // Manejar el centro de manera especial (combinar TAP y LONG_PRESS)
-        val centerTextView = createCenterCombinedTextView(cellConfig)
-        if (centerTextView != null) {
-            container.addView(centerTextView)
-        }
-        
-        // Crear TextView para direcciones no-centro
-        cellConfig.actions.forEach { (gestureAction, actionConfig) ->
-            if (gestureAction.direction != Direction.CENTER) {
-                val label = when (actionConfig) {
-                    is ActionConfig.Character -> configManager.applyCase(actionConfig.char.toString())
-                    is ActionConfig.Text -> configManager.applyCase(actionConfig.text.take(2))
-                    is ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
-                }
-                
-                if (label.isNotEmpty()) {
-                    val textView = createDirectionalTextView(label, gestureAction.direction, gestureAction.gestureType)
-                    container.addView(textView)
-                }
-            }
-        }
-    }
+    // Removed: createDirectionalLabelsAbsolute - now handled by DirectionalLabelFactory
     
-    /**
-     * Crea un TextView posicionado para una dirección específica
-     */
-    fun createDirectionalTextView(text: String, direction: Direction, gestureType: GestureType): TextView {
-        return TextView(context).apply {
-            this.text = if (gestureType == GestureType.LONG_PRESS) "($text)" else text
-            textSize = 12f
-            setTextColor(Color.parseColor("#FFFFFF"))
-            gravity = Gravity.CENTER
-            
-            // Configurar posición absoluta según la dirección
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                when (direction) {
-                    Direction.N -> {
-                        gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                        topMargin = 8
-                    }
-                    Direction.NE -> {
-                        gravity = Gravity.TOP or Gravity.END
-                        topMargin = 8
-                        rightMargin = 8
-                    }
-                    Direction.E -> {
-                        gravity = Gravity.CENTER_VERTICAL or Gravity.END
-                        rightMargin = 8
-                    }
-                    Direction.SE -> {
-                        gravity = Gravity.BOTTOM or Gravity.END
-                        bottomMargin = 8
-                        rightMargin = 8
-                    }
-                    Direction.S -> {
-                        gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                        bottomMargin = 8
-                    }
-                    Direction.SW -> {
-                        gravity = Gravity.BOTTOM or Gravity.START
-                        bottomMargin = 8
-                        leftMargin = 8
-                    }
-                    Direction.W -> {
-                        gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                        leftMargin = 8
-                    }
-                    Direction.NW -> {
-                        gravity = Gravity.TOP or Gravity.START
-                        topMargin = 8
-                        leftMargin = 8
-                    }
-                    Direction.CENTER -> {
-                        gravity = Gravity.CENTER
-                    }
-                }
-            }
-        }
-    }
+    // Removed: createDirectionalTextView - now handled by DirectionalLabelFactory
     
-    /**
-     * Maneja la combinación de TAP y LONG_PRESS para el centro
-     */
-    fun createCenterCombinedTextView(cellConfig: CellConfiguration): TextView? {
-        val tapAction = cellConfig.getActionFor(GestureType.TAP, Direction.CENTER)
-        val longPressAction = cellConfig.getActionFor(GestureType.LONG_PRESS, Direction.CENTER)
-        
-        val tapLabel = tapAction?.let { action ->
-            when (action) {
-                is ActionConfig.Character -> configManager.applyCase(action.char.toString())
-                is ActionConfig.Text -> configManager.applyCase(action.text.take(2))
-                is ActionConfig.Action -> getActionSymbol(action.keyAction)
-            }
-        } ?: ""
-        
-        val longPressLabel = longPressAction?.let { action ->
-            when (action) {
-                is ActionConfig.Character -> configManager.applyCase(action.char.toString())
-                is ActionConfig.Text -> configManager.applyCase(action.text.take(2))
-                is ActionConfig.Action -> getActionSymbol(action.keyAction)
-            }
-        } ?: ""
-        
-        // Combinar labels
-        val combinedText = when {
-            tapLabel.isNotEmpty() && longPressLabel.isNotEmpty() -> "$tapLabel ($longPressLabel)"
-            tapLabel.isNotEmpty() -> tapLabel
-            longPressLabel.isNotEmpty() -> "($longPressLabel)"
-            else -> return null
-        }
-        
-        return TextView(context).apply {
-            text = combinedText
-            textSize = 16f
-            setTextColor(Color.parseColor("#FFFFFF"))
-            gravity = Gravity.CENTER
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-    }
+    // Removed: createCenterCombinedTextView - now handled by DirectionalLabelFactory
     
     /**
      * Crea el texto con labels direccionales para una celda
      */
     fun createDirectionalLabels(cellConfig: CellConfiguration?, cellIndex: Int): String {
-        if (cellConfig == null) return ""
-        
-        val labels = mutableListOf<String>()
-        
-        // Obtener label del centro (combinando TAP y LONG_PRESS)
-        val centerLabel = getCenterLabel(cellConfig)
-        if (centerLabel.isNotEmpty()) {
-            labels.add(centerLabel)
-        }
-        
-        // Obtener labels de otras direcciones
-        val directions = listOf(Direction.N, Direction.NE, Direction.E, Direction.SE, 
-                               Direction.S, Direction.SW, Direction.W, Direction.NW)
-        
-        directions.forEach { direction ->
-            val label = getDirectionalLabel(cellConfig, direction)
-            if (label.isNotEmpty()) {
-                val dirSymbol = getDirectionSymbol(direction)
-                labels.add("$dirSymbol$label")
-            }
-        }
-        
-        return labels.joinToString(" ")
+        return labelFactory.createDirectionalLabels(cellConfig, cellIndex)
     }
     
     /**
      * Obtiene el label para una dirección específica
      */
     fun getDirectionalLabel(cellConfig: CellConfiguration, direction: Direction): String {
-        val swipeAction = cellConfig.getActionFor(GestureType.SWIPE, direction)
-        return swipeAction?.let { action ->
-            when (action) {
-                is ActionConfig.Character -> configManager.applyCase(action.char.toString())
-                is ActionConfig.Text -> configManager.applyCase(action.text.take(1))
-                is ActionConfig.Action -> getActionSymbol(action.keyAction)
-            }
-        } ?: ""
+        return hintProvider.getDirectionalLabel(cellConfig, direction)
     }
     
     /**
      * Obtiene el label para el centro (combinando TAP y LONG_PRESS)
      */
     fun getCenterLabel(cellConfig: CellConfiguration): String {
-        val tapAction = cellConfig.getActionFor(GestureType.TAP, Direction.CENTER)
-        val longPressAction = cellConfig.getActionFor(GestureType.LONG_PRESS, Direction.CENTER)
-        
-        val tapLabel = tapAction?.let { action ->
-            when (action) {
-                is ActionConfig.Character -> configManager.applyCase(action.char.toString())
-                is ActionConfig.Text -> configManager.applyCase(action.text.take(1))
-                is ActionConfig.Action -> getActionSymbol(action.keyAction)
-            }
-        } ?: ""
-        
-        val longPressLabel = longPressAction?.let { action ->
-            when (action) {
-                is ActionConfig.Character -> configManager.applyCase(action.char.toString())
-                is ActionConfig.Text -> configManager.applyCase(action.text.take(1))
-                is ActionConfig.Action -> getActionSymbol(action.keyAction)
-            }
-        } ?: ""
-        
-        return when {
-            tapLabel.isNotEmpty() && longPressLabel.isNotEmpty() -> "$tapLabel($longPressLabel)"
-            tapLabel.isNotEmpty() -> tapLabel
-            longPressLabel.isNotEmpty() -> "($longPressLabel)"
-            else -> ""
-        }
+        return hintProvider.getCenterLabel(cellConfig)
     }
     
     // ============================================================================
@@ -442,83 +161,28 @@ class KeyboardUiFactory(
      * Obtiene hints visuales de los gestos configurados para una celda
      */
     fun getConfigurationHints(cellIndex: Int): String {
-        val cellConfig = configManager.keyboardConfiguration.cells.find { it.cellIndex == cellIndex } ?: return ""
-        
-        val hints = mutableListOf<String>()
-        
-        // Revisar todas las acciones configuradas (excluyendo tap center que ya se muestra)
-        cellConfig.actions.forEach { (gestureAction, actionConfig) ->
-            if (!(gestureAction.gestureType == GestureType.TAP && gestureAction.direction == Direction.CENTER)) {
-                val directionSymbol = getDirectionSymbol(gestureAction.direction)
-                val actionSymbol = when (actionConfig) {
-                    is ActionConfig.Character -> actionConfig.char.toString()
-                    is ActionConfig.Text -> actionConfig.text.take(1)
-                    is ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
-                }
-                val gestureSymbol = when (gestureAction.gestureType) {
-                    GestureType.SWIPE -> "→"
-                    GestureType.LONG_PRESS -> "⏱"
-                    else -> ""
-                }
-                hints.add("$directionSymbol$gestureSymbol$actionSymbol")
-            }
-        }
-        
-        return hints.joinToString(" ")
+        return hintProvider.getConfigurationHints(cellIndex)
     }
     
     /**
      * Obtiene el símbolo visual para una dirección
      */
     fun getDirectionSymbol(direction: Direction): String {
-        return when (direction) {
-            Direction.N -> "↑"
-            Direction.NE -> "↗"
-            Direction.E -> "→"
-            Direction.SE -> "↘"
-            Direction.S -> "↓"
-            Direction.SW -> "↙"
-            Direction.W -> "←"
-            Direction.NW -> "↖"
-            Direction.CENTER -> "●"
-        }
+        return hintProvider.getDirectionSymbol(direction)
     }
     
     /**
      * Obtiene hints visuales de los gestos disponibles para una celda (método legacy)
      */
     fun getLegacyGestureHints(cellIndex: Int): String {
-        val hints = mutableListOf<String>()
-        
-        // Ejemplo de hints básicos - esto se puede expandir
-        when (cellIndex) {
-            0 -> hints.addAll(listOf("↑á", "←à", "→â"))
-            1 -> hints.addAll(listOf("↑é", "←è", "→ê"))
-            2 -> hints.addAll(listOf("↑í", "←ì", "→î"))
-            3 -> hints.addAll(listOf("↑ó", "←ò", "→ô"))
-            4 -> hints.addAll(listOf("↑ú", "←ù", "→û"))
-            5 -> hints.addAll(listOf("↑ñ", "←ç", "→ü"))
-            6 -> hints.addAll(listOf("↑¿", "←¡", "→!"))
-            7 -> hints.addAll(listOf("↑.", "←,", "→;"))
-        }
-        
-        return hints.joinToString(" ")
+        return hintProvider.getLegacyGestureHints(cellIndex)
     }
     
     /**
      * Obtiene el símbolo visual para una acción
      */
     fun getActionSymbol(action: KeyAction): String {
-        return when (action) {
-            is KeyAction.Backspace -> "⌫"
-            is KeyAction.Space -> "␣"
-            is KeyAction.Enter -> "↵"
-            is KeyAction.ToggleCase -> "Aa"
-            is KeyAction.SwitchToNumbers -> "123"
-            is KeyAction.SwitchToLetters -> "ABC"
-            is KeyAction.InsertText -> action.text.take(2)
-            else -> "?"
-        }
+        return hintProvider.getActionSymbol(action)
     }
     
     // ============================================================================
@@ -529,39 +193,13 @@ class KeyboardUiFactory(
      * Crea el botón individual para cambiar layout (para columna lateral)
      */
     fun createLayoutButton(onClickListener: () -> Unit): android.widget.Button {
-        return android.widget.Button(context).apply {
-            text = "Layout"
-            textSize = 12f
-            setTextColor(android.graphics.Color.parseColor("#4CAF50"))
-            layoutParams = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 4, 0, 4)
-            }
-            background = createButtonBackground(false, false, true)
-            
-            setOnClickListener { onClickListener() }
-        }
+        return controlButtonFactory.createLayoutButton(onClickListener)
     }
     
     /**
      * Crea el botón individual para cambiar case (para columna lateral)
      */
     fun createCaseButton(onClickListener: () -> Unit): android.widget.Button {
-        return android.widget.Button(context).apply {
-            text = "Aa"
-            textSize = 12f
-            setTextColor(android.graphics.Color.parseColor("#2196F3"))
-            layoutParams = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 4, 0, 4)
-            }
-            background = createButtonBackground(false, false, true)
-            
-            setOnClickListener { onClickListener() }
-        }
+        return controlButtonFactory.createCaseButton(onClickListener)
     }
 }
