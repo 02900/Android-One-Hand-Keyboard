@@ -1,11 +1,8 @@
 package com.onehandkeyboard.core.gesture
 
 import android.view.MotionEvent
-import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.Gesture
 import com.onehandkeyboard.core.domain.model.GestureConfig
-import com.onehandkeyboard.core.domain.model.GestureType
-import com.onehandkeyboard.core.domain.model.Position
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -15,8 +12,8 @@ import javax.inject.Singleton
 /**
  * Default implementation of GestureDetector
  * 
- * This implementation uses a state machine approach to track touch events
- * and detect gestures with configurable thresholds and dead zones.
+ * This implementation coordinates specialized components to detect gestures
+ * from touch events using a state machine approach.
  */
 @Singleton
 class DefaultGestureDetector @Inject constructor() : GestureDetector {
@@ -24,43 +21,34 @@ class DefaultGestureDetector @Inject constructor() : GestureDetector {
     private val _gestures = Channel<Gesture>(Channel.UNLIMITED)
     override val gestures: Flow<Gesture> = _gestures.receiveAsFlow()
     
+    // Specialized components for gesture detection
+    private val velocityCalculator = VelocityCalculator()
+    private val directionDetector = DirectionDetector()
+    private val gestureTypeClassifier = GestureTypeClassifier()
+    private val touchEventHandler = TouchEventHandler()
+    
     private var config = GestureConfig()
     private var currentState = GestureState.IDLE
     private var gestureStartTime = 0L
-    private var startPosition = Position(0f, 0f)
-    private var currentPosition = Position(0f, 0f)
-    private var startCell = -1
-    private var currentCell = -1
-    private var cellBounds: Array<CellBounds> = emptyArray()
-    
-    // For velocity calculation
-    private val velocityTracker = mutableListOf<VelocityPoint>()
-    private val maxVelocityPoints = 10
-    
-    // For direction tracking with hysteresis
-    private var lastDetectedDirection: Direction? = null
-    private var directionLocked = false
     
     override fun onTouchEvent(event: MotionEvent, cellBounds: Array<CellBounds>): Boolean {
         return try {
-            this.cellBounds = cellBounds
-            
             println("🎯 DETECTOR: onTouchEvent called - action: ${event.action}, cellBounds.size: ${cellBounds.size}")
             
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     println("🎯 DETECTOR: About to call handleActionDown")
-                    handleActionDown(event)
+                    handleActionDown(event, cellBounds)
                     println("🎯 DETECTOR: handleActionDown completed")
                 }
                 MotionEvent.ACTION_MOVE -> {
                     println("🎯 DETECTOR: About to call handleActionMove")
-                    handleActionMove(event)
+                    handleActionMove(event, cellBounds)
                     println("🎯 DETECTOR: handleActionMove completed")
                 }
                 MotionEvent.ACTION_UP -> {
                     println("🎯 DETECTOR: About to call handleActionUp")
-                    handleActionUp(event)
+                    handleActionUp(event, cellBounds)
                     println("🎯 DETECTOR: handleActionUp completed")
                 }
                 MotionEvent.ACTION_CANCEL -> {
@@ -82,13 +70,13 @@ class DefaultGestureDetector @Inject constructor() : GestureDetector {
         }
     }
     
-    private fun handleActionDown(event: MotionEvent) {
-        val position = Position(event.x, event.y)
-        val cell = findCellAt(position)
+    private fun handleActionDown(event: MotionEvent, cellBounds: Array<CellBounds>) {
+        touchEventHandler.updateCellBounds(cellBounds)
+        val touchInfo = touchEventHandler.processTouchEvent(event)
         
-        println("🎯 DETECTOR: handleActionDown - position: $position, cell: $cell")
+        println("🎯 DETECTOR: handleActionDown - position: ${touchInfo.position}, cell: ${touchInfo.cell}")
         
-        if (cell == -1) {
+        if (touchInfo.cell == -1) {
             // Touch outside keyboard area
             currentState = GestureState.IDLE
             println("🎯 DETECTOR: Touch outside keyboard area, setting IDLE")
@@ -96,41 +84,36 @@ class DefaultGestureDetector @Inject constructor() : GestureDetector {
         }
         
         currentState = GestureState.TRACKING
-        gestureStartTime = System.currentTimeMillis()
-        startPosition = position
-        currentPosition = position
-        startCell = cell
-        currentCell = cell
+        gestureStartTime = touchInfo.timestamp
         
-        // Initialize velocity tracking
-        velocityTracker.clear()
-        addVelocityPoint(position, gestureStartTime)
+        // Initialize components with touch data
+        velocityCalculator.clear()
+        velocityCalculator.addVelocityPoint(touchInfo.position, touchInfo.timestamp)
+        directionDetector.reset()
         
-        println("🎯 DETECTOR: State set to TRACKING, startCell: $startCell")
+        println("🎯 DETECTOR: handleActionDown completed - state: $currentState, startCell: ${touchInfo.cell}")
     }
     
-    private fun handleActionMove(event: MotionEvent) {
+    private fun handleActionMove(event: MotionEvent, cellBounds: Array<CellBounds>) {
         if (currentState != GestureState.TRACKING) return
         
-        val position = Position(event.x, event.y)
-        val cell = findCellAt(position)
-        
-        currentPosition = position
-        currentCell = if (cell != -1) cell else currentCell
+        touchEventHandler.updateCellBounds(cellBounds)
+        val touchInfo = touchEventHandler.processTouchEvent(event)
         
         // Add velocity point
-        addVelocityPoint(position, System.currentTimeMillis())
+        velocityCalculator.addVelocityPoint(touchInfo.position, touchInfo.timestamp)
         
         // Check if we should transition to long press
-        val duration = System.currentTimeMillis() - gestureStartTime
-        val distance = startPosition.distanceTo(currentPosition)
+        val duration = touchInfo.timestamp - gestureStartTime
+        // For distance calculation, we need to track the start position
+        // This will be handled by the gesture type classifier
         
-        if (duration >= config.longPressThreshold && distance <= config.maxTapDistance) {
+        if (duration >= config.longPressThreshold) {
             currentState = GestureState.LONG_PRESS
         }
     }
     
-    private fun handleActionUp(event: MotionEvent) {
+    private fun handleActionUp(event: MotionEvent, cellBounds: Array<CellBounds>) {
         println("🎯 DETECTOR: handleActionUp called, currentState: $currentState")
         
         if (currentState == GestureState.IDLE) {
@@ -138,33 +121,52 @@ class DefaultGestureDetector @Inject constructor() : GestureDetector {
             return
         }
         
-        val endPosition = Position(event.x, event.y)
-        val endTime = System.currentTimeMillis()
-        val duration = endTime - gestureStartTime
-        val distance = startPosition.distanceTo(endPosition)
-        val velocity = calculateVelocity()
+        touchEventHandler.updateCellBounds(cellBounds)
+        val touchInfo = touchEventHandler.processTouchEvent(event)
+        val duration = touchInfo.timestamp - gestureStartTime
+        val velocity = velocityCalculator.calculateVelocity()
+        
+        // Get start position from velocity tracker (first point)
+        val allPoints = velocityCalculator.getAllPoints()
+        val startPosition = if (allPoints.isNotEmpty()) allPoints.first().position else touchInfo.position
+        val distance = startPosition.distanceTo(touchInfo.position)
         
         println("🎯 DETECTOR: duration: $duration, distance: $distance, velocity: $velocity")
         
-        // Determine gesture type and direction
-        val gestureType = determineGestureType(distance, duration, velocity)
-        val direction = if (gestureType == GestureType.TAP || gestureType == GestureType.LONG_PRESS) {
-            Direction.CENTER
+        // Get start cell from first touch
+        val startCell = if (allPoints.isNotEmpty()) {
+            touchEventHandler.findCellAt(allPoints.first().position)
         } else {
-            detectDirectionWithDeadZones(startPosition, endPosition)
+            touchInfo.cell
+        }
+        
+        // Determine gesture type and direction using specialized components
+        val gestureType = gestureTypeClassifier.determineGestureType(
+            distance = distance,
+            duration = duration,
+            velocity = velocity,
+            startCell = startCell,
+            currentCell = touchInfo.cell
+        )
+        
+        val direction = if (gestureType == com.onehandkeyboard.core.domain.model.GestureType.TAP || 
+                            gestureType == com.onehandkeyboard.core.domain.model.GestureType.LONG_PRESS) {
+            com.onehandkeyboard.core.domain.model.Direction.CENTER
+        } else {
+            directionDetector.detectDirectionWithDeadZones(startPosition, touchInfo.position)
         }
         
         println("🎯 DETECTOR: gestureType: $gestureType, direction: $direction")
         
         val gesture = Gesture(
             startCell = startCell,
-            endCell = currentCell,
+            endCell = touchInfo.cell,
             direction = direction,
             durationMs = duration,
             speed = velocity,
             distance = distance,
             startPosition = startPosition,
-            endPosition = endPosition,
+            endPosition = touchInfo.position,
             type = gestureType
         )
         
@@ -174,144 +176,28 @@ class DefaultGestureDetector @Inject constructor() : GestureDetector {
         
         // Reset state
         currentState = GestureState.IDLE
-        lastDetectedDirection = null
-        directionLocked = false
+        directionDetector.reset()
     }
     
     private fun handleActionCancel() {
         currentState = GestureState.IDLE
-        velocityTracker.clear()
-        lastDetectedDirection = null
-        directionLocked = false
+        velocityCalculator.clear()
+        directionDetector.reset()
     }
     
-    private fun findCellAt(position: Position): Int {
-        return cellBounds.find { it.contains(position.x, position.y) }?.cellIndex ?: -1
-    }
-    
-    /**
-     * Detects direction with dead zones and hysteresis to prevent oscillation
-     */
-    private fun detectDirectionWithDeadZones(startPos: Position, endPos: Position): Direction {
-        val (deltaX, deltaY) = startPos.vectorTo(endPos)
-        val distance = startPos.distanceTo(endPos)
-        
-        // If movement is too small, consider it center/tap
-        if (distance < config.minSwipeDistance) {
-            return Direction.CENTER
-        }
-        
-        // Calculate angle in degrees (0° = right, 90° = up, etc.)
-        val angleRad = kotlin.math.atan2(-deltaY, deltaX) // Negative deltaY for screen coordinates
-        val angleDeg = Math.toDegrees(angleRad.toDouble()).toFloat()
-        val normalizedAngle = if (angleDeg < 0) angleDeg + 360f else angleDeg
-        
-        // Apply hysteresis if we have a previously locked direction
-        if (directionLocked && lastDetectedDirection != null && lastDetectedDirection != Direction.CENTER) {
-            val lastDirection = lastDetectedDirection!!
-            val lastAngle = lastDirection.angleDegrees
-            
-            // Calculate angular difference considering wrap-around
-            val angleDiff = kotlin.math.abs(normalizedAngle - lastAngle).let { diff ->
-                if (diff > 180f) 360f - diff else diff
-            }
-            
-            // If within hysteresis threshold, keep the same direction
-            if (angleDiff <= config.directionHysteresis) {
-                return lastDirection
-            }
-        }
-        
-        // Find the best matching direction considering dead zones
-        val candidateDirection = Direction.fromAngle(normalizedAngle)
-        
-        // Check if we're in a dead zone (between two directions)
-        val directionAngle = candidateDirection.angleDegrees
-        val angleDiff = kotlin.math.abs(normalizedAngle - directionAngle).let { diff ->
-            if (diff > 180f) 360f - diff else diff
-        }
-        
-        // If we're in the dead zone, either keep previous direction or return CENTER
-        if (angleDiff > config.directionDeadZone) {
-            return if (directionLocked && lastDetectedDirection != null) {
-                lastDetectedDirection!!
-            } else {
-                Direction.CENTER
-            }
-        }
-        
-        // Update tracking state
-        lastDetectedDirection = candidateDirection
-        directionLocked = true
-        
-        return candidateDirection
-    }
-    
-    private fun addVelocityPoint(position: Position, time: Long) {
-        velocityTracker.add(VelocityPoint(position, time))
-        
-        // Keep only recent points
-        if (velocityTracker.size > maxVelocityPoints) {
-            velocityTracker.removeAt(0)
-        }
-    }
-    
-    private fun calculateVelocity(): Float {
-        if (velocityTracker.size < 2) return 0f
-        
-        val recent = velocityTracker.takeLast(5) // Use last 5 points for velocity
-        if (recent.size < 2) return 0f
-        
-        val first = recent.first()
-        val last = recent.last()
-        
-        val distance = first.position.distanceTo(last.position)
-        val timeDelta = (last.time - first.time) / 1000f // Convert to seconds
-        
-        return if (timeDelta > 0) distance / timeDelta else 0f
-    }
-    
-    private fun determineGestureType(distance: Float, duration: Long, velocity: Float): GestureType {
-        return when {
-            // Long press: held down for a while without much movement
-            duration >= config.longPressThreshold && distance <= config.maxTapDistance -> {
-                GestureType.LONG_PRESS
-            }
-            
-            // Tap: quick and short movement
-            distance <= config.maxTapDistance -> {
-                GestureType.TAP
-            }
-            
-            // Flick: fast movement
-            velocity >= config.flickSpeedThreshold -> {
-                GestureType.FLICK
-            }
-            
-            // Drag: movement across cells
-            startCell != currentCell -> {
-                GestureType.DRAG
-            }
-            
-            // Swipe: regular movement within acceptable range
-            distance >= config.minSwipeDistance -> {
-                GestureType.SWIPE
-            }
-            
-            // Default to tap
-            else -> GestureType.TAP
-        }
-    }
+
     
     override fun updateConfig(config: GestureConfig) {
         this.config = config
+        // Update config in all components that support it
+        directionDetector.updateConfig(config)
+        gestureTypeClassifier.updateConfig(config)
     }
     
     override fun reset() {
         currentState = GestureState.IDLE
-        velocityTracker.clear()
-        lastDetectedDirection = null
-        directionLocked = false
+        velocityCalculator.clear()
+        directionDetector.reset()
         _gestures.close()
     }
     
@@ -320,9 +206,4 @@ class DefaultGestureDetector @Inject constructor() : GestureDetector {
         TRACKING,
         LONG_PRESS
     }
-    
-    private data class VelocityPoint(
-        val position: Position,
-        val time: Long
-    )
 }

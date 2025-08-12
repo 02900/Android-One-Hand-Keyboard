@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -52,7 +54,7 @@ class DefaultGestureDetectorTest {
         // When: Processing the events
         gestureDetector.onTouchEvent(downEvent, cellBounds)
         gestureDetector.onTouchEvent(upEvent, cellBounds)
-
+        
         // Then: Should detect a tap gesture
         val gesture = gestureDetector.gestures.first()
         assertEquals(GestureType.TAP, gesture.type)
@@ -196,7 +198,7 @@ class DefaultGestureDetectorTest {
 
         gestureDetector.onTouchEvent(downEvent, cellBounds)
         gestureDetector.onTouchEvent(upEvent, cellBounds)
-
+        
         // Then: Should be detected as tap due to higher threshold
         val gesture = gestureDetector.gestures.first()
         assertEquals(GestureType.TAP, gesture.type)
@@ -213,9 +215,25 @@ class DefaultGestureDetectorTest {
         val upConsumed = gestureDetector.onTouchEvent(upEvent, cellBounds)
 
         // Then: Events should be consumed but no gesture emitted
-        assertTrue(downConsumed)
-        assertTrue(upConsumed)
-        // No gesture should be emitted (would timeout if we tried to collect)
+        assertTrue("Down event should be consumed", downConsumed)
+        assertTrue("Up event should be consumed", upConsumed)
+        
+        // Advance time to ensure no gesture is emitted
+        advanceUntilIdle()
+        
+        // No gesture should be emitted - we can verify this by checking that
+        // the gesture flow doesn't emit anything within a reasonable time
+        var gestureEmitted = false
+        try {
+            withTimeout(100) {
+                gestureDetector.gestures.first()
+                gestureEmitted = true
+            }
+        } catch (e: TimeoutCancellationException) {
+            // Expected - no gesture should be emitted
+        }
+        
+        assertTrue("No gesture should be emitted for touches outside keyboard area", !gestureEmitted)
     }
 
     private fun createMotionEvent(
@@ -229,6 +247,7 @@ class DefaultGestureDetectorTest {
             every { this@apply.x } returns x
             every { this@apply.y } returns y
             every { this@apply.eventTime } returns eventTime
+            every { this@apply.downTime } returns 0L
         }
     }
 }
