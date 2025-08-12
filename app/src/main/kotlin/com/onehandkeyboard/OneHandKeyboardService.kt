@@ -83,8 +83,9 @@ class OneHandKeyboardService : InputMethodService() {
         // Initialize UI factory (requires service context)
         uiFactory = KeyboardUiFactory(this, configManager)
         
-        // Initialize view builder (requires context and layout manager)
-        viewBuilder = KeyboardViewBuilder(this, layoutManager, uiFactory)
+        // Initialize gesture integration (requires service callbacks)
+        gestureIntegration = GestureIntegration(this, configManager, gestureDetector)
+        gestureIntegration.initializeGestureSystem()
         
         // Initialize action processor (requires service callbacks)
         actionProcessor = KeyboardActionProcessor(
@@ -94,9 +95,8 @@ class OneHandKeyboardService : InputMethodService() {
             onCaseSwitch = { eventCoordinator.recreateKeyboard() }
         )
         
-        // Initialize gesture integration (requires service callbacks)
-        gestureIntegration = GestureIntegration(this, configManager, gestureDetector)
-        gestureIntegration.initializeGestureSystem()
+        // Initialize view builder (requires context, layout manager, gesture integration, and action processor)
+        viewBuilder = KeyboardViewBuilder(this, layoutManager, uiFactory, gestureIntegration, actionProcessor)
         
         // Initialize event coordinator (coordinates all components)
         eventCoordinator = KeyboardEventCoordinator(

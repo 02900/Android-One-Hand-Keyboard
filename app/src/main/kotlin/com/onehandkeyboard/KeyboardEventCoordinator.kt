@@ -32,8 +32,8 @@ class KeyboardEventCoordinator(
     fun setupKeyboardEvents(keyboardView: View) {
         Log.d("KeyboardEventCoordinator", "Setting up keyboard events and gesture integration")
         
-        // Setup gesture integration with the main keyboard view
-        gestureIntegration.initializeGestureSystem()
+        // Note: Gesture system is already initialized in OneHandKeyboardService
+        // No need to initialize again here to avoid JobCancellationException
         
         // Setup control button listeners
         setupControlButtonListeners(keyboardView)

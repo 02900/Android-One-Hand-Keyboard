@@ -341,6 +341,22 @@ class GestureIntegration(
     
     // TODO: Implement handleGesture function when needed
     
+    /**
+     * Procesa gestos directamente desde eventos de toque de botones
+     * Este método es un wrapper que conecta los eventos de toque con el procesamiento completo
+     */
+    fun processGestureDirectly(event: MotionEvent, cellIndex: Int, onGestureProcessed: (KeyboardOutput?) -> Unit = {}) {
+        Log.d("OneHandKeyboard", "🎯 Processing gesture directly on cell $cellIndex: ${event.action}")
+        
+        // Usar el método existente de procesamiento de gestos
+        processGestureEvent(event, cellIndex) { keyboardOutput ->
+            Log.d("OneHandKeyboard", "🎯 Gesture processing result: $keyboardOutput")
+            
+            // Pasar el resultado al callback para que sea procesado externamente
+            onGestureProcessed(keyboardOutput)
+        }
+    }
+    
     // ============================================================================
     // REGION: CLEANUP
     // ============================================================================

@@ -33,7 +33,9 @@ import com.onehandkeyboard.core.domain.model.KeyData
 class KeyboardViewBuilder(
     private val context: Context,
     private val layoutManager: KeyboardLayoutManager,
-    private val uiFactory: KeyboardUiFactory
+    private val uiFactory: KeyboardUiFactory,
+    private val gestureIntegration: GestureIntegration,
+    private val actionProcessor: KeyboardActionProcessor
 ) {
     
     /**
@@ -104,7 +106,20 @@ class KeyboardViewBuilder(
                     // Create 3 columns in each row
                     for (col in 0..2) {
                         val cellIndex = row * 3 + col
-                        addView(createGestureButton(keyData[row][col], cellIndex, cellSize))
+                        // Use uiFactory method that has OnTouchListener configured
+                        addView(uiFactory.createGestureButton(keyData[row][col], cellIndex) { event, index ->
+                            Log.d("OneHandKeyboard", "🎯 Touch event received on cell $index: ${event.action}")
+                            // Process gesture using the integrated gesture system
+                            gestureIntegration.processGestureDirectly(event, index) { keyboardOutput ->
+                                Log.d("OneHandKeyboard", "🎯 Gesture result ready for processing: $keyboardOutput")
+                                // Process the gesture result using KeyboardActionProcessor
+                                keyboardOutput?.let { output ->
+                                    Log.d("OneHandKeyboard", "🎯 Processing output with ActionProcessor: $output")
+                                    actionProcessor.processKeyboardOutput(output)
+                                }
+                            }
+                            true
+                        })
                     }
                 })
             }
