@@ -160,22 +160,7 @@ class KeyboardViewBuilder(
         return (availableWidth * 0.75f / 3).toInt() // 75% for grid, divided by 3 columns
     }
     
-    /**
-     * Creates a gesture button with directional labels
-     */
-    fun createGestureButton(keyData: KeyData, cellIndex: Int, cellSize: Int): FrameLayout {
-        return FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(cellSize, cellSize).apply {
-                setMargins(2, 2, 2, 2)
-            }
-            background = createButtonBackground(false)
-            
-            // Add directional labels
-            val cellConfig = layoutManager.getCellConfiguration(cellIndex)
-            
-            createDirectionalLabelsAbsolute(this, cellConfig, cellIndex)
-        }
-    }
+
     
     /**
      * Creates directional labels positioned absolutely within a FrameLayout
