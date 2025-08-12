@@ -169,6 +169,36 @@ data class CellConfiguration(
     val label: String,
     val actions: Map<GestureAction, ActionConfig>
 ) {
+    init {
+        // Validar que el índice de celda esté en el rango válido (0-8 para grid 3x3)
+        if (cellIndex !in 0..8) {
+            throw IllegalArgumentException("Cell index must be between 0 and 8, got: $cellIndex")
+        }
+        
+        // Validar que no haya más de un TAP o LONG_PRESS para CENTER
+        val centerActions = actions.keys.filter { it.direction == Direction.CENTER }
+        val tapActions = centerActions.filter { it.gestureType == GestureType.TAP }
+        val longPressActions = centerActions.filter { it.gestureType == GestureType.LONG_PRESS }
+        
+        if (tapActions.size > 1) {
+            throw IllegalArgumentException("Cell $cellIndex has multiple TAP actions for CENTER direction")
+        }
+        
+        if (longPressActions.size > 1) {
+            throw IllegalArgumentException("Cell $cellIndex has multiple LONG_PRESS actions for CENTER direction")
+        }
+        
+        // Validar que no haya múltiples SWIPE para la misma dirección
+        val swipeDirections = actions.keys
+            .filter { it.gestureType == GestureType.SWIPE }
+            .groupBy { it.direction }
+        
+        swipeDirections.forEach { (direction, gestureActions) ->
+            if (gestureActions.size > 1) {
+                throw IllegalArgumentException("Cell $cellIndex has multiple SWIPE actions for direction $direction")
+            }
+        }
+    }
     /**
      * Obtiene la acción configurada para un gesto específico
      */
@@ -195,7 +225,50 @@ data class CellConfiguration(
 data class GestureAction(
     val gestureType: GestureType,
     val direction: Direction
-)
+) {
+    init {
+        // Validar que la combinación de gesto y dirección sea válida
+        if (!isValidGestureAction(gestureType, direction)) {
+            throw IllegalArgumentException(
+                "Invalid gesture action: $gestureType cannot be performed in direction $direction. " +
+                "TAP and LONG_PRESS are only allowed in CENTER direction. " +
+                "SWIPE is only allowed in non-CENTER directions."
+            )
+        }
+    }
+    
+    companion object {
+        /**
+         * Valida si una combinación de tipo de gesto y dirección es válida
+         */
+        fun isValidGestureAction(gestureType: GestureType, direction: Direction): Boolean {
+            return when (gestureType) {
+                GestureType.TAP, GestureType.LONG_PRESS -> direction == Direction.CENTER
+                GestureType.SWIPE, GestureType.DRAG, GestureType.FLICK -> direction != Direction.CENTER
+            }
+        }
+        
+        /**
+         * Obtiene todas las direcciones válidas para un tipo de gesto
+         */
+        fun getValidDirectionsFor(gestureType: GestureType): List<Direction> {
+            return when (gestureType) {
+                GestureType.TAP, GestureType.LONG_PRESS -> listOf(Direction.CENTER)
+                GestureType.SWIPE, GestureType.DRAG, GestureType.FLICK -> Direction.values().filter { it != Direction.CENTER }
+            }
+        }
+        
+        /**
+         * Obtiene todos los tipos de gesto válidos para una dirección
+         */
+        fun getValidGestureTypesFor(direction: Direction): List<GestureType> {
+            return when (direction) {
+                Direction.CENTER -> listOf(GestureType.TAP, GestureType.LONG_PRESS)
+                else -> listOf(GestureType.SWIPE, GestureType.DRAG, GestureType.FLICK)
+            }
+        }
+    }
+}
 
 /**
  * Configuración de acción que puede ser carácter o acción del teclado

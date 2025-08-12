@@ -996,6 +996,12 @@ class OneHandKeyboardService : InputMethodService() {
     private fun handleDirectGesture(cellIndex: Int, gestureType: GestureType, direction: Direction) {
         Log.d("OneHandKeyboard", "🎯 DIRECT GESTURE: $gestureType on cell $cellIndex, direction $direction")
         
+        // Validar que el gesto sea válido antes de procesarlo
+        if (!GestureAction.isValidGestureAction(gestureType, direction)) {
+            Log.e("OneHandKeyboard", "🎯 INVALID GESTURE: $gestureType cannot be performed in direction $direction")
+            return
+        }
+        
         // Buscar la configuración de la celda
         val cellConfig = keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
         if (cellConfig == null) {
