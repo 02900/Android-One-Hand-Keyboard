@@ -31,25 +31,26 @@ import com.onehandkeyboard.core.domain.model.KeyboardLayout
 fun KeyboardGrid(
     layout: KeyboardLayout,
     onKeyPress: (cellIndex: Int, direction: Direction, duration: Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var pressedKey by remember { mutableStateOf<Int?>(null) }
-    
+
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(8.dp),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(8.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Row 0: cells 0, 1, 2
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 for (cellIndex in 0..2) {
                     val cell = layout.getCell(cellIndex)
@@ -61,15 +62,15 @@ fun KeyboardGrid(
                                 onKeyPress(cellIndex, direction, duration)
                                 pressedKey = null
                             },
-                            isPressed = pressedKey == cellIndex
+                            isPressed = pressedKey == cellIndex,
                         )
                     }
                 }
             }
-            
+
             // Row 1: cells 3, 4, 5
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 for (cellIndex in 3..5) {
                     val cell = layout.getCell(cellIndex)
@@ -81,15 +82,15 @@ fun KeyboardGrid(
                                 onKeyPress(cellIndex, direction, duration)
                                 pressedKey = null
                             },
-                            isPressed = pressedKey == cellIndex
+                            isPressed = pressedKey == cellIndex,
                         )
                     }
                 }
             }
-            
+
             // Row 2: cells 6, 7, 8
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 for (cellIndex in 6..8) {
                     val cell = layout.getCell(cellIndex)
@@ -101,7 +102,7 @@ fun KeyboardGrid(
                                 onKeyPress(cellIndex, direction, duration)
                                 pressedKey = null
                             },
-                            isPressed = pressedKey == cellIndex
+                            isPressed = pressedKey == cellIndex,
                         )
                     }
                 }
@@ -116,7 +117,7 @@ private fun KeyboardGridPreview() {
     KeyboardTheme {
         KeyboardGrid(
             layout = DefaultLayouts.spanishLetters(),
-            onKeyPress = { _, _, _ -> }
+            onKeyPress = { _, _, _ -> },
         )
     }
 }

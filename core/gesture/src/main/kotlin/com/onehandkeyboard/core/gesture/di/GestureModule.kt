@@ -14,10 +14,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class GestureModule {
-    
     @Binds
     @Singleton
-    abstract fun bindGestureDetector(
-        defaultGestureDetector: DefaultGestureDetector
-    ): GestureDetector
+    abstract fun bindGestureDetector(defaultGestureDetector: DefaultGestureDetector): GestureDetector
 }

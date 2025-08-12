@@ -2,20 +2,19 @@ package com.onehandkeyboard
 
 import android.inputmethodservice.InputMethodService
 import android.util.Log
-import android.view.inputmethod.InputConnection
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
 
 /**
  * Processes keyboard actions and text input for the OneHandKeyboard.
- * 
+ *
  * This class centralizes all keyboard action processing logic including:
  * - Processing keyboard output (characters and actions)
  * - Executing specific actions (backspace, space, enter, etc.)
  * - Managing input connections with target applications
  * - Integrating with keyboard configuration and case modes
  * - Handling layout and case mode switching callbacks
- * 
+ *
  * Extracted from OneHandKeyboardService for better separation of concerns.
  * Uses manual initialization due to InputMethodService dependency requirements.
  */
@@ -23,13 +22,12 @@ class KeyboardActionProcessor(
     private val service: InputMethodService,
     private val configManager: KeyboardConfigManager,
     private val onLayoutSwitch: () -> Unit,
-    private val onCaseSwitch: () -> Unit
+    private val onCaseSwitch: () -> Unit,
 ) {
-    
     // ============================================================================
     // REGION: KEYBOARD OUTPUT PROCESSING
     // ============================================================================
-    
+
     /**
      * Procesa la salida del teclado (caracteres o acciones)
      */
@@ -43,26 +41,26 @@ class KeyboardActionProcessor(
             }
         }
     }
-    
+
     /**
      * Procesa la salida de un carácter
      */
     private fun processCharacterOutput(char: String) {
         Log.d("OneHandKeyboard", "🎯 SENDING CHARACTER: '$char'")
-        
+
         val inputConnection = service.currentInputConnection
         if (inputConnection == null) {
             Log.e("OneHandKeyboard", "🎯 ERROR: currentInputConnection is NULL!")
             return
         }
-        
+
         val result = inputConnection.commitText(char, 1)
         Log.d("OneHandKeyboard", "🎯 commitText result: $result")
-        
+
         // Manejar modo capitalize
         configManager.onCharacterWritten()
     }
-    
+
     /**
      * Procesa la salida de una acción
      */
@@ -70,11 +68,11 @@ class KeyboardActionProcessor(
         Log.d("OneHandKeyboard", "🎯 EXECUTING ACTION: $action")
         executeKeyAction(action)
     }
-    
+
     // ============================================================================
     // REGION: ACTION EXECUTION
     // ============================================================================
-    
+
     /**
      * Ejecuta una acción de teclado específica
      */
@@ -106,11 +104,11 @@ class KeyboardActionProcessor(
             }
         }
     }
-    
+
     // ============================================================================
     // REGION: SPECIFIC ACTION IMPLEMENTATIONS
     // ============================================================================
-    
+
     /**
      * Ejecuta acción de backspace
      */
@@ -123,7 +121,7 @@ class KeyboardActionProcessor(
             Log.e("OneHandKeyboard", "🎯 ERROR: Cannot execute backspace - no input connection")
         }
     }
-    
+
     /**
      * Ejecuta acción de espacio
      */
@@ -136,7 +134,7 @@ class KeyboardActionProcessor(
             Log.e("OneHandKeyboard", "🎯 ERROR: Cannot execute space - no input connection")
         }
     }
-    
+
     /**
      * Ejecuta acción de enter
      */
@@ -149,7 +147,7 @@ class KeyboardActionProcessor(
             Log.e("OneHandKeyboard", "🎯 ERROR: Cannot execute enter - no input connection")
         }
     }
-    
+
     /**
      * Ejecuta acción de cambio de modo de mayúsculas
      */
@@ -157,7 +155,7 @@ class KeyboardActionProcessor(
         onCaseSwitch()
         Log.d("OneHandKeyboard", "🎯 Case mode toggled")
     }
-    
+
     /**
      * Ejecuta acción de cambio a números
      */
@@ -166,7 +164,7 @@ class KeyboardActionProcessor(
         onLayoutSwitch()
         Log.d("OneHandKeyboard", "🎯 Switched to numbers layout")
     }
-    
+
     /**
      * Ejecuta acción de cambio a letras
      */
@@ -175,7 +173,7 @@ class KeyboardActionProcessor(
         onLayoutSwitch()
         Log.d("OneHandKeyboard", "🎯 Switched to letters layout")
     }
-    
+
     /**
      * Ejecuta acción de insertar texto
      */
@@ -188,18 +186,18 @@ class KeyboardActionProcessor(
             Log.e("OneHandKeyboard", "🎯 ERROR: Cannot insert text - no input connection")
         }
     }
-    
+
     // ============================================================================
     // REGION: UTILITY METHODS
     // ============================================================================
-    
+
     /**
      * Verifica si hay una conexión de entrada válida
      */
     fun hasValidInputConnection(): Boolean {
         return service.currentInputConnection != null
     }
-    
+
     /**
      * Obtiene información sobre la conexión de entrada actual
      */

@@ -28,19 +28,20 @@ import com.onehandkeyboard.core.domain.model.DefaultLayouts
 @Composable
 fun KeyboardScreen(
     modifier: Modifier = Modifier,
-    viewModel: KeyboardViewModel = hiltViewModel()
+    viewModel: KeyboardViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentLayout by viewModel.currentLayout.collectAsState(initial = null)
     val currentCaseMode by viewModel.currentCaseMode.collectAsState(initial = CaseMode.LOWERCASE)
-    
+
     KeyboardTheme {
         Box(
-            modifier = modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(8.dp),
-            contentAlignment = Alignment.Center
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(8.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Column {
                 // Debug info (will be removed in production)
@@ -50,30 +51,32 @@ fun KeyboardScreen(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp),
                     )
                 }
-                
+
                 // Case mode indicator
                 Text(
                     text = "Mode: ${currentCaseMode.name}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
                 )
-                
+
                 // Main keyboard grid
                 currentLayout?.let { layout ->
                     KeyboardGrid(
                         layout = layout,
                         onKeyPress = { cellIndex, direction, duration ->
                             viewModel.onKeyPress(cellIndex, direction, duration)
-                        }
+                        },
                     )
                 } ?: run {
                     // Loading state
@@ -82,10 +85,10 @@ fun KeyboardScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
-                
+
                 // Error state
                 uiState.error?.let { error ->
                     Text(
@@ -93,9 +96,10 @@ fun KeyboardScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
                     )
                 }
             }
@@ -109,11 +113,12 @@ private fun KeyboardScreenPreview() {
     KeyboardTheme {
         // Preview with mock data
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(8.dp),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(8.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Column {
                 Text(
@@ -121,24 +126,26 @@ private fun KeyboardScreenPreview() {
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
                 )
-                
+
                 Text(
                     text = "Mode: LOWERCASE",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
                 )
-                
+
                 KeyboardGrid(
                     layout = DefaultLayouts.spanishLetters(),
-                    onKeyPress = { _, _, _ -> }
+                    onKeyPress = { _, _, _ -> },
                 )
             }
         }

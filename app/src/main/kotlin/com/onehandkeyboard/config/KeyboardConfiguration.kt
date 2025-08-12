@@ -1,7 +1,5 @@
 package com.onehandkeyboard.config
 
-import com.onehandkeyboard.config.CellConfiguration
-import com.onehandkeyboard.config.KeyboardConfigurationFactory
 import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
 
@@ -13,13 +11,16 @@ data class KeyboardConfiguration(
     val description: String,
     val language: Language,
     val mode: LayoutMode,
-    val cells: List<CellConfiguration>
+    val cells: List<CellConfiguration>,
 ) {
     companion object {
         /**
          * Obtiene la configuración para un idioma y modo específicos
          */
-        fun getConfiguration(language: Language, mode: LayoutMode): KeyboardConfiguration {
+        fun getConfiguration(
+            language: Language,
+            mode: LayoutMode,
+        ): KeyboardConfiguration {
             return KeyboardConfigurationFactory.getConfiguration(language, mode)
         }
 

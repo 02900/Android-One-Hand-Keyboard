@@ -7,6 +7,8 @@ import com.onehandkeyboard.core.domain.model.KeyAction
  */
 sealed class ActionConfig {
     data class Character(val char: Char) : ActionConfig()
+
     data class Action(val keyAction: KeyAction) : ActionConfig()
+
     data class Text(val text: String) : ActionConfig() // Para texto múltiple
 }

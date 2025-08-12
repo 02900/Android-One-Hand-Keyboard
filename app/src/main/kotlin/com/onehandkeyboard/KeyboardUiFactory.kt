@@ -5,10 +5,10 @@ import android.util.Log
 import android.view.MotionEvent
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import com.onehandkeyboard.core.domain.model.KeyData
+import com.onehandkeyboard.config.CellConfiguration
 import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.KeyAction
-import com.onehandkeyboard.config.CellConfiguration
+import com.onehandkeyboard.core.domain.model.KeyData
 import com.onehandkeyboard.ui.ButtonStyleProvider
 import com.onehandkeyboard.ui.ControlButtonFactory
 import com.onehandkeyboard.ui.DirectionalLabelFactory
@@ -17,188 +17,197 @@ import com.onehandkeyboard.ui.LayoutCalculator
 
 /**
  * Factory class for creating keyboard UI components using Android Views.
- * 
+ *
  * This class coordinates UI creation by delegating to specialized components:
  * - LayoutCalculator: Handles sizing and positioning calculations
  * - ButtonStyleProvider: Manages visual styles and themes
  * - GestureHintProvider: Generates gesture hints and symbols
  * - ControlButtonFactory: Creates control buttons (layout, case, backspace)
  * - DirectionalLabelFactory: Creates positioned directional labels
- * 
+ *
  * Refactored for better separation of concerns and modularity.
  * Uses manual initialization due to Context dependency requirements.
  */
 class KeyboardUiFactory(
     private val context: Context,
-    private val configManager: KeyboardConfigManager
+    private val configManager: KeyboardConfigManager,
 ) {
-    
     // Delegated components for specialized responsibilities
     private val layoutCalculator = LayoutCalculator(context)
     private val styleProvider = ButtonStyleProvider()
     private val hintProvider = GestureHintProvider(configManager)
     private val controlButtonFactory = ControlButtonFactory(context, styleProvider)
     private val labelFactory = DirectionalLabelFactory(context, styleProvider, hintProvider)
-    
+
     // ============================================================================
     // REGION: LAYOUT CALCULATIONS (Delegated)
     // ============================================================================
-    
+
     /**
      * Calcula el tamaño de celda cuadrada basado en el ancho disponible para el grid
      */
     fun calculateSquareCellSize(): Int {
         return layoutCalculator.calculateSquareCellSize()
     }
-    
+
     // ============================================================================
     // REGION: BUTTON CREATION
     // ============================================================================
-    
+
     /**
      * Crea una celda con labels posicionados absolutamente usando configuración externa
      */
     fun createGestureButton(
-        keyData: KeyData, 
+        keyData: KeyData,
         cellIndex: Int,
-        onTouchListener: (MotionEvent, Int) -> Boolean
+        onTouchListener: (MotionEvent, Int) -> Boolean,
     ): FrameLayout {
         return FrameLayout(context).apply {
             // Obtener configuración de la celda
             val cellConfig = configManager.keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
-            
+
             // Layout parameters con aspect ratio 1:1
             val squareSize = layoutCalculator.calculateSquareCellSize()
             val margins = layoutCalculator.getStandardCellMargins()
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                squareSize, // Altura fija para aspect ratio 1:1
-                1f
-            ).apply {
-                setMargins(margins, margins, margins, margins)
-            }
-            
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    0,
+                    squareSize, // Altura fija para aspect ratio 1:1
+                    1f,
+                ).apply {
+                    setMargins(margins, margins, margins, margins)
+                }
+
             // Fondo con bordes redondeados
             background = styleProvider.createButtonBackground(false)
-            
+
             // Crear labels posicionados para cada dirección
             labelFactory.createDirectionalLabelsAbsolute(this, cellConfig, cellIndex)
-            
+
             // Configurar touch listener para gestos
             setOnTouchListener { _, event ->
                 Log.d("OneHandKeyboard", "🎯 Touch event on cell $cellIndex: ${event.action}")
-                
+
                 // Procesar gesto usando el callback proporcionado
                 val handled = onTouchListener(event, cellIndex)
                 Log.d("OneHandKeyboard", "🎯 Gesture processed: $handled")
-                
+
                 // Consumir el evento para evitar propagación
                 handled
             }
         }
     }
-    
+
     /**
      * Crea el botón de backspace mejorado
      */
     fun createBackspaceButton(onClickListener: () -> Unit): FrameLayout {
         return controlButtonFactory.createBackspaceButton(onClickListener)
     }
-    
+
     /**
      * Crea un botón mejorado con diseño moderno (método legacy)
      */
-    fun createLegacyButton(keyData: KeyData, onClickListener: (String) -> Unit): FrameLayout {
+    fun createLegacyButton(
+        keyData: KeyData,
+        onClickListener: (String) -> Unit,
+    ): FrameLayout {
         return controlButtonFactory.createLegacyButton(keyData, onClickListener)
     }
-    
+
     // ============================================================================
     // REGION: VISUAL HELPERS & BACKGROUNDS
     // ============================================================================
-    
+
     // Removed: createButtonBackground - now handled by ButtonStyleProvider
-    
+
     /**
      * Crea la vista del título con información de estado
      */
     fun createTitleView(): android.widget.TextView {
         return labelFactory.createTitleView()
     }
-    
+
     // ============================================================================
     // REGION: DIRECTIONAL LABELS & TEXT VIEWS
     // ============================================================================
-    
+
     // Removed: createDirectionalLabelsAbsolute - now handled by DirectionalLabelFactory
-    
+
     // Removed: createDirectionalTextView - now handled by DirectionalLabelFactory
-    
+
     // Removed: createCenterCombinedTextView - now handled by DirectionalLabelFactory
-    
+
     /**
      * Crea el texto con labels direccionales para una celda
      */
-    fun createDirectionalLabels(cellConfig: CellConfiguration?, cellIndex: Int): String {
+    fun createDirectionalLabels(
+        cellConfig: CellConfiguration?,
+        cellIndex: Int,
+    ): String {
         return labelFactory.createDirectionalLabels(cellConfig, cellIndex)
     }
-    
+
     /**
      * Obtiene el label para una dirección específica
      */
-    fun getDirectionalLabel(cellConfig: CellConfiguration, direction: Direction): String {
+    fun getDirectionalLabel(
+        cellConfig: CellConfiguration,
+        direction: Direction,
+    ): String {
         return hintProvider.getDirectionalLabel(cellConfig, direction)
     }
-    
+
     /**
      * Obtiene el label para el centro (combinando TAP y LONG_PRESS)
      */
     fun getCenterLabel(cellConfig: CellConfiguration): String {
         return hintProvider.getCenterLabel(cellConfig)
     }
-    
+
     // ============================================================================
     // REGION: CONFIGURATION HINTS & SYMBOLS
     // ============================================================================
-    
+
     /**
      * Obtiene hints visuales de los gestos configurados para una celda
      */
     fun getConfigurationHints(cellIndex: Int): String {
         return hintProvider.getConfigurationHints(cellIndex)
     }
-    
+
     /**
      * Obtiene el símbolo visual para una dirección
      */
     fun getDirectionSymbol(direction: Direction): String {
         return hintProvider.getDirectionSymbol(direction)
     }
-    
+
     /**
      * Obtiene hints visuales de los gestos disponibles para una celda (método legacy)
      */
     fun getLegacyGestureHints(cellIndex: Int): String {
         return hintProvider.getLegacyGestureHints(cellIndex)
     }
-    
+
     /**
      * Obtiene el símbolo visual para una acción
      */
     fun getActionSymbol(action: KeyAction): String {
         return hintProvider.getActionSymbol(action)
     }
-    
+
     // ============================================================================
     // REGION: CONTROL BUTTONS
     // ============================================================================
-    
+
     /**
      * Crea el botón individual para cambiar layout (para columna lateral)
      */
     fun createLayoutButton(onClickListener: () -> Unit): android.widget.Button {
         return controlButtonFactory.createLayoutButton(onClickListener)
     }
-    
+
     /**
      * Crea el botón individual para cambiar case (para columna lateral)
      */

@@ -8,7 +8,7 @@ import android.widget.LinearLayout
 
 /**
  * Factory para crear botones de control del teclado.
- * 
+ *
  * Responsabilidades:
  * - Crear botones de layout (cambio de idioma/modo)
  * - Crear botones de case (mayúsculas/minúsculas)
@@ -17,9 +17,8 @@ import android.widget.LinearLayout
  */
 class ControlButtonFactory(
     private val context: Context,
-    private val styleProvider: ButtonStyleProvider
+    private val styleProvider: ButtonStyleProvider,
 ) {
-    
     /**
      * Crea el botón individual para cambiar layout (para columna lateral)
      */
@@ -28,18 +27,19 @@ class ControlButtonFactory(
             text = "Layout"
             textSize = styleProvider.getControlTextSize()
             setTextColor(Color.parseColor("#4CAF50"))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 4, 0, 4)
-            }
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply {
+                    setMargins(0, 4, 0, 4)
+                }
             background = styleProvider.createButtonBackground(false, false, true)
-            
+
             setOnClickListener { onClickListener() }
         }
     }
-    
+
     /**
      * Crea el botón individual para cambiar case (para columna lateral)
      */
@@ -48,49 +48,53 @@ class ControlButtonFactory(
             text = "Aa"
             textSize = styleProvider.getControlTextSize()
             setTextColor(Color.parseColor("#2196F3"))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 4, 0, 4)
-            }
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply {
+                    setMargins(0, 4, 0, 4)
+                }
             background = styleProvider.createButtonBackground(false, false, true)
-            
+
             setOnClickListener { onClickListener() }
         }
     }
-    
+
     /**
      * Crea el botón de backspace mejorado
      */
     fun createBackspaceButton(onClickListener: () -> Unit): FrameLayout {
         return FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(8, 8, 8, 8)
-            }
-            
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply {
+                    setMargins(8, 8, 8, 8)
+                }
+
             background = styleProvider.createButtonBackground(false, true)
-            
+
             // TextView para el símbolo de backspace
-            val backspaceText = android.widget.TextView(context).apply {
-                text = "⌫"
-                textSize = styleProvider.getStandardTextSize()
-                setTextColor(styleProvider.getTextColor(isBackspace = true))
-                gravity = android.view.Gravity.CENTER
-                layoutParams = FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-                )
-            }
-            
+            val backspaceText =
+                android.widget.TextView(context).apply {
+                    text = "⌫"
+                    textSize = styleProvider.getStandardTextSize()
+                    setTextColor(styleProvider.getTextColor(isBackspace = true))
+                    gravity = android.view.Gravity.CENTER
+                    layoutParams =
+                        FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                        )
+                }
+
             addView(backspaceText)
-            
+
             // Configurar click listener
             setOnClickListener { onClickListener() }
-            
+
             // Feedback visual al presionar
             setOnTouchListener { _, event ->
                 when (event.action) {
@@ -107,39 +111,45 @@ class ControlButtonFactory(
             }
         }
     }
-    
+
     /**
      * Crea un botón mejorado con diseño moderno (método legacy)
      */
-    fun createLegacyButton(keyData: com.onehandkeyboard.core.domain.model.KeyData, onClickListener: (String) -> Unit): FrameLayout {
+    fun createLegacyButton(
+        keyData: com.onehandkeyboard.core.domain.model.KeyData,
+        onClickListener: (String) -> Unit,
+    ): FrameLayout {
         return FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f
-            ).apply {
-                setMargins(4, 4, 4, 4)
-            }
-            
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f,
+                ).apply {
+                    setMargins(4, 4, 4, 4)
+                }
+
             background = styleProvider.createButtonBackground(false)
-            
+
             // TextView principal
-            val mainText = android.widget.TextView(context).apply {
-                text = keyData.primaryChar
-                textSize = styleProvider.getStandardTextSize()
-                setTextColor(styleProvider.getTextColor())
-                gravity = android.view.Gravity.CENTER
-                layoutParams = FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-                )
-            }
-            
+            val mainText =
+                android.widget.TextView(context).apply {
+                    text = keyData.primaryChar
+                    textSize = styleProvider.getStandardTextSize()
+                    setTextColor(styleProvider.getTextColor())
+                    gravity = android.view.Gravity.CENTER
+                    layoutParams =
+                        FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                        )
+                }
+
             addView(mainText)
-            
+
             // Configurar click listener
             setOnClickListener { onClickListener(keyData.primaryChar) }
-            
+
             // Feedback visual al presionar
             setOnTouchListener { _, event ->
                 when (event.action) {

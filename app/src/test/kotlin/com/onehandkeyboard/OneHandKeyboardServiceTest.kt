@@ -12,7 +12,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class OneHandKeyboardServiceTest {
-
     @Test
     fun `service can be instantiated`() {
         // Given & When

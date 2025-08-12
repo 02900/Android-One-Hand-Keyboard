@@ -5,5 +5,5 @@ package com.onehandkeyboard.enums
  */
 enum class Language {
     SPANISH,
-    ENGLISH
+    ENGLISH,
 }

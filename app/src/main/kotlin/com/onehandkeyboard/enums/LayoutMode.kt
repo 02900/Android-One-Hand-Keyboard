@@ -5,5 +5,5 @@ package com.onehandkeyboard.enums
  */
 enum class LayoutMode {
     LETTERS,
-    SYMBOLS
+    SYMBOLS,
 }

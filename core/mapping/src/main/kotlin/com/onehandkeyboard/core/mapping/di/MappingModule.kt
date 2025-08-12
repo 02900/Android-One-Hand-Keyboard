@@ -14,10 +14,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class MappingModule {
-    
     @Binds
     @Singleton
-    abstract fun bindMappingService(
-        defaultMappingService: DefaultMappingService
-    ): MappingService
+    abstract fun bindMappingService(defaultMappingService: DefaultMappingService): MappingService
 }
