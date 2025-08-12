@@ -8,6 +8,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.onehandkeyboard.core.domain.model.*
@@ -192,34 +193,27 @@ class OneHandKeyboardService : InputMethodService() {
     }
     
     /**
-     * Crea un botón con integración completa del sistema de gestos usando configuración externa
+     * Calcula el tamaño de celda cuadrada basado en el ancho de pantalla
      */
-    private fun createGestureButton(keyData: KeyData, cellIndex: Int): Button {
-        return Button(this).apply {
+    private fun calculateSquareCellSize(): Int {
+        val screenWidth = resources.displayMetrics.widthPixels
+        val totalMargins = 60 // 6px * 2 (left+right) * 3 columns + padding extra
+        return (screenWidth - totalMargins) / 3
+    }
+
+    /**
+     * Crea una celda con labels posicionados absolutamente usando configuración externa
+     */
+    private fun createGestureButton(keyData: KeyData, cellIndex: Int): FrameLayout {
+        return FrameLayout(this).apply {
             // Obtener configuración de la celda
             val cellConfig = keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
-            val label = cellConfig?.label ?: "Cell $cellIndex"
             
-            // Obtener el carácter principal (tap center) de la configuración
-            val tapAction = cellConfig?.getActionFor(GestureType.TAP, Direction.CENTER)
-            val displayChar = when (tapAction) {
-                is ActionConfig.Character -> applyCase(tapAction.char.toString())
-                is ActionConfig.Text -> applyCase(tapAction.text)
-                is ActionConfig.Action -> getActionSymbol(tapAction.keyAction)
-                null -> ""
-            }
-            
-            // Configuración del texto con información de gestos
-            val gestureHints = getConfigurationHints(cellIndex)
-            text = "$label\n$displayChar$gestureHints"
-            textSize = 12f
-            setTextColor(Color.parseColor("#FFFFFF"))
-            gravity = Gravity.CENTER
-            
-            // Layout parameters
+            // Layout parameters con aspect ratio 1:1
+            val squareSize = calculateSquareCellSize()
             layoutParams = LinearLayout.LayoutParams(
                 0,
-                LinearLayout.LayoutParams.MATCH_PARENT,
+                squareSize, // Altura fija para aspect ratio 1:1
                 1f
             ).apply {
                 setMargins(6, 6, 6, 6)
@@ -228,69 +222,243 @@ class OneHandKeyboardService : InputMethodService() {
             // Fondo con bordes redondeados
             background = createButtonBackground(false)
             
-            // **INTEGRACIÓN COMPLETA CON SISTEMA DE GESTOS - FIXED VERSION**
-            setOnTouchListener { _, event ->
-                Log.d("OneHandKeyboard", "🔥 Touch event on cell $cellIndex: ${event.action}")
-                Log.d("OneHandKeyboard", "🔥 CellBounds size: ${cellBounds.size}")
-                
-                var gestureHandled = false
-                
-                // BYPASS: Procesar gestos directamente sin detector externo
-                if (cellBounds.isNotEmpty()) {
-                    Log.d("OneHandKeyboard", "🔥 Processing gesture directly")
-                    gestureHandled = processGestureDirectly(event, cellIndex)
-                    Log.d("OneHandKeyboard", "🔥 Direct gesture result: $gestureHandled")
-                } else {
-                    Log.w("OneHandKeyboard", "🔥 CellBounds empty! Cannot process gestures")
-                }
-                
-                // Manejar feedback visual básico
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        background = createButtonBackground(true)
-                        Log.d("OneHandKeyboard", "🔥 Touch down on cell $cellIndex")
-                    }
-                    MotionEvent.ACTION_UP -> {
-                        background = createButtonBackground(false)
-                        Log.d("OneHandKeyboard", "🔥 Touch up on cell $cellIndex")
-                        
-                        // FALLBACK: Solo si el gesture detector no manejó el evento
-                        if (!gestureHandled || cellBounds.isEmpty()) {
-                            Log.d("OneHandKeyboard", "🔥 Using fallback tap - gestureHandled: $gestureHandled")
-                            val outputChar = applyCase(keyData.primaryChar)
-                            currentInputConnection?.commitText(outputChar, 1)
-                            
-                            if (currentCaseMode == CaseMode.CAPITALIZE && isCapitalizeNext) {
-                                isCapitalizeNext = false
-                            }
-                        }
-                    }
-                    MotionEvent.ACTION_CANCEL -> {
-                        background = createButtonBackground(false)
-                        Log.d("OneHandKeyboard", "🔥 Touch cancel on cell $cellIndex")
-                    }
-                }
-                
-                // Siempre consumir el evento para evitar conflictos
-                true
-            }
+            // Crear labels posicionados para cada dirección
+            createDirectionalLabelsAbsolute(this, cellConfig, cellIndex)
             
-            // Mantener click listener como fallback para taps simples
-            setOnClickListener {
-                if (cellBounds.isEmpty()) {
-                    // Fallback si el sistema de gestos no está listo
-                    val outputChar = applyCase(keyData.primaryChar)
-                    Log.d("OneHandKeyboard", "Fallback click: $outputChar")
-                    currentInputConnection?.commitText(outputChar, 1)
-                    
-                    if (currentCaseMode == CaseMode.CAPITALIZE && isCapitalizeNext) {
-                        isCapitalizeNext = false
+            // Configurar touch listener para gestos
+            setOnTouchListener { _, event ->
+                Log.d("OneHandKeyboard", "🎯 Touch event on cell $cellIndex: ${event.action}")
+                
+                // Procesar gesto directamente
+                val handled = processGestureDirectly(event, cellIndex)
+                Log.d("OneHandKeyboard", "🎯 Gesture processed: $handled")
+                
+                // Consumir el evento para evitar propagación
+                handled
+            }
+        }
+    }
+    
+    /**
+     * Crea labels posicionados absolutamente para cada dirección en un FrameLayout
+     */
+    private fun createDirectionalLabelsAbsolute(container: FrameLayout, cellConfig: CellConfiguration?, cellIndex: Int) {
+        if (cellConfig == null) return
+        
+        // Manejar el centro de manera especial (combinar TAP y LONG_PRESS)
+        val centerTextView = createCenterCombinedTextView(cellConfig)
+        if (centerTextView != null) {
+            container.addView(centerTextView)
+        }
+        
+        // Crear TextView para direcciones no-centro
+        cellConfig.actions.forEach { (gestureAction, actionConfig) ->
+            if (gestureAction.direction != Direction.CENTER) {
+                val label = when (actionConfig) {
+                    is ActionConfig.Character -> applyCase(actionConfig.char.toString())
+                    is ActionConfig.Text -> applyCase(actionConfig.text.take(2))
+                    is ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
+                }
+                
+                if (label.isNotEmpty()) {
+                    val textView = createDirectionalTextView(label, gestureAction.direction, gestureAction.gestureType)
+                    container.addView(textView)
+                }
+            }
+        }
+    }
+    
+    /**
+     * Crea un TextView posicionado para una dirección específica
+     */
+    private fun createDirectionalTextView(text: String, direction: Direction, gestureType: GestureType): TextView {
+        return TextView(this).apply {
+            this.text = if (gestureType == GestureType.LONG_PRESS) "($text)" else text
+            textSize = 12f
+            setTextColor(Color.parseColor("#FFFFFF"))
+            gravity = Gravity.CENTER
+            
+            // Configurar posición absoluta según la dirección
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                when (direction) {
+                    Direction.NW -> {
+                        gravity = Gravity.TOP or Gravity.START
+                        setMargins(4, 4, 0, 0)
+                    }
+                    Direction.N -> {
+                        gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+                        setMargins(0, 4, 0, 0)
+                    }
+                    Direction.NE -> {
+                        gravity = Gravity.TOP or Gravity.END
+                        setMargins(0, 4, 4, 0)
+                    }
+                    Direction.W -> {
+                        gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                        setMargins(4, 0, 0, 0)
+                    }
+                    Direction.CENTER -> {
+                        gravity = Gravity.CENTER
+                        setMargins(0, 0, 0, 0)
+                    }
+                    Direction.E -> {
+                        gravity = Gravity.CENTER_VERTICAL or Gravity.END
+                        setMargins(0, 0, 4, 0)
+                    }
+                    Direction.SW -> {
+                        gravity = Gravity.BOTTOM or Gravity.START
+                        setMargins(4, 0, 0, 4)
+                    }
+                    Direction.S -> {
+                        gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                        setMargins(0, 0, 0, 4)
+                    }
+                    Direction.SE -> {
+                        gravity = Gravity.BOTTOM or Gravity.END
+                        setMargins(0, 0, 4, 4)
                     }
                 }
             }
         }
     }
     
+    /**
+     * Maneja la combinación de TAP y LONG_PRESS para el centro
+     */
+    private fun createCenterCombinedTextView(cellConfig: CellConfiguration): TextView? {
+        val tapAction = cellConfig.getActionFor(GestureType.TAP, Direction.CENTER)
+        val longPressAction = cellConfig.getActionFor(GestureType.LONG_PRESS, Direction.CENTER)
+        
+        val tapLabel = when (tapAction) {
+            is ActionConfig.Character -> applyCase(tapAction.char.toString())
+            is ActionConfig.Text -> applyCase(tapAction.text.take(2))
+            is ActionConfig.Action -> getActionSymbol(tapAction.keyAction)
+            null -> ""
+        }
+        
+        val longPressLabel = when (longPressAction) {
+            is ActionConfig.Character -> applyCase(longPressAction.char.toString())
+            is ActionConfig.Text -> applyCase(longPressAction.text.take(2))
+            is ActionConfig.Action -> getActionSymbol(longPressAction.keyAction)
+            null -> ""
+        }
+        
+        val combinedText = when {
+            tapLabel.isNotEmpty() && longPressLabel.isNotEmpty() -> "$tapLabel($longPressLabel)"
+            tapLabel.isNotEmpty() -> tapLabel
+            longPressLabel.isNotEmpty() -> "($longPressLabel)"
+            else -> return null
+        }
+        
+        return TextView(this).apply {
+            text = combinedText
+            textSize = 14f // Más grande para el centro
+            setTextColor(Color.parseColor("#FFFFFF"))
+            gravity = Gravity.CENTER
+            
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.CENTER
+            }
+        }
+    }
+
+    /**
+     * Crea el texto con labels direccionales para una celda
+     */
+    private fun createDirectionalLabels(cellConfig: CellConfiguration?, cellIndex: Int): String {
+        if (cellConfig == null) {
+            return "Cell $cellIndex"
+        }
+        
+        val lines = mutableListOf<String>()
+        
+        // Línea superior: NW, N, NE
+        val topLine = buildString {
+            val nw = getDirectionalLabel(cellConfig, Direction.NW)
+            val n = getDirectionalLabel(cellConfig, Direction.N)
+            val ne = getDirectionalLabel(cellConfig, Direction.NE)
+            
+            append(nw.padEnd(4))
+            append(n.padEnd(4))
+            append(ne)
+        }.trim()
+        if (topLine.isNotBlank()) lines.add(topLine)
+        
+        // Línea media: W, CENTER, E
+        val middleLine = buildString {
+            val w = getDirectionalLabel(cellConfig, Direction.W)
+            val center = getCenterLabel(cellConfig)
+            val e = getDirectionalLabel(cellConfig, Direction.E)
+            
+            append(w.padEnd(4))
+            append(center.padEnd(4))
+            append(e)
+        }.trim()
+        if (middleLine.isNotBlank()) lines.add(middleLine)
+        
+        // Línea inferior: SW, S, SE
+        val bottomLine = buildString {
+            val sw = getDirectionalLabel(cellConfig, Direction.SW)
+            val s = getDirectionalLabel(cellConfig, Direction.S)
+            val se = getDirectionalLabel(cellConfig, Direction.SE)
+            
+            append(sw.padEnd(4))
+            append(s.padEnd(4))
+            append(se)
+        }.trim()
+        if (bottomLine.isNotBlank()) lines.add(bottomLine)
+        
+        return lines.joinToString("\n").ifEmpty { "Cell $cellIndex" }
+    }
+    
+    /**
+     * Obtiene el label para una dirección específica
+     */
+    private fun getDirectionalLabel(cellConfig: CellConfiguration, direction: Direction): String {
+        val action = cellConfig.getActionFor(GestureType.SWIPE, direction)
+        return when (action) {
+            is ActionConfig.Character -> applyCase(action.char.toString())
+            is ActionConfig.Text -> applyCase(action.text.take(2)) // Máximo 2 caracteres
+            is ActionConfig.Action -> getActionSymbol(action.keyAction)
+            null -> ""
+        }
+    }
+    
+    /**
+     * Obtiene el label para el centro (combinando TAP y LONG_PRESS)
+     */
+    private fun getCenterLabel(cellConfig: CellConfiguration): String {
+        val tapAction = cellConfig.getActionFor(GestureType.TAP, Direction.CENTER)
+        val longPressAction = cellConfig.getActionFor(GestureType.LONG_PRESS, Direction.CENTER)
+        
+        val tapLabel = when (tapAction) {
+            is ActionConfig.Character -> applyCase(tapAction.char.toString())
+            is ActionConfig.Text -> applyCase(tapAction.text.take(2))
+            is ActionConfig.Action -> getActionSymbol(tapAction.keyAction)
+            null -> ""
+        }
+        
+        val longPressLabel = when (longPressAction) {
+            is ActionConfig.Character -> applyCase(longPressAction.char.toString())
+            is ActionConfig.Text -> applyCase(longPressAction.text.take(2))
+            is ActionConfig.Action -> getActionSymbol(longPressAction.keyAction)
+            null -> ""
+        }
+        
+        return when {
+            tapLabel.isNotEmpty() && longPressLabel.isNotEmpty() -> "$tapLabel($longPressLabel)"
+            tapLabel.isNotEmpty() -> tapLabel
+            longPressLabel.isNotEmpty() -> "($longPressLabel)"
+            else -> ""
+        }
+    }
+
     /**
      * Obtiene hints visuales de los gestos configurados para una celda
      */
