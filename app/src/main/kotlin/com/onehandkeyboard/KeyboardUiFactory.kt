@@ -6,6 +6,9 @@ import android.view.MotionEvent
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import com.onehandkeyboard.core.domain.model.KeyData
+import com.onehandkeyboard.core.domain.model.Direction
+import com.onehandkeyboard.core.domain.model.KeyAction
+import com.onehandkeyboard.config.CellConfiguration
 import com.onehandkeyboard.ui.ButtonStyleProvider
 import com.onehandkeyboard.ui.ControlButtonFactory
 import com.onehandkeyboard.ui.DirectionalLabelFactory

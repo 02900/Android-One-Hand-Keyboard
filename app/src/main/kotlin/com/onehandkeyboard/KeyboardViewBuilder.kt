@@ -153,13 +153,10 @@ class KeyboardViewBuilder(
             layoutParams = LinearLayout.LayoutParams(cellSize, cellSize).apply {
                 setMargins(2, 2, 2, 2)
             }
-            background = uiFactory.createButtonBackground(false)
+            background = createButtonBackground(false)
             
             // Add directional labels
-            val cellConfig = uiFactory.configManager.getConfiguration(
-                uiFactory.configManager.currentLanguage,
-                uiFactory.configManager.currentMode
-            ).cells[cellIndex]
+            val cellConfig = layoutManager.getCellConfiguration(cellIndex)
             
             createDirectionalLabelsAbsolute(this, cellConfig, cellIndex)
         }
@@ -216,35 +213,35 @@ class KeyboardViewBuilder(
             ).apply {
                 // Position based on direction
                 when (direction) {
-                    Direction.TOP -> {
+                    Direction.N -> {
                         gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
                         setMargins(0, 4, 0, 0)
                     }
-                    Direction.TOP_RIGHT -> {
+                    Direction.NE -> {
                         gravity = Gravity.TOP or Gravity.END
                         setMargins(0, 4, 4, 0)
                     }
-                    Direction.RIGHT -> {
+                    Direction.E -> {
                         gravity = Gravity.CENTER_VERTICAL or Gravity.END
                         setMargins(0, 0, 4, 0)
                     }
-                    Direction.BOTTOM_RIGHT -> {
+                    Direction.SE -> {
                         gravity = Gravity.BOTTOM or Gravity.END
                         setMargins(0, 0, 4, 4)
                     }
-                    Direction.BOTTOM -> {
+                    Direction.S -> {
                         gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
                         setMargins(0, 0, 0, 4)
                     }
-                    Direction.BOTTOM_LEFT -> {
+                    Direction.SW -> {
                         gravity = Gravity.BOTTOM or Gravity.START
                         setMargins(4, 0, 0, 4)
                     }
-                    Direction.LEFT -> {
+                    Direction.W -> {
                         gravity = Gravity.CENTER_VERTICAL or Gravity.START
                         setMargins(4, 0, 0, 0)
                     }
-                    Direction.TOP_LEFT -> {
+                    Direction.NW -> {
                         gravity = Gravity.TOP or Gravity.START
                         setMargins(4, 4, 0, 0)
                     }
@@ -298,7 +295,8 @@ class KeyboardViewBuilder(
     private fun getActionLabel(actionConfig: ActionConfig): String {
         return when (actionConfig) {
             is ActionConfig.Character -> actionConfig.char.toString()
-            is ActionConfig.Action -> getActionSymbol(actionConfig.action)
+            is ActionConfig.Text -> actionConfig.text
+            is ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
         }
     }
     
@@ -307,13 +305,11 @@ class KeyboardViewBuilder(
      */
     private fun getActionSymbol(action: KeyAction): String {
         return when (action) {
-            KeyAction.BACKSPACE -> "⌫"
-            KeyAction.SPACE -> "␣"
-            KeyAction.ENTER -> "↵"
-            KeyAction.SHIFT -> "⇧"
-            KeyAction.SWITCH_LAYOUT -> "⌨"
-            KeyAction.SWITCH_CASE -> "Aa"
-            else -> action.name.take(2)
+            is KeyAction.Backspace -> "⌫"
+            is KeyAction.Space -> "␣"
+            is KeyAction.Enter -> "↵"
+            is KeyAction.ToggleCase -> "Aa"
+            else -> "⚡"
         }
     }
     
@@ -350,7 +346,7 @@ class KeyboardViewBuilder(
             ).apply {
                 setMargins(0, 4, 0, 4)
             }
-            background = uiFactory.createButtonBackground(false, false, true)
+            background = createButtonBackground(false, false, true)
         }
     }
     
@@ -368,7 +364,29 @@ class KeyboardViewBuilder(
             ).apply {
                 setMargins(0, 4, 0, 4)
             }
-            background = uiFactory.createButtonBackground(false, false, true)
+            background = createButtonBackground(false, false, true)
+        }
+    }
+    
+    /**
+     * Creates button background with rounded corners
+     */
+    private fun createButtonBackground(pressed: Boolean, isBackspace: Boolean = false, isControl: Boolean = false): GradientDrawable {
+        return GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = if (isControl) 8f else 12f
+            
+            if (pressed) {
+                setColor(Color.parseColor("#4A4A4A"))
+            } else if (isBackspace) {
+                setColor(Color.parseColor("#2D2D2D"))
+            } else if (isControl) {
+                setColor(Color.parseColor("#2A2A2A"))
+            } else {
+                setColor(Color.parseColor("#3A3A3A"))
+            }
+            
+            setStroke(2, Color.parseColor("#555555"))
         }
     }
 }

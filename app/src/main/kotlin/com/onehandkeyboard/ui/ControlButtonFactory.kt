@@ -125,7 +125,7 @@ class ControlButtonFactory(
             
             // TextView principal
             val mainText = android.widget.TextView(context).apply {
-                text = keyData.primaryText
+                text = keyData.primaryChar
                 textSize = styleProvider.getStandardTextSize()
                 setTextColor(styleProvider.getTextColor())
                 gravity = android.view.Gravity.CENTER
@@ -138,7 +138,7 @@ class ControlButtonFactory(
             addView(mainText)
             
             // Configurar click listener
-            setOnClickListener { onClickListener(keyData.primaryText) }
+            setOnClickListener { onClickListener(keyData.primaryChar) }
             
             // Feedback visual al presionar
             setOnTouchListener { _, event ->

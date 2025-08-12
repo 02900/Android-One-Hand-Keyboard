@@ -7,6 +7,7 @@ import android.widget.LinearLayout
 import com.onehandkeyboard.config.*
 import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
+import com.onehandkeyboard.actions.ActionConfig
 import com.onehandkeyboard.core.domain.model.*
 import com.onehandkeyboard.core.gesture.CellBounds
 import com.onehandkeyboard.core.gesture.GestureDetector

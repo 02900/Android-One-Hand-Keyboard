@@ -2,6 +2,9 @@ package com.onehandkeyboard
 
 import android.util.Log
 import com.onehandkeyboard.core.domain.model.KeyData
+import com.onehandkeyboard.core.domain.model.CaseMode
+import com.onehandkeyboard.enums.Language
+import com.onehandkeyboard.enums.LayoutMode
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,7 +29,7 @@ class KeyboardLayoutManager @Inject constructor(
      */
     fun switchLayout() {
         Log.d("KeyboardLayoutManager", "Switching layout from ${configManager.currentMode}")
-        configManager.switchLayoutMode()
+        configManager.switchLayout()
         Log.d("KeyboardLayoutManager", "Layout switched to ${configManager.currentMode}")
     }
     
@@ -91,5 +94,13 @@ class KeyboardLayoutManager @Inject constructor(
         return "Language: ${configManager.currentLanguage}, " +
                "Mode: ${configManager.currentMode}, " +
                "Case: ${configManager.currentCaseMode}"
+    }
+    
+    /**
+     * Gets cell configuration for a specific cell index
+     */
+    fun getCellConfiguration(cellIndex: Int): com.onehandkeyboard.config.CellConfiguration? {
+        val configuration = configManager.keyboardConfiguration
+        return configuration.cells.find { it.cellIndex == cellIndex }
     }
 }

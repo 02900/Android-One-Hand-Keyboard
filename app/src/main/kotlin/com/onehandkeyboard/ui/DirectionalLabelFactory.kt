@@ -141,7 +141,7 @@ class DirectionalLabelFactory(
         val labels = mutableListOf<String>()
         
         // Agregar labels para cada dirección configurada
-        for (gestureAction in cellConfig.gestureActions) {
+        cellConfig.actions.forEach { (gestureAction, _) ->
             val directionSymbol = hintProvider.getDirectionSymbol(gestureAction.direction)
             val label = hintProvider.getDirectionalLabel(cellConfig, gestureAction.direction)
             if (label.isNotEmpty()) {

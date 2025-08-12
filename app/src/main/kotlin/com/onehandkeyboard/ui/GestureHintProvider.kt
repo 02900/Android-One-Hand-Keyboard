@@ -31,7 +31,7 @@ class GestureHintProvider(private val configManager: KeyboardConfigManager) {
             val actionSymbol = when (actionConfig) {
                 is com.onehandkeyboard.actions.ActionConfig.Character -> actionConfig.char.toString()
                 is com.onehandkeyboard.actions.ActionConfig.Text -> actionConfig.text
-                is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.action)
+                is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
             }
             val gestureSymbol = when (gestureAction.gestureType) {
                 GestureType.SWIPE -> "→"
@@ -110,7 +110,7 @@ class GestureHintProvider(private val configManager: KeyboardConfigManager) {
         return when (actionConfig) {
             is com.onehandkeyboard.actions.ActionConfig.Character -> actionConfig.char.toString()
             is com.onehandkeyboard.actions.ActionConfig.Text -> actionConfig.text
-            is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.action)
+            is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
         }
     }
     
@@ -130,7 +130,7 @@ class GestureHintProvider(private val configManager: KeyboardConfigManager) {
             when (actionConfig) {
                 is com.onehandkeyboard.actions.ActionConfig.Character -> actionConfig.char.toString()
                 is com.onehandkeyboard.actions.ActionConfig.Text -> actionConfig.text
-                is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.action)
+                is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
             }
         } ?: ""
         
@@ -138,7 +138,7 @@ class GestureHintProvider(private val configManager: KeyboardConfigManager) {
             when (actionConfig) {
                 is com.onehandkeyboard.actions.ActionConfig.Character -> actionConfig.char.toString()
                 is com.onehandkeyboard.actions.ActionConfig.Text -> actionConfig.text
-                is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.action)
+                is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
             }
         } ?: ""
         
