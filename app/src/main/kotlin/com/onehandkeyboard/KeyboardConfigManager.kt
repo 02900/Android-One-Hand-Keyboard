@@ -1,14 +1,27 @@
 package com.onehandkeyboard
 
 import android.util.Log
-import com.onehandkeyboard.config.*
+import com.onehandkeyboard.config.KeyboardConfiguration
+import com.onehandkeyboard.config.Language
+import com.onehandkeyboard.config.LayoutMode
+import com.onehandkeyboard.core.domain.model.CaseMode
+import com.onehandkeyboard.core.domain.model.KeyData
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
- * Manages keyboard configuration, language switching, and layout state
+ * Manages keyboard configuration and layout switching for the OneHandKeyboard.
  * 
- * Extracted from OneHandKeyboardService for better separation of concerns
+ * This singleton class handles:
+ * - Language switching (Spanish, English)
+ * - Layout mode switching (Letters, Symbols)
+ * - Case mode management (lowercase, UPPERCASE, Capitalize)
+ * - Configuration retrieval for current state
+ * 
+ * Injected as a singleton via Hilt for consistent state across the application.
  */
-class KeyboardConfigManager {
+@Singleton
+class KeyboardConfigManager @Inject constructor() {
     
     // Estado del teclado
     var currentLanguage = Language.SPANISH

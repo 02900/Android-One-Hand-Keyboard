@@ -4,22 +4,30 @@ import android.content.Context
 import android.util.Log
 import android.view.MotionEvent
 import android.widget.LinearLayout
-import com.onehandkeyboard.core.domain.model.*
-import com.onehandkeyboard.core.gesture.GestureDetector
-import com.onehandkeyboard.core.gesture.CellBounds
 import com.onehandkeyboard.config.*
-import kotlinx.coroutines.*
+import com.onehandkeyboard.core.domain.model.*
+import com.onehandkeyboard.core.gesture.CellBounds
+import com.onehandkeyboard.core.gesture.GestureDetector
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 /**
- * Class for handling gesture integration and processing
+ * Handles gesture integration and processing for the OneHandKeyboard.
  * 
  * This class centralizes all gesture-related logic including:
- * - Gesture system initialization
- * - Cell bounds calculation
- * - Domain keyboard layout creation
- * - Gesture processing and handling
- * - Direction detection and mapping
+ * - Gesture system initialization with DefaultGestureDetector
+ * - Cell bounds calculation for 3x3 grid layout
+ * - Domain keyboard layout creation from configuration
+ * - Gesture processing and event handling via coroutines
+ * - Direction detection and mapping to keyboard actions
+ * - Integration between UI touch events and gesture detection
+ * 
+ * Extracted from OneHandKeyboardService for better separation of concerns.
+ * Uses manual initialization due to Context and callback dependencies.
  */
 class GestureIntegration(
     private val context: Context,
@@ -186,9 +194,9 @@ class GestureIntegration(
     // ============================================================================
     
     /**
-     * Procesa gestos directamente sin detector externo
+     * Procesa eventos de gesto en tiempo real
      */
-    fun processGestureDirectly(event: MotionEvent, cellIndex: Int, onGestureProcessed: (KeyboardOutput?) -> Unit) {
+    fun processGestureEvent(event: MotionEvent, cellIndex: Int, onGestureProcessed: (KeyboardOutput?) -> Unit) {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 gestureStartTime = System.currentTimeMillis()
@@ -213,7 +221,7 @@ class GestureIntegration(
                     isLongPressDetected = true
                     gestureAlreadyEmitted = true
                     Log.d("OneHandKeyboard", "🎯 LONG_PRESS detected on cell $cellIndex")
-                    handleDirectGesture(cellIndex, GestureType.LONG_PRESS, Direction.CENTER, onGestureProcessed)
+                    handleGestureAction(cellIndex, GestureType.LONG_PRESS, Direction.CENTER, onGestureProcessed)
                 }
                 
                 // Detectar swipe
@@ -221,7 +229,7 @@ class GestureIntegration(
                     val direction = getSwipeDirection(deltaX, deltaY)
                     gestureAlreadyEmitted = true
                     Log.d("OneHandKeyboard", "🎯 SWIPE detected on cell $cellIndex, direction: $direction")
-                    handleDirectGesture(cellIndex, GestureType.SWIPE, direction, onGestureProcessed)
+                    handleGestureAction(cellIndex, GestureType.SWIPE, direction, onGestureProcessed)
                 }
             }
             
@@ -237,7 +245,7 @@ class GestureIntegration(
                 // Detectar tap (si no hubo long press ni swipe)
                 if (!isLongPressDetected && distance < swipeThreshold) {
                     Log.d("OneHandKeyboard", "🎯 TAP detected on cell $cellIndex")
-                    handleDirectGesture(cellIndex, GestureType.TAP, Direction.CENTER, onGestureProcessed)
+                    handleGestureAction(cellIndex, GestureType.TAP, Direction.CENTER, onGestureProcessed)
                 }
             }
         }
@@ -266,9 +274,9 @@ class GestureIntegration(
     // ============================================================================
     
     /**
-     * Maneja un gesto detectado directamente usando configuración externa
+     * Maneja una acción de gesto detectada usando configuración externa
      */
-    fun handleDirectGesture(
+    fun handleGestureAction(
         cellIndex: Int, 
         gestureType: GestureType, 
         direction: Direction,
@@ -344,10 +352,4 @@ class GestureIntegration(
     }
 }
 
-/**
- * Sealed class para representar la salida del teclado
- */
-sealed class KeyboardOutput {
-    data class Character(val char: String) : KeyboardOutput()
-    data class Action(val action: KeyAction) : KeyboardOutput()
-}
+// KeyboardOutput moved to KeyboardActionProcessor.kt

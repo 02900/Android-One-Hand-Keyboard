@@ -1,6 +1,6 @@
 # OneHandKeyboard - Android 3×3 Gesture IME
 
-Un teclado Android innovador basado en gestos con diseño 3×3, inspirado en MessagEase, construido con Clean Architecture y Jetpack Compose.
+Un teclado Android innovador basado en gestos con diseño 3×3, inspirado en MessagEase, construido con Clean Architecture y Android Views para máxima compatibilidad.
 
 ## 🚀 Características Principales
 
@@ -9,15 +9,17 @@ Un teclado Android innovador basado en gestos con diseño 3×3, inspirado en Mes
 - **Latencia ultra-baja**: ≤20ms desde gesto hasta texto
 - **Accesibilidad completa**: Soporte TalkBack, alto contraste, tamaños adaptativos
 - **Modular**: Arquitectura limpia con módulos independientes
-- **Multiidioma**: Soporte inicial para español (es-MX) e inglés (en-US)
+- **Multiidioma**: Soporte para español (es-MX) e inglés (en-US)
+- **Layouts Dinámicos**: Intercambio entre Letters/Symbols y modos de mayúsculas
+- **Gestos Avanzados**: Tap, Long Press y Swipe en 8 direcciones
 
 ## 🏗️ Arquitectura
 
-El proyecto sigue Clean Architecture con patrón MVI/UDF y está organizado en módulos:
+El proyecto sigue Clean Architecture con arquitectura modular y está organizado en:
 
 ### Módulos Core
 - `core:domain` - Casos de uso y modelos de dominio
-- `core:gesture` - Motor de detección de gestos
+- `core:gesture` - Motor de detección de gestos con dead zones e histeresis
 - `core:mapping` - Sistema de mapeo (celda, dirección) → acción
 - `core:text` - Adaptadores InputConnection y comandos
 - `core:design` - Design System y componentes UI
@@ -30,16 +32,21 @@ El proyecto sigue Clean Architecture con patrón MVI/UDF y está organizado en m
 - `feature:settings` - Pantallas de configuración
 
 ### App Principal
-- `app-ime` - InputMethodService y bootstrap
+- `app-ime` - InputMethodService refactorizado en componentes modulares:
+  - **OneHandKeyboardService**: Servicio principal coordinador
+  - **KeyboardConfigManager**: Gestión de configuración y estado (Hilt singleton)
+  - **KeyboardUiFactory**: Creación de UI con Android Views
+  - **GestureIntegration**: Integración de gestos y detección de eventos
+  - **KeyboardActionProcessor**: Procesamiento de acciones y entrada de texto
 
 ## 🛠️ Stack Tecnológico
 
 - **Lenguaje**: Kotlin
-- **UI**: Jetpack Compose
-- **DI**: Hilt
+- **UI**: Android Views (estable para IME)
+- **DI**: Hilt (configuración y gestores)
 - **Persistencia**: DataStore + Room (opcional)
 - **Concurrencia**: Coroutines + Flow
-- **Testing**: JUnit, MockK, Turbine, Compose Testing
+- **Testing**: JUnit, Robolectric, MockK
 - **Calidad**: ktlint, detekt, CI/CD
 
 ## 📋 Requisitos
@@ -51,16 +58,48 @@ El proyecto sigue Clean Architecture con patrón MVI/UDF y está organizado en m
 
 ## 🚦 Estado del Proyecto
 
-### ✅ Etapa 1: Bootstrap y Fundaciones (Completada)
+### ✅ Etapas Completadas
+
+#### Etapa 1: Bootstrap y Fundaciones
 - [x] Estructura modular creada
 - [x] Herramientas de calidad configuradas
 - [x] Dependencias y build system establecido
 
+#### Etapa 2: IME Esqueleto + UI
+- [x] InputMethodService base implementado
+- [x] UI con Android Views (estable para IME)
+- [x] Integración básica funcional
+
+#### Etapa 3: Motor de Gestos v1
+- [x] DefaultGestureDetector con dead zones e histeresis
+- [x] Detección de 8 direcciones + tap + long press
+- [x] Tests unitarios para motor de gestos
+
+#### Etapa 4: Layout 3×3 y Mapping Básico
+- [x] Grid 3×3 con aspect ratio cuadrado
+- [x] Sistema de mapping (celda, dirección) → acción
+- [x] Configuración de layouts por idioma
+
+#### Etapa 5: Design System v1 + Funcionalidades
+- [x] UI moderna con gradientes y feedback visual
+- [x] Layouts intercambiables (Español, Inglés, Números)
+- [x] Modos de mayúsculas (lowercase, UPPERCASE, Capitalize)
+- [x] Integración completa de gestos en UI
+
+#### Etapa 6: Refactorización Modular (ACTUAL)
+- [x] Extracción de KeyboardConfigManager (Hilt singleton)
+- [x] Extracción de KeyboardUiFactory (creación de UI)
+- [x] Extracción de GestureIntegration (procesamiento de gestos)
+- [x] Extracción de KeyboardActionProcessor (acciones de teclado)
+- [x] Limpieza de código muerto y duplicado
+- [x] Mejora de nombres y documentación
+- [x] Validación de tests y builds exitosos
+
 ### 🔄 Próximas Etapas
-- [ ] Etapa 2: IME Esqueleto + Compose
-- [ ] Etapa 3: Motor de Gestos v1
-- [ ] Etapa 4: Layout 3×3 y Mapping Básico
-- [ ] Etapa 5: Design System v1 + Temas
+- [ ] Etapa 7: Optimización y Performance
+- [ ] Etapa 8: Configuración Avanzada y Personalización
+- [ ] Etapa 9: Accesibilidad y UX Mejorada
+- [ ] Etapa 10: Testing Integral y Estabilización
 
 ## 🏃‍♂️ Inicio Rápido
 

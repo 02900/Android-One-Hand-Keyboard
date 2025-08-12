@@ -75,7 +75,7 @@ data class KeyboardLayout(
         // Handle character output
         val character = cell.getCharacterForDirection(gesture.direction)
         if (character != null) {
-            return KeyboardOutput.Character(character)
+            return KeyboardOutput.Character(character.toString())
         }
         
         // Handle action output
@@ -134,26 +134,5 @@ enum class LayoutType {
     CUSTOM
 }
 
-/**
- * Case modes for text input
- */
-enum class CaseMode {
-    LOWERCASE,
-    UPPERCASE,
-    CAPITALIZE
-}
-
-/**
- * Output from processing a keyboard gesture
- */
-sealed class KeyboardOutput {
-    /**
-     * A character to be inserted
-     */
-    data class Character(val char: Char) : KeyboardOutput()
-    
-    /**
-     * An action to be performed
-     */
-    data class Action(val action: KeyAction) : KeyboardOutput()
-}
+// CaseMode moved to core/domain/model/CaseMode.kt
+// KeyboardOutput moved to core/domain/model/KeyboardOutput.kt

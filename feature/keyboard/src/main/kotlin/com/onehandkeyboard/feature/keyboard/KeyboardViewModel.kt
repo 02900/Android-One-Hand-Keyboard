@@ -56,7 +56,7 @@ class KeyboardViewModel @Inject constructor(
             // Handle the output
             when (output) {
                 is KeyboardOutput.Character -> {
-                    onCharacterOutput(output.char)
+                    onCharacterOutput(output.char.firstOrNull() ?: ' ')
                 }
                 is KeyboardOutput.Action -> {
                     onActionOutput(output.action)

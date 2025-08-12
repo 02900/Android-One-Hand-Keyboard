@@ -9,16 +9,25 @@ import android.view.MotionEvent
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.onehandkeyboard.core.domain.model.*
-import com.onehandkeyboard.config.*
+import com.onehandkeyboard.config.ActionConfig
+import com.onehandkeyboard.config.CellConfiguration
+import com.onehandkeyboard.core.domain.model.Direction
+import com.onehandkeyboard.core.domain.model.GestureType
+import com.onehandkeyboard.core.domain.model.KeyAction
+import com.onehandkeyboard.core.domain.model.KeyData
 
 /**
- * Factory class for creating keyboard UI components
+ * Factory class for creating keyboard UI components using Android Views.
  * 
  * This class centralizes all UI creation logic including:
- * - Button creation and styling
- * - Layout calculations and positioning
- * - Visual helpers and backgrounds
+ * - 3x3 grid layout creation with proper aspect ratios
+ * - Button creation and modern styling with gradients
+ * - Gesture hint labels positioned by direction
+ * - Control buttons for layout and case mode switching
+ * - Visual feedback and accessibility features
+ * 
+ * Extracted from OneHandKeyboardService for better separation of concerns.
+ * Uses manual initialization due to Context dependency requirements.
  * - Directional labels and text views
  */
 class KeyboardUiFactory(
@@ -127,7 +136,7 @@ class KeyboardUiFactory(
     /**
      * Crea un botón mejorado con diseño moderno (método legacy)
      */
-    fun createEnhancedButton(keyData: KeyData, onClickListener: (String) -> Unit): FrameLayout {
+    fun createLegacyButton(keyData: KeyData, onClickListener: (String) -> Unit): FrameLayout {
         return FrameLayout(context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 0,
@@ -478,7 +487,7 @@ class KeyboardUiFactory(
     /**
      * Obtiene hints visuales de los gestos disponibles para una celda (método legacy)
      */
-    fun getGestureHints(cellIndex: Int): String {
+    fun getLegacyGestureHints(cellIndex: Int): String {
         val hints = mutableListOf<String>()
         
         // Ejemplo de hints básicos - esto se puede expandir

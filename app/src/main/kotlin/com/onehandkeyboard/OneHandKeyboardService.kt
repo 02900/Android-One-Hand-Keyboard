@@ -11,54 +11,50 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.onehandkeyboard.core.domain.model.*
-import com.onehandkeyboard.core.gesture.GestureDetector
+import com.onehandkeyboard.config.ActionConfig
+import com.onehandkeyboard.config.CellConfiguration
+import com.onehandkeyboard.config.GestureAction
+import com.onehandkeyboard.core.domain.model.Direction
+import com.onehandkeyboard.core.domain.model.GestureType
+import com.onehandkeyboard.core.domain.model.KeyAction
+import com.onehandkeyboard.core.domain.model.KeyData
 import com.onehandkeyboard.core.gesture.CellBounds
-import com.onehandkeyboard.config.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
+import com.onehandkeyboard.core.gesture.GestureDetector
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 /**
- * Data class for keyboard key information
- */
-data class KeyData(
-    val label: String,        // Texto mostrado en el botón (ABC, DEF, etc.)
-    val primaryChar: String,  // Carácter principal (a, d, g, etc.)
-    val accentChars: String   // Caracteres con acentos (áàâä, etc.)
-)
-
-// Los enums Language y LayoutMode ahora están en KeyboardConfiguration.kt
-
-/**
- * Enum for case modes
- */
-enum class CaseMode {
-    LOWERCASE,
-    UPPERCASE,
-    CAPITALIZE
-}
-
-/**
- * Main InputMethodService for OneHandKeyboard
+ * Main InputMethodService for OneHandKeyboard - A 3x3 gesture-based keyboard.
  *
- * Enhanced version with improved UI using Android Views
+ * This service provides a compact 9-key keyboard with 8-directional swipe gestures,
+ * supporting multiple languages (Spanish, English) and layout modes (Letters, Symbols).
  * 
- * TODO: REFACTORING - This file will be split into smaller modules:
- * - KeyboardConfigManager: Configuration and state management
- * - KeyboardUiFactory: UI creation and layout helpers
- * - GestureIntegration: Gesture processing and bounds calculation
- * - KeyboardActionProcessor: Action execution and text input
+ * Architecture:
+ * - Uses Clean Architecture principles with modular components
+ * - Implements Android Views for stable IME compatibility
+ * - Integrates Hilt dependency injection for configuration management
+ * 
+ * Key Components:
+ * - KeyboardConfigManager: Configuration and state management (Hilt singleton)
+ * - KeyboardUiFactory: UI creation and layout helpers (manual init)
+ * - GestureIntegration: Gesture processing and bounds calculation (manual init)
+ * - KeyboardActionProcessor: Action execution and text input (manual init)
+ * 
+ * Features:
+ * - 3x3 grid with gesture hints and modern styling
+ * - Multi-directional swipes (8 directions + tap + long press)
+ * - Dynamic layout switching and case mode management
+ * - Offline-first, privacy-focused design
  */
 @AndroidEntryPoint
 class OneHandKeyboardService : InputMethodService() {
     private var keyboardView: LinearLayout? = null
     
-    // Gestor de configuración del teclado
-    private val configManager = KeyboardConfigManager()
+    // Gestor de configuración del teclado - inyectado por Hilt
+    @Inject
+    lateinit var configManager: KeyboardConfigManager
     
-    // Factory para creación de UI
+    // Factory para creación de UI (inicializado manualmente debido a dependencias de contexto)
     private lateinit var uiFactory: KeyboardUiFactory
     
     // Sistema de gestos avanzado - inyectado por Hilt
@@ -67,6 +63,9 @@ class OneHandKeyboardService : InputMethodService() {
     
     // Integración de gestos
     private lateinit var gestureIntegration: GestureIntegration
+    
+    // Procesador de acciones del teclado
+    private lateinit var actionProcessor: KeyboardActionProcessor
 
     // ============================================================================
     // REGION: LIFECYCLE & CORE SERVICE
@@ -75,10 +74,18 @@ class OneHandKeyboardService : InputMethodService() {
     override fun onCreateInputView(): View {
         Log.d("OneHandKeyboard", "onCreateInputView() called - GESTURE INTEGRATED VERSION")
         
-        // Inicializar UI factory
+        // Inicializar UI factory (requiere contexto del servicio)
         uiFactory = KeyboardUiFactory(this, configManager)
         
-        // Inicializar integración de gestos
+        // Inicializar procesador de acciones (no inyectable debido a callbacks)
+        actionProcessor = KeyboardActionProcessor(
+            service = this,
+            configManager = configManager,
+            onLayoutSwitch = { recreateKeyboard() },
+            onCaseSwitch = { switchCaseMode() }
+        )
+        
+        // Inicializar integración de gestos (no inyectable debido a callbacks)
         gestureIntegration = GestureIntegration(this, configManager, gestureDetector)
         gestureIntegration.initializeGestureSystem()
         
@@ -191,8 +198,8 @@ class OneHandKeyboardService : InputMethodService() {
                     } else {
                         // Botón normal con gestos
                         rowLayout.addView(uiFactory.createGestureButton(key, keyIndex) { event, cellIndex ->
-                            gestureIntegration.processGestureDirectly(event, cellIndex) { output ->
-                                output?.let { processKeyboardOutput(it) }
+                            gestureIntegration.processGestureEvent(event, cellIndex) { output ->
+                                output?.let { actionProcessor.processKeyboardOutput(it) }
                             }
                             true // Consumir el evento
                         })
@@ -272,8 +279,8 @@ class OneHandKeyboardService : InputMethodService() {
                 Log.d("OneHandKeyboard", "🎯 Touch event on cell $cellIndex: ${event.action}")
                 
                 // Procesar gesto usando GestureIntegration
-                gestureIntegration.processGestureDirectly(event, cellIndex) { output ->
-                    output?.let { processKeyboardOutput(it) }
+                gestureIntegration.processGestureEvent(event, cellIndex) { output ->
+                    output?.let { actionProcessor.processKeyboardOutput(it) }
                 }
                 
                 // Consumir el evento para evitar propagación
@@ -298,8 +305,8 @@ class OneHandKeyboardService : InputMethodService() {
         cellConfig.actions.forEach { (gestureAction, actionConfig) ->
             if (gestureAction.direction != Direction.CENTER) {
                 val label = when (actionConfig) {
-                    is ActionConfig.Character -> applyCase(actionConfig.char.toString())
-                    is ActionConfig.Text -> applyCase(actionConfig.text.take(2))
+                    is ActionConfig.Character -> configManager.applyCase(actionConfig.char.toString())
+                    is ActionConfig.Text -> configManager.applyCase(actionConfig.text.take(2))
                     is ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
                 }
                 
@@ -376,15 +383,15 @@ class OneHandKeyboardService : InputMethodService() {
         val longPressAction = cellConfig.getActionFor(GestureType.LONG_PRESS, Direction.CENTER)
         
         val tapLabel = when (tapAction) {
-            is ActionConfig.Character -> applyCase(tapAction.char.toString())
-            is ActionConfig.Text -> applyCase(tapAction.text.take(2))
+            is ActionConfig.Character -> configManager.applyCase(tapAction.char.toString())
+            is ActionConfig.Text -> configManager.applyCase(tapAction.text.take(2))
             is ActionConfig.Action -> getActionSymbol(tapAction.keyAction)
             null -> ""
         }
         
         val longPressLabel = when (longPressAction) {
-            is ActionConfig.Character -> applyCase(longPressAction.char.toString())
-            is ActionConfig.Text -> applyCase(longPressAction.text.take(2))
+            is ActionConfig.Character -> configManager.applyCase(longPressAction.char.toString())
+            is ActionConfig.Text -> configManager.applyCase(longPressAction.text.take(2))
             is ActionConfig.Action -> getActionSymbol(longPressAction.keyAction)
             null -> ""
         }
@@ -466,8 +473,8 @@ class OneHandKeyboardService : InputMethodService() {
     private fun getDirectionalLabel(cellConfig: CellConfiguration, direction: Direction): String {
         val action = cellConfig.getActionFor(GestureType.SWIPE, direction)
         return when (action) {
-            is ActionConfig.Character -> applyCase(action.char.toString())
-            is ActionConfig.Text -> applyCase(action.text.take(2)) // Máximo 2 caracteres
+            is ActionConfig.Character -> configManager.applyCase(action.char.toString())
+            is ActionConfig.Text -> configManager.applyCase(action.text.take(2)) // Máximo 2 caracteres
             is ActionConfig.Action -> getActionSymbol(action.keyAction)
             null -> ""
         }
@@ -481,15 +488,15 @@ class OneHandKeyboardService : InputMethodService() {
         val longPressAction = cellConfig.getActionFor(GestureType.LONG_PRESS, Direction.CENTER)
         
         val tapLabel = when (tapAction) {
-            is ActionConfig.Character -> applyCase(tapAction.char.toString())
-            is ActionConfig.Text -> applyCase(tapAction.text.take(2))
+            is ActionConfig.Character -> configManager.applyCase(tapAction.char.toString())
+            is ActionConfig.Text -> configManager.applyCase(tapAction.text.take(2))
             is ActionConfig.Action -> getActionSymbol(tapAction.keyAction)
             null -> ""
         }
         
         val longPressLabel = when (longPressAction) {
-            is ActionConfig.Character -> applyCase(longPressAction.char.toString())
-            is ActionConfig.Text -> applyCase(longPressAction.text.take(2))
+            is ActionConfig.Character -> configManager.applyCase(longPressAction.char.toString())
+            is ActionConfig.Text -> configManager.applyCase(longPressAction.text.take(2))
             is ActionConfig.Action -> getActionSymbol(longPressAction.keyAction)
             null -> ""
         }
@@ -557,66 +564,9 @@ class OneHandKeyboardService : InputMethodService() {
         }
     }
     
-    /**
-     * Crea un botón mejorado con diseño moderno (método legacy)
-     */
-    private fun createEnhancedButton(keyData: KeyData): Button {
-        return Button(this).apply {
-            // Aplicar modo de mayúsculas al carácter
-            val displayChar = configManager.applyCase(keyData.primaryChar.toString())
-            
-            // Configuración del texto
-            text = "${keyData.label}\n$displayChar"
-            textSize = 14f
-            setTextColor(Color.parseColor("#FFFFFF"))
-            gravity = Gravity.CENTER
-            
-            // Layout parameters
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                1f
-            ).apply {
-                setMargins(6, 6, 6, 6)
-            }
-            
-            // Fondo con bordes redondeados
-            background = createButtonBackground(false)
-            
-            // Configurar click listeners
-            setOnClickListener {
-                val outputChar = configManager.applyCase(keyData.primaryChar)
-                Log.d("OneHandKeyboard", "Key clicked: $outputChar")
-                currentInputConnection?.commitText(outputChar, 1)
-                
-                // Manejar modo capitalize
-                configManager.onCharacterWritten()
-                
-                // Feedback visual
-                background = createButtonBackground(true)
-                postDelayed({
-                    background = createButtonBackground(false)
-                }, 100)
-            }
-            
-            // Long press para caracteres con acentos
-            if (keyData.accentChars.isNotEmpty()) {
-                setOnLongClickListener {
-                    Log.d("OneHandKeyboard", "Long press: showing accents ${keyData.accentChars}")
-                    showAccentOptions(keyData.accentChars)
-                    true
-                }
-            }
-        }
-    }
+    // createEnhancedButton function removed - replaced by KeyboardUiFactory
     
-    /**
-     * Aplica el modo de mayúsculas al carácter
-     */
-    private fun applyCase(char: String): String {
-        if (char == " ") return char // No cambiar espacios
-        return configManager.applyCase(char)
-    }
+    // applyCase function moved to KeyboardConfigManager
     
     /**
      * Crea el botón de backspace mejorado
@@ -832,93 +782,8 @@ class OneHandKeyboardService : InputMethodService() {
 
 
     // ============================================================================
-    // REGION: GESTURE INTEGRATION & PROCESSING
+    // REGION: UTILITY FUNCTIONS
     // ============================================================================
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-
-
-    
-    // ============================================================================
-    // REGION: ACTION PROCESSING & TEXT INPUT
-    // ============================================================================
-    
-    /**
-     * Procesa la salida del teclado (caracteres o acciones)
-     */
-    private fun processKeyboardOutput(output: KeyboardOutput) {
-        when (output) {
-            is KeyboardOutput.Character -> {
-                Log.d("OneHandKeyboard", "🎯 SENDING CHARACTER: '${output.char}'")
-                
-                val inputConnection = currentInputConnection
-                if (inputConnection == null) {
-                    Log.e("OneHandKeyboard", "🎯 ERROR: currentInputConnection is NULL!")
-                    return
-                }
-                
-                val result = inputConnection.commitText(output.char, 1)
-                Log.d("OneHandKeyboard", "🎯 commitText result: $result")
-                
-                // Manejar modo capitalize
-                configManager.onCharacterWritten()
-            }
-            is KeyboardOutput.Action -> {
-                Log.d("OneHandKeyboard", "🎯 EXECUTING ACTION: ${output.action}")
-                executeKeyAction(output.action)
-            }
-        }
-    }
-    
-    /**
-     * Ejecuta una acción de teclado
-     */
-    private fun executeKeyAction(action: KeyAction) {
-        when (action) {
-            is KeyAction.Backspace -> {
-                currentInputConnection?.deleteSurroundingText(1, 0)
-            }
-            is KeyAction.Space -> {
-                currentInputConnection?.commitText(" ", 1)
-            }
-            is KeyAction.Enter -> {
-                currentInputConnection?.commitText("\n", 1)
-            }
-            is KeyAction.ToggleCase -> {
-                switchCaseMode()
-            }
-            is KeyAction.SwitchToNumbers -> {
-                configManager.switchLayout()
-                recreateKeyboard()
-            }
-            is KeyAction.SwitchToLetters -> {
-                configManager.switchLayout()
-                recreateKeyboard()
-            }
-            is KeyAction.InsertText -> {
-                currentInputConnection?.commitText(action.text, 1)
-            }
-            else -> {
-                Log.d("OneHandKeyboard", "Action not implemented: $action")
-            }
-        }
-    }
     
     /**
      * Muestra opciones de acentos (implementación simple por ahora)
@@ -932,18 +797,7 @@ class OneHandKeyboardService : InputMethodService() {
         }
     }
     
-    private fun createUltraSimpleView(): TextView {
-        Log.d("OneHandKeyboard", "Creating ultra-simple fallback")
-        return TextView(this).apply {
-            text = "OneHand Keyboard\n¡FUNCIONA!"
-            textSize = 24f
-            setTextColor(Color.WHITE)
-            setBackgroundColor(Color.BLUE)
-            gravity = Gravity.CENTER
-            setPadding(32, 32, 32, 32)
-            minimumHeight = 300
-        }
-    }
+    // createUltraSimpleView function removed - no longer used
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
