@@ -1,14 +1,17 @@
 package com.onehandkeyboard.core.mapping
 
 import com.onehandkeyboard.core.domain.model.CaseMode
+import com.onehandkeyboard.core.domain.model.Cell
 import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.Gesture
 import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
+import com.onehandkeyboard.core.domain.model.KeyboardLayout
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
 import com.onehandkeyboard.core.domain.model.LayoutType
 import com.onehandkeyboard.core.domain.model.Position
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,14 +20,33 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import io.mockk.every
+import io.mockk.mockk
 
 class DefaultMappingServiceTest {
     
+    private lateinit var layoutManager: LayoutManager
+    private lateinit var caseModeManager: CaseModeManager
     private lateinit var mappingService: DefaultMappingService
     
     @Before
     fun setup() {
-        mappingService = DefaultMappingService()
+        layoutManager = mockk()
+        caseModeManager = mockk()
+        
+        // Setup default mock behavior
+        val mockLayout = KeyboardLayout(
+            id = "spanish_letters",
+            name = "Spanish Letters",
+            description = "Spanish keyboard layout with letters",
+            cells = emptyList(),
+            type = LayoutType.LETTERS,
+            locale = "es-MX"
+        )
+        every { layoutManager.currentLayout } returns flowOf(mockLayout)
+        every { caseModeManager.currentCaseMode } returns flowOf(CaseMode.LOWERCASE)
+        
+        mappingService = DefaultMappingService(layoutManager, caseModeManager)
     }
     
     @Test
