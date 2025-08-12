@@ -29,14 +29,7 @@ data class KeyData(
     val accentChars: String   // Caracteres con acentos (áàâä, etc.)
 )
 
-/**
- * Enum for keyboard layouts
- */
-enum class KeyboardLayout {
-    SPANISH_LETTERS,
-    ENGLISH_LETTERS, 
-    NUMBERS_SYMBOLS
-}
+// Los enums Language y LayoutMode ahora están en KeyboardConfiguration.kt
 
 /**
  * Enum for case modes
@@ -57,7 +50,8 @@ class OneHandKeyboardService : InputMethodService() {
     private var keyboardView: LinearLayout? = null
     
     // Estado del teclado
-    private var currentLayout = KeyboardLayout.SPANISH_LETTERS
+    private var currentLanguage = Language.SPANISH
+    private var currentMode = LayoutMode.LETTERS
     private var currentCaseMode = CaseMode.LOWERCASE
     private var isCapitalizeNext = false // Para modo capitalize
     
@@ -70,7 +64,7 @@ class OneHandKeyboardService : InputMethodService() {
     private val gestureScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     
     // Sistema de configuración externa
-    private var keyboardConfiguration: KeyboardConfiguration = KeyboardConfiguration.createSpanishDefault()
+    private var keyboardConfiguration: KeyboardConfiguration = KeyboardConfiguration.getConfiguration(Language.SPANISH, LayoutMode.LETTERS)
     
     // Estado para procesamiento directo de gestos
     private var gestureStartTime = 0L
@@ -133,7 +127,7 @@ class OneHandKeyboardService : InputMethodService() {
     }
 
     private fun createSimpleKeyboard(): LinearLayout {
-        Log.d("OneHandKeyboard", "Creating enhanced 3x3 keyboard - Layout: $currentLayout, Case: $currentCaseMode")
+        Log.d("OneHandKeyboard", "Creating enhanced 3x3 keyboard - Language: $currentLanguage, Mode: $currentMode, Case: $currentCaseMode")
         
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -713,7 +707,7 @@ class OneHandKeyboardService : InputMethodService() {
      */
     private fun createTitleView(): TextView {
         return TextView(this).apply {
-            text = "OneHand Keyboard - ${currentLayout.name.replace("_", " ")} (${currentCaseMode.name})"
+            text = "OneHand Keyboard - ${currentLanguage.name} ${currentMode.name} (${currentCaseMode.name})"
             textSize = 14f
             setTextColor(Color.parseColor("#E0E0E0"))
             gravity = Gravity.CENTER
@@ -722,6 +716,52 @@ class OneHandKeyboardService : InputMethodService() {
         }
     }
     
+    /**
+     * Cambia entre modos LETTERS y SYMBOLS para el idioma actual
+     */
+    private fun switchLayout() {
+        currentMode = when (currentMode) {
+            LayoutMode.LETTERS -> LayoutMode.SYMBOLS
+            LayoutMode.SYMBOLS -> LayoutMode.LETTERS
+        }
+        
+        // Actualizar configuración del teclado
+        keyboardConfiguration = KeyboardConfiguration.getConfiguration(currentLanguage, currentMode)
+        
+        // Recrear el teclado con la nueva configuración
+        recreateKeyboard()
+    }
+    
+    /**
+     * Cambia entre modos de mayúsculas
+     */
+    private fun switchCaseMode() {
+        currentCaseMode = when (currentCaseMode) {
+            CaseMode.LOWERCASE -> CaseMode.UPPERCASE
+            CaseMode.UPPERCASE -> CaseMode.CAPITALIZE
+            CaseMode.CAPITALIZE -> CaseMode.LOWERCASE
+        }
+        
+        // Reset capitalize flag
+        isCapitalizeNext = currentCaseMode == CaseMode.CAPITALIZE
+        
+        // Recrear el teclado para reflejar el cambio
+        recreateKeyboard()
+    }
+    
+    /**
+     * Recrea el teclado con la configuración actual
+     */
+    private fun recreateKeyboard() {
+        try {
+            keyboardView = createSimpleKeyboard()
+            setInputView(keyboardView)
+            Log.d("OneHandKeyboard", "Keyboard recreated - Language: $currentLanguage, Mode: $currentMode, Case: $currentCaseMode")
+        } catch (e: Exception) {
+            Log.e("OneHandKeyboard", "Error recreating keyboard", e)
+        }
+    }
+
     /**
      * Crea el botón individual para cambiar layout (para columna lateral)
      */
@@ -819,13 +859,18 @@ class OneHandKeyboardService : InputMethodService() {
     }
     
     /**
-     * Obtiene los datos de las teclas según el layout actual
+     * Obtiene los datos de las teclas según el idioma y modo actual
      */
     private fun getCurrentKeyData(): Array<Array<KeyData>> {
-        return when (currentLayout) {
-            KeyboardLayout.SPANISH_LETTERS -> getSpanishLettersData()
-            KeyboardLayout.ENGLISH_LETTERS -> getEnglishLettersData()
-            KeyboardLayout.NUMBERS_SYMBOLS -> getNumbersSymbolsData()
+        return when (currentLanguage) {
+            Language.SPANISH -> when (currentMode) {
+                LayoutMode.LETTERS -> getSpanishLettersData()
+                LayoutMode.SYMBOLS -> getNumbersSymbolsData()
+            }
+            Language.ENGLISH -> when (currentMode) {
+                LayoutMode.LETTERS -> getEnglishLettersData()
+                LayoutMode.SYMBOLS -> getNumbersSymbolsData()
+            }
         }
     }
     
@@ -897,61 +942,7 @@ class OneHandKeyboardService : InputMethodService() {
             )
         )
     }
-    
-    /**
-     * Cambia al siguiente layout
-     */
-    private fun switchLayout() {
-        currentLayout = when (currentLayout) {
-            KeyboardLayout.SPANISH_LETTERS -> KeyboardLayout.ENGLISH_LETTERS
-            KeyboardLayout.ENGLISH_LETTERS -> KeyboardLayout.NUMBERS_SYMBOLS
-            KeyboardLayout.NUMBERS_SYMBOLS -> KeyboardLayout.SPANISH_LETTERS
-        }
-        Log.d("OneHandKeyboard", "Switched to layout: $currentLayout")
-        recreateKeyboard()
-    }
-    
-    /**
-     * Cambia al siguiente modo de mayúsculas
-     */
-    private fun switchCaseMode() {
-        currentCaseMode = when (currentCaseMode) {
-            CaseMode.LOWERCASE -> CaseMode.UPPERCASE
-            CaseMode.UPPERCASE -> CaseMode.CAPITALIZE
-            CaseMode.CAPITALIZE -> CaseMode.LOWERCASE
-        }
-        isCapitalizeNext = (currentCaseMode == CaseMode.CAPITALIZE)
-        Log.d("OneHandKeyboard", "Switched to case mode: $currentCaseMode")
-        recreateKeyboard()
-    }
-    
-    /**
-     * Recrea el teclado con el nuevo estado
-     */
-    private fun recreateKeyboard() {
-        try {
-            Log.d("OneHandKeyboard", "🔥 Starting recreateKeyboard()")
-            
-            // Actualizar el layout del dominio
-            currentKeyboardLayout = createDomainKeyboardLayout()
-            Log.d("OneHandKeyboard", "🔥 Domain layout updated")
-            
-            // Recrear la vista
-            keyboardView = createSimpleKeyboard()
-            setInputView(keyboardView)
-            Log.d("OneHandKeyboard", "🔥 New keyboard view set")
-            
-            // Recalcular bounds después de que la vista esté lista
-            keyboardView?.post {
-                Log.d("OneHandKeyboard", "🔥 Post runnable in recreateKeyboard - calculating bounds")
-                calculateCellBounds()
-            } ?: Log.w("OneHandKeyboard", "🔥 keyboardView is null in recreateKeyboard!")
-            
-            Log.d("OneHandKeyboard", "🔥 Keyboard recreated successfully with gesture system")
-        } catch (e: Exception) {
-            Log.e("OneHandKeyboard", "🔥 Error recreating keyboard", e)
-        }
-    }
+
     
     /**
      * Inicializa el sistema de gestos avanzado
@@ -1050,25 +1041,33 @@ class OneHandKeyboardService : InputMethodService() {
     }
     
     /**
-     * Crea el layout del dominio según el layout actual de la UI
+     * Crea el layout del dominio según el idioma y modo actual
      */
     private fun createDomainKeyboardLayout(): com.onehandkeyboard.core.domain.model.KeyboardLayout {
-        val cells = when (currentLayout) {
-            KeyboardLayout.SPANISH_LETTERS -> createSpanishCells()
-            KeyboardLayout.ENGLISH_LETTERS -> createEnglishCells()
-            KeyboardLayout.NUMBERS_SYMBOLS -> createNumbersCells()
+        val cells = when (currentLanguage) {
+            Language.SPANISH -> when (currentMode) {
+                LayoutMode.LETTERS -> createSpanishCells()
+                LayoutMode.SYMBOLS -> createNumbersCells()
+            }
+            Language.ENGLISH -> when (currentMode) {
+                LayoutMode.LETTERS -> createEnglishCells()
+                LayoutMode.SYMBOLS -> createNumbersCells()
+            }
         }
         
         return com.onehandkeyboard.core.domain.model.KeyboardLayout(
-            id = "current_layout",
-            name = currentLayout.name,
-            description = "Current active layout",
+            id = "${currentLanguage.name.lowercase()}_${currentMode.name.lowercase()}",
+            name = "${currentLanguage.name} ${currentMode.name}",
+            description = "Current active layout: ${currentLanguage.name} ${currentMode.name}",
             cells = cells,
-            type = when (currentLayout) {
-                KeyboardLayout.SPANISH_LETTERS, KeyboardLayout.ENGLISH_LETTERS -> LayoutType.LETTERS
-                KeyboardLayout.NUMBERS_SYMBOLS -> LayoutType.NUMBERS
+            type = when (currentMode) {
+                LayoutMode.LETTERS -> LayoutType.LETTERS
+                LayoutMode.SYMBOLS -> LayoutType.NUMBERS
             },
-            locale = if (currentLayout == KeyboardLayout.SPANISH_LETTERS) "es-MX" else "en-US"
+            locale = when (currentLanguage) {
+                Language.SPANISH -> "es-MX"
+                Language.ENGLISH -> "en-US"
+            }
         )
     }
     
@@ -1369,11 +1368,13 @@ class OneHandKeyboardService : InputMethodService() {
                 switchCaseMode()
             }
             is KeyAction.SwitchToNumbers -> {
-                currentLayout = KeyboardLayout.NUMBERS_SYMBOLS
+                currentMode = LayoutMode.SYMBOLS
+                keyboardConfiguration = KeyboardConfiguration.getConfiguration(currentLanguage, currentMode)
                 recreateKeyboard()
             }
             is KeyAction.SwitchToLetters -> {
-                currentLayout = KeyboardLayout.SPANISH_LETTERS
+                currentMode = LayoutMode.LETTERS
+                keyboardConfiguration = KeyboardConfiguration.getConfiguration(currentLanguage, currentMode)
                 recreateKeyboard()
             }
             is KeyAction.InsertText -> {
