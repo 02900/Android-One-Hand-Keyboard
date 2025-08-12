@@ -245,9 +245,14 @@ class GestureIntegration(
                 val deltaY = event.y - gestureStartY
                 val distance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
                 
+                // Verificar si debería ser long press (si no se detectó en ACTION_MOVE)
+                if (!isLongPressDetected && deltaTime >= longPressThreshold && distance < swipeThreshold) {
+                    Log.d("OneHandKeyboard", "🎯 LONG_PRESS detected on ACTION_UP for cell $cellIndex (deltaTime: ${deltaTime}ms)")
+                    handleGestureAction(cellIndex, GestureType.LONG_PRESS, Direction.CENTER, onGestureProcessed)
+                }
                 // Detectar tap (si no hubo long press ni swipe)
-                if (!isLongPressDetected && distance < swipeThreshold) {
-                    Log.d("OneHandKeyboard", "🎯 TAP detected on cell $cellIndex")
+                else if (!isLongPressDetected && distance < swipeThreshold) {
+                    Log.d("OneHandKeyboard", "🎯 TAP detected on cell $cellIndex (deltaTime: ${deltaTime}ms)")
                     handleGestureAction(cellIndex, GestureType.TAP, Direction.CENTER, onGestureProcessed)
                 }
             }
