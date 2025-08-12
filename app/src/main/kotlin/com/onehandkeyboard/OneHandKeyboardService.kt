@@ -11,9 +11,9 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.onehandkeyboard.config.ActionConfig
+import com.onehandkeyboard.actions.ActionConfig
 import com.onehandkeyboard.config.CellConfiguration
-import com.onehandkeyboard.config.GestureAction
+import com.onehandkeyboard.gestures.GestureAction
 import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction

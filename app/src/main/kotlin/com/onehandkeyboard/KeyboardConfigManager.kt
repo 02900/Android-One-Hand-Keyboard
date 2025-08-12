@@ -2,8 +2,8 @@ package com.onehandkeyboard
 
 import android.util.Log
 import com.onehandkeyboard.config.KeyboardConfiguration
-import com.onehandkeyboard.config.Language
-import com.onehandkeyboard.config.LayoutMode
+import com.onehandkeyboard.enums.Language
+import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.core.domain.model.CaseMode
 import com.onehandkeyboard.core.domain.model.KeyData
 import javax.inject.Inject

@@ -5,6 +5,8 @@ import android.util.Log
 import android.view.MotionEvent
 import android.widget.LinearLayout
 import com.onehandkeyboard.config.*
+import com.onehandkeyboard.enums.Language
+import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.core.domain.model.*
 import com.onehandkeyboard.core.gesture.CellBounds
 import com.onehandkeyboard.core.gesture.GestureDetector
