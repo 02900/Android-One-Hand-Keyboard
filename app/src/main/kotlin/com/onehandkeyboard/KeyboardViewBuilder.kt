@@ -57,6 +57,9 @@ class KeyboardViewBuilder(
 
             // Add main content (grid + controls)
             addView(createMainContent())
+
+            // Add spacebar row below main content
+            addView(createSpacebarRow())
         }
     }
 
@@ -140,7 +143,7 @@ class KeyboardViewBuilder(
     }
 
     /**
-     * Creates the side controls column (Layout, Case mode buttons, Space, Backspace)
+     * Creates the side controls column (Layout, Case mode buttons, Backspace)
      */
     private fun createSideControlsColumn(): LinearLayout {
         return LinearLayout(context).apply {
@@ -160,9 +163,6 @@ class KeyboardViewBuilder(
             if (layoutManager.isLettersMode()) {
                 addView(createCaseButton())
             }
-
-            // Space button
-            addView(createSpaceButton())
 
             // Backspace button
             addView(createBackspaceButton())
@@ -418,29 +418,6 @@ class KeyboardViewBuilder(
     }
 
     /**
-     * Creates space button
-     */
-    fun createSpaceButton(): Button {
-        return Button(context).apply {
-            text = "␣"
-            textSize = 16f
-            setTextColor(Color.parseColor("#FFFFFF"))
-            layoutParams =
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                ).apply {
-                    setMargins(0, 4, 0, 4)
-                }
-            background = createButtonBackground(false, false, true)
-            
-            setOnClickListener {
-                actionProcessor.processKeyboardOutput(KeyboardOutput.Action(KeyAction.Space))
-            }
-        }
-    }
-
-    /**
      * Creates backspace button
      */
     fun createBackspaceButton(): Button {
@@ -459,6 +436,47 @@ class KeyboardViewBuilder(
             
             setOnClickListener {
                 actionProcessor.processKeyboardOutput(KeyboardOutput.Action(KeyAction.Backspace))
+            }
+        }
+    }
+
+    /**
+     * Creates a full-width spacebar row below the main keyboard content
+     */
+    private fun createSpacebarRow(): LinearLayout {
+        return LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            setPadding(4, 8, 4, 4)
+
+            // Create full-width spacebar button
+            addView(createFullWidthSpacebar())
+        }
+    }
+
+    /**
+     * Creates a full-width spacebar button
+     */
+    private fun createFullWidthSpacebar(): Button {
+        return Button(context).apply {
+            text = "Espacio"
+            layoutParams = LinearLayout.LayoutParams(
+                0, // width = 0 to use weight
+                200 // height in pixels
+            ).apply {
+                weight = 1.0f // Take all available horizontal space
+                setMargins(4, 4, 4, 4)
+            }
+            
+            textSize = 16f
+            setTextColor(Color.WHITE)
+            background = createButtonBackground(false, false, false)
+            
+            setOnClickListener {
+                actionProcessor.processKeyboardOutput(KeyboardOutput.Action(KeyAction.Space))
             }
         }
     }
