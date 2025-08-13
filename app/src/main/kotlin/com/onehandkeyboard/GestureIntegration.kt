@@ -43,8 +43,8 @@ class GestureIntegration(
     private var gestureStartY = 0f
     private var isLongPressDetected = false
     private var gestureAlreadyEmitted = false // Prevenir repetición de gestos
-    private val longPressThreshold = 500L // 500ms
-    private val swipeThreshold = 50f // pixels
+    private val longPressThreshold = 100L // 100ms
+    private val swipeThreshold = 100f // pixels
 
     // Sistema de gestos avanzado
     private var currentKeyboardLayout: com.onehandkeyboard.core.domain.model.KeyboardLayout? = null
