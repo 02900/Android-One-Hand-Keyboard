@@ -14,6 +14,7 @@ import com.onehandkeyboard.config.CellConfiguration
 import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
+import com.onehandkeyboard.core.domain.model.KeyboardOutput
 import com.onehandkeyboard.gestures.GestureAction
 
 /**
@@ -139,7 +140,7 @@ class KeyboardViewBuilder(
     }
 
     /**
-     * Creates the side controls column (Layout, Case mode buttons)
+     * Creates the side controls column (Layout, Case mode buttons, Space, Backspace)
      */
     private fun createSideControlsColumn(): LinearLayout {
         return LinearLayout(context).apply {
@@ -159,6 +160,12 @@ class KeyboardViewBuilder(
             if (layoutManager.isLettersMode()) {
                 addView(createCaseButton())
             }
+
+            // Space button
+            addView(createSpaceButton())
+
+            // Backspace button
+            addView(createBackspaceButton())
         }
     }
 
@@ -407,6 +414,52 @@ class KeyboardViewBuilder(
             }
 
             setStroke(2, Color.parseColor("#555555"))
+        }
+    }
+
+    /**
+     * Creates space button
+     */
+    fun createSpaceButton(): Button {
+        return Button(context).apply {
+            text = "␣"
+            textSize = 16f
+            setTextColor(Color.parseColor("#FFFFFF"))
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply {
+                    setMargins(0, 4, 0, 4)
+                }
+            background = createButtonBackground(false, false, true)
+            
+            setOnClickListener {
+                actionProcessor.processKeyboardOutput(KeyboardOutput.Action(KeyAction.Space))
+            }
+        }
+    }
+
+    /**
+     * Creates backspace button
+     */
+    fun createBackspaceButton(): Button {
+        return Button(context).apply {
+            text = "⌫"
+            textSize = 16f
+            setTextColor(Color.parseColor("#FF5722"))
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply {
+                    setMargins(0, 4, 0, 4)
+                }
+            background = createButtonBackground(false, true, true)
+            
+            setOnClickListener {
+                actionProcessor.processKeyboardOutput(KeyboardOutput.Action(KeyAction.Backspace))
+            }
         }
     }
 }
