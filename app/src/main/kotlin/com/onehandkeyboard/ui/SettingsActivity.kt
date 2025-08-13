@@ -6,11 +6,11 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -20,7 +20,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.onehandkeyboard.R
+import com.onehandkeyboard.core.design.theme.KeyboardThemeWithTokens
+import com.onehandkeyboard.core.design.theme.ThemeManager
+import com.onehandkeyboard.ui.components.ThemeSelector
+import com.onehandkeyboard.ui.components.ThemeSelectorContent
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * Settings activity for OneHandKeyboard
@@ -30,19 +35,28 @@ import dagger.hilt.android.AndroidEntryPoint
  */
 @AndroidEntryPoint
 class SettingsActivity : ComponentActivity() {
+    
+    @Inject
+    lateinit var themeManager: ThemeManager
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            OneHandKeyboardTheme {
-                SettingsScreen()
+            OneHandKeyboardTheme(themeManager = themeManager) {
+                SettingsScreen(themeManager = themeManager)
             }
         }
     }
 }
 
 @Composable
-private fun OneHandKeyboardTheme(content: @Composable () -> Unit) {
-    MaterialTheme {
+private fun OneHandKeyboardTheme(
+    themeManager: ThemeManager,
+    content: @Composable () -> Unit
+) {
+    KeyboardThemeWithTokens(
+        themeManager = themeManager
+    ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
@@ -52,45 +66,95 @@ private fun OneHandKeyboardTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun SettingsScreen() {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
+private fun SettingsScreen(themeManager: ThemeManager) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = stringResource(R.string.settings_title),
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        // Header Section
+        item {
+            Column {
+                Text(
+                    text = stringResource(R.string.settings_title),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
 
-        Text(
-            text = "Settings will be available in future updates",
-            fontSize = 16.sp,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(top = 16.dp),
-        )
+                Text(
+                    text = "Customize your OneHandKeyboard experience",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+        }
 
-        Text(
-            text = "For now, you can enable the keyboard in:\nSettings > System > Languages & input > On-screen keyboard",
-            fontSize = 14.sp,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(top = 24.dp),
-        )
+        // Theme Selection Section
+        item {
+            ThemeSelectorContent(themeManager = themeManager)
+        }
+
+        // Divider
+        item {
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 16.dp),
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+        }
+
+        // Keyboard Setup Instructions
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "🚀 Setup Instructions",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    Text(
+                        text = "To use OneHandKeyboard, enable it in your device settings:",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    Text(
+                        text = "Settings → System → Languages & input → On-screen keyboard → OneHandKeyboard",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun SettingsScreenPreview() {
-    OneHandKeyboardTheme {
-        SettingsScreen()
+    MaterialTheme {
+        Surface {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text("Settings Screen Preview")
+                Text("(Requires ThemeManager injection to function)")
+            }
+        }
     }
 }

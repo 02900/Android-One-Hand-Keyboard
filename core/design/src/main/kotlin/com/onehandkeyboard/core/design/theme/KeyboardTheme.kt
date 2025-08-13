@@ -5,11 +5,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
+import com.onehandkeyboard.core.design.tokens.DesignTokens
+import com.onehandkeyboard.core.design.tokens.ThemePresets
 
 /**
- * Color tokens for the keyboard theme
+ * Legacy color tokens for backward compatibility
+ * @deprecated Use DesignTokens and ThemeManager instead
  */
+@Deprecated("Use DesignTokens and ThemeManager instead")
 object KeyboardColors {
     // Primary colors
     val Primary = Color(0xFF6750A4)
@@ -85,3 +91,52 @@ fun KeyboardTheme(
         content = content,
     )
 }
+
+/**
+ * Modern keyboard theme using design tokens
+ * Integrates with ThemeManager for dynamic theme switching
+ */
+@Composable
+fun KeyboardThemeWithTokens(
+    themeManager: ThemeManager? = null,
+    fallbackDarkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
+    val designTokens = if (themeManager != null) {
+        val currentTheme by themeManager.currentTheme.collectAsState()
+        currentTheme
+    } else {
+        // Fallback to default themes when ThemeManager is not available
+        if (fallbackDarkTheme) ThemePresets.DefaultDark else ThemePresets.DefaultLight
+    }
+    
+    val colorScheme = createColorSchemeFromTokens(designTokens)
+    
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = KeyboardTypography,
+        content = content,
+    )
+}
+
+/**
+ * Create Material3 ColorScheme from design tokens
+ */
+private fun createColorSchemeFromTokens(tokens: DesignTokens) = lightColorScheme(
+    primary = tokens.colors.primary,
+    onPrimary = tokens.colors.actionKeyText,
+    primaryContainer = tokens.colors.primaryVariant,
+    onPrimaryContainer = tokens.colors.keyText,
+    secondary = tokens.colors.secondary,
+    onSecondary = tokens.colors.controlKeyText,
+    secondaryContainer = tokens.colors.secondaryVariant,
+    onSecondaryContainer = tokens.colors.keyTextSecondary,
+    surface = tokens.colors.surface,
+    onSurface = tokens.colors.onSurface,
+    surfaceVariant = tokens.colors.surfaceVariant,
+    onSurfaceVariant = tokens.colors.onSurfaceVariant,
+    error = tokens.colors.error,
+    onError = Color.White,
+    background = tokens.colors.keyboardBackground,
+    onBackground = tokens.colors.keyText
+)
