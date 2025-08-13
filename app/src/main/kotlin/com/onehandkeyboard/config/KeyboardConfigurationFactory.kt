@@ -64,6 +64,7 @@ object KeyboardConfigurationFactory {
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('n'),
+                                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('ñ'),
                                 GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('l'),
                             ),
                     ),
@@ -122,6 +123,8 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('e'),
                                 GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('w'),
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('z'),
+                                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character(','),
+                                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('.'),
                             ),
                     ),
                     CellConfiguration(
@@ -163,7 +166,7 @@ object KeyboardConfigurationFactory {
                         cellIndex = 1,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('4'),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('2'),
                                 GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('5'),
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('6'),
                                 GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('$'),
@@ -175,7 +178,7 @@ object KeyboardConfigurationFactory {
                         cellIndex = 2,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('7'),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('3'),
                                 GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('8'),
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('9'),
                                 GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('&'),
@@ -187,7 +190,7 @@ object KeyboardConfigurationFactory {
                         cellIndex = 3,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('+'),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('4'),
                                 GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('-'),
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('='),
                                 GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('_'),
@@ -199,7 +202,7 @@ object KeyboardConfigurationFactory {
                         cellIndex = 4,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('0'),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('5'),
                                 GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character(')'),
                                 GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('{'),
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('}'),
@@ -212,7 +215,7 @@ object KeyboardConfigurationFactory {
                         cellIndex = 5,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('.'),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('6'),
                                 GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character(','),
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('?'),
                                 GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('¿'),
@@ -224,7 +227,7 @@ object KeyboardConfigurationFactory {
                         cellIndex = 6,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('"'),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('7'),
                                 GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('\''),
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character(':'),
                                 GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('<'),
@@ -236,7 +239,7 @@ object KeyboardConfigurationFactory {
                         cellIndex = 7,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Action(KeyAction.Space),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('8'),
                                 GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('`'),
                                 GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Action(KeyAction.Space),
                                 GestureAction(GestureType.LONG_PRESS, Direction.CENTER) to ActionConfig.Action(KeyAction.Space),
@@ -246,7 +249,7 @@ object KeyboardConfigurationFactory {
                         cellIndex = 8,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Action(KeyAction.Backspace),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('9'),
                                 GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Action(KeyAction.Enter),
                                 GestureAction(GestureType.LONG_PRESS, Direction.CENTER) to ActionConfig.Action(KeyAction.Backspace),
                             ),
