@@ -51,114 +51,85 @@ object KeyboardConfigurationFactory {
             mode = LayoutMode.LETTERS,
             cells =
                 listOf(
-                    // Celda 0 (ABC)
                     CellConfiguration(
                         cellIndex = 0,
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('a'),
-                                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('á'),
-                                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('b'),
-                                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('c'),
-                                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('à'),
-                                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('â'),
+                                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character('v'),
                             ),
                     ),
-                    // Celda 1 (DEF)
                     CellConfiguration(
                         cellIndex = 1,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('d'),
-                                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('é'),
-                                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('e'),
-                                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('f'),
-                                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('è'),
-                                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('ê'),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('n'),
+                                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('l'),
                             ),
                     ),
-                    // Celda 2 (GHI)
                     CellConfiguration(
                         cellIndex = 2,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('g'),
-                                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('í'),
-                                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('i'),
-                                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('h'),
-                                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('ì'),
-                                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('î'),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('i'),
+                                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('?'),
+                                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character('x'),
                             ),
                     ),
-                    // Celda 3 (JKL)
                     CellConfiguration(
                         cellIndex = 3,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('j'),
-                                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('k'),
-                                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('l'),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('d'),
+                                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('k'),
                             ),
                     ),
-                    // Celda 4 (MNO)
                     CellConfiguration(
                         cellIndex = 4,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('m'),
-                                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('ó'),
-                                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('n'),
-                                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('o'),
-                                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('ò'),
-                                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('ô'),
-                                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character('ñ'),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('o'),
+                                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('u'),
+                                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('p'),
+                                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('b'),
+                                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character('j'),
+                                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('h'),
+                                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character('g'),
+                                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('c'),
+                                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.Character('q'),
                             ),
                     ),
-                    // Celda 5 (PQR)
                     CellConfiguration(
                         cellIndex = 5,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('p'),
-                                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('q'),
-                                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('r'),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('r'),
+                                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('m'),
                             ),
                     ),
-                    // Celda 6 (STU)
                     CellConfiguration(
                         cellIndex = 6,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('s'),
-                                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('ú'),
-                                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('t'),
-                                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('u'),
-                                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('ù'),
-                                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('û'),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('t'),
+                                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('y'),
                             ),
                     ),
-                    // Celda 7 (VWX) - Con espacio
                     CellConfiguration(
                         cellIndex = 7,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('v'),
-                                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('w'),
-                                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('x'),
-                                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Action(KeyAction.Space),
-                                GestureAction(GestureType.LONG_PRESS, Direction.CENTER) to ActionConfig.Action(KeyAction.Space),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('e'),
+                                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('w'),
+                                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('z'),
                             ),
                     ),
-                    // Celda 8 (YZ) - Con backspace y enter
                     CellConfiguration(
                         cellIndex = 8,
                         actions =
                             mapOf(
-                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('y'),
-                                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('z'),
-                                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Action(KeyAction.Backspace),
-                                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Action(KeyAction.Enter),
-                                GestureAction(GestureType.LONG_PRESS, Direction.CENTER) to ActionConfig.Action(KeyAction.Backspace),
+                                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('s'),
+                                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.Character('f'),
                             ),
                     ),
                 ),
@@ -176,7 +147,6 @@ object KeyboardConfigurationFactory {
             mode = LayoutMode.SYMBOLS,
             cells =
                 listOf(
-                    // Celda 0 (123)
                     CellConfiguration(
                         cellIndex = 0,
                         actions =
@@ -189,7 +159,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('#'),
                             ),
                     ),
-                    // Celda 1 (456)
                     CellConfiguration(
                         cellIndex = 1,
                         actions =
@@ -202,7 +171,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('^'),
                             ),
                     ),
-                    // Celda 2 (789)
                     CellConfiguration(
                         cellIndex = 2,
                         actions =
@@ -215,7 +183,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('('),
                             ),
                     ),
-                    // Celda 3 (Símbolos básicos)
                     CellConfiguration(
                         cellIndex = 3,
                         actions =
@@ -228,7 +195,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character(']'),
                             ),
                     ),
-                    // Celda 4 (0 y símbolos)
                     CellConfiguration(
                         cellIndex = 4,
                         actions =
@@ -242,7 +208,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character('~'),
                             ),
                     ),
-                    // Celda 5 (Puntuación)
                     CellConfiguration(
                         cellIndex = 5,
                         actions =
@@ -255,7 +220,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character(';'),
                             ),
                     ),
-                    // Celda 6 (Comillas y más)
                     CellConfiguration(
                         cellIndex = 6,
                         actions =
@@ -268,7 +232,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('/'),
                             ),
                     ),
-                    // Celda 7 (Espacio y navegación)
                     CellConfiguration(
                         cellIndex = 7,
                         actions =
@@ -279,7 +242,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.LONG_PRESS, Direction.CENTER) to ActionConfig.Action(KeyAction.Space),
                             ),
                     ),
-                    // Celda 8 (Backspace y Enter)
                     CellConfiguration(
                         cellIndex = 8,
                         actions =
@@ -304,7 +266,6 @@ object KeyboardConfigurationFactory {
             mode = LayoutMode.LETTERS,
             cells =
                 listOf(
-                    // Celda 0 (ABC)
                     CellConfiguration(
                         cellIndex = 0,
                         actions =
@@ -314,7 +275,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('c'),
                             ),
                     ),
-                    // Celda 1 (DEF)
                     CellConfiguration(
                         cellIndex = 1,
                         actions =
@@ -324,7 +284,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('f'),
                             ),
                     ),
-                    // Celda 2 (GHI)
                     CellConfiguration(
                         cellIndex = 2,
                         actions =
@@ -334,7 +293,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('i'),
                             ),
                     ),
-                    // Celda 3 (JKL)
                     CellConfiguration(
                         cellIndex = 3,
                         actions =
@@ -344,7 +302,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('l'),
                             ),
                     ),
-                    // Celda 4 (MNO)
                     CellConfiguration(
                         cellIndex = 4,
                         actions =
@@ -355,7 +312,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('o'),
                             ),
                     ),
-                    // Celda 5 (PQR)
                     CellConfiguration(
                         cellIndex = 5,
                         actions =
@@ -365,7 +321,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('r'),
                             ),
                     ),
-                    // Celda 6 (STU)
                     CellConfiguration(
                         cellIndex = 6,
                         actions =
@@ -375,7 +330,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('u'),
                             ),
                     ),
-                    // Celda 7 (VWX)
                     CellConfiguration(
                         cellIndex = 7,
                         actions =
@@ -385,7 +339,6 @@ object KeyboardConfigurationFactory {
                                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('x'),
                             ),
                     ),
-                    // Celda 8 (YZ) - Con backspace
                     CellConfiguration(
                         cellIndex = 8,
                         actions =
