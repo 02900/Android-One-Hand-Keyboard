@@ -110,13 +110,23 @@ class KeyboardActionProcessor(
     // ============================================================================
 
     /**
-     * Ejecuta acción de backspace
+     * Ejecuta acción de backspace - borra selección actual o un carácter hacia atrás
      */
     private fun executeBackspace() {
         val inputConnection = service.currentInputConnection
         if (inputConnection != null) {
-            inputConnection.deleteSurroundingText(1, 0)
-            Log.d("OneHandKeyboard", "🎯 Backspace executed")
+            // Obtener información sobre la selección actual
+            val selectedText = inputConnection.getSelectedText(0)
+            
+            if (selectedText != null && selectedText.isNotEmpty()) {
+                // Si hay texto seleccionado, borrarlo completamente
+                inputConnection.commitText("", 1)
+                Log.d("OneHandKeyboard", "🎯 Backspace executed - deleted selection: '${selectedText}'")
+            } else {
+                // Si no hay selección, borrar un carácter hacia atrás (comportamiento estándar)
+                inputConnection.deleteSurroundingText(1, 0)
+                Log.d("OneHandKeyboard", "🎯 Backspace executed - deleted one character")
+            }
         } else {
             Log.e("OneHandKeyboard", "🎯 ERROR: Cannot execute backspace - no input connection")
         }
