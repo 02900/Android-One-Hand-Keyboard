@@ -62,7 +62,7 @@ android {
 
 dependencies {
     // Feature modules
-    implementation(project(":feature:keyboard"))
+
     implementation(project(":feature:settings"))
 
     // Core modules

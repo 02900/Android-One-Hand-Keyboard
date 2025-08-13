@@ -60,7 +60,8 @@ object DefaultLayouts {
                         ),
                     actions =
                         mapOf(
-                            Direction.S to KeyAction.Backspace, // Backspace on South, removed '%' character
+                            // Backspace on South, removed '%' character
+                            Direction.S to KeyAction.Backspace,
                         ),
                 ),
                 // Row 1: JKL, MNÑ, OPQ

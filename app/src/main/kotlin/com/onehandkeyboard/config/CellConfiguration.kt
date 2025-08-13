@@ -10,7 +10,6 @@ import com.onehandkeyboard.gestures.GestureAction
  */
 data class CellConfiguration(
     val cellIndex: Int,
-    val label: String,
     val actions: Map<GestureAction, ActionConfig>,
 ) {
     init {

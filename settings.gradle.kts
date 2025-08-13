@@ -26,7 +26,6 @@ include(":app-ime")
 project(":app-ime").projectDir = file("app")
 
 // Feature modules
-include(":feature:keyboard")
 include(":feature:settings")
 
 // Core modules

@@ -54,7 +54,6 @@ object KeyboardConfigurationFactory {
                     // Celda 0 (ABC)
                     CellConfiguration(
                         cellIndex = 0,
-                        label = "ABC",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('a'),
@@ -68,7 +67,6 @@ object KeyboardConfigurationFactory {
                     // Celda 1 (DEF)
                     CellConfiguration(
                         cellIndex = 1,
-                        label = "DEF",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('d'),
@@ -82,7 +80,6 @@ object KeyboardConfigurationFactory {
                     // Celda 2 (GHI)
                     CellConfiguration(
                         cellIndex = 2,
-                        label = "GHI",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('g'),
@@ -96,7 +93,6 @@ object KeyboardConfigurationFactory {
                     // Celda 3 (JKL)
                     CellConfiguration(
                         cellIndex = 3,
-                        label = "JKL",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('j'),
@@ -107,7 +103,6 @@ object KeyboardConfigurationFactory {
                     // Celda 4 (MNO)
                     CellConfiguration(
                         cellIndex = 4,
-                        label = "MNO",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('m'),
@@ -122,7 +117,6 @@ object KeyboardConfigurationFactory {
                     // Celda 5 (PQR)
                     CellConfiguration(
                         cellIndex = 5,
-                        label = "PQR",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('p'),
@@ -133,7 +127,6 @@ object KeyboardConfigurationFactory {
                     // Celda 6 (STU)
                     CellConfiguration(
                         cellIndex = 6,
-                        label = "STU",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('s'),
@@ -147,7 +140,6 @@ object KeyboardConfigurationFactory {
                     // Celda 7 (VWX) - Con espacio
                     CellConfiguration(
                         cellIndex = 7,
-                        label = "VWX",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('v'),
@@ -160,7 +152,6 @@ object KeyboardConfigurationFactory {
                     // Celda 8 (YZ) - Con backspace y enter
                     CellConfiguration(
                         cellIndex = 8,
-                        label = "YZ",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('y'),
@@ -188,7 +179,6 @@ object KeyboardConfigurationFactory {
                     // Celda 0 (123)
                     CellConfiguration(
                         cellIndex = 0,
-                        label = "123",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('1'),
@@ -202,7 +192,6 @@ object KeyboardConfigurationFactory {
                     // Celda 1 (456)
                     CellConfiguration(
                         cellIndex = 1,
-                        label = "456",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('4'),
@@ -216,7 +205,6 @@ object KeyboardConfigurationFactory {
                     // Celda 2 (789)
                     CellConfiguration(
                         cellIndex = 2,
-                        label = "789",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('7'),
@@ -230,7 +218,6 @@ object KeyboardConfigurationFactory {
                     // Celda 3 (Símbolos básicos)
                     CellConfiguration(
                         cellIndex = 3,
-                        label = "+-=",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('+'),
@@ -244,7 +231,6 @@ object KeyboardConfigurationFactory {
                     // Celda 4 (0 y símbolos)
                     CellConfiguration(
                         cellIndex = 4,
-                        label = "0",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('0'),
@@ -259,7 +245,6 @@ object KeyboardConfigurationFactory {
                     // Celda 5 (Puntuación)
                     CellConfiguration(
                         cellIndex = 5,
-                        label = ".,?",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('.'),
@@ -273,7 +258,6 @@ object KeyboardConfigurationFactory {
                     // Celda 6 (Comillas y más)
                     CellConfiguration(
                         cellIndex = 6,
-                        label = "\"':;",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('"'),
@@ -287,7 +271,6 @@ object KeyboardConfigurationFactory {
                     // Celda 7 (Espacio y navegación)
                     CellConfiguration(
                         cellIndex = 7,
-                        label = "SPC",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Action(KeyAction.Space),
@@ -299,7 +282,6 @@ object KeyboardConfigurationFactory {
                     // Celda 8 (Backspace y Enter)
                     CellConfiguration(
                         cellIndex = 8,
-                        label = "⌫↵",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Action(KeyAction.Backspace),
@@ -325,7 +307,6 @@ object KeyboardConfigurationFactory {
                     // Celda 0 (ABC)
                     CellConfiguration(
                         cellIndex = 0,
-                        label = "ABC",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('a'),
@@ -336,7 +317,6 @@ object KeyboardConfigurationFactory {
                     // Celda 1 (DEF)
                     CellConfiguration(
                         cellIndex = 1,
-                        label = "DEF",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('d'),
@@ -347,7 +327,6 @@ object KeyboardConfigurationFactory {
                     // Celda 2 (GHI)
                     CellConfiguration(
                         cellIndex = 2,
-                        label = "GHI",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('g'),
@@ -358,7 +337,6 @@ object KeyboardConfigurationFactory {
                     // Celda 3 (JKL)
                     CellConfiguration(
                         cellIndex = 3,
-                        label = "JKL",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('j'),
@@ -369,7 +347,6 @@ object KeyboardConfigurationFactory {
                     // Celda 4 (MNO)
                     CellConfiguration(
                         cellIndex = 4,
-                        label = "MNO",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('m'),
@@ -381,7 +358,6 @@ object KeyboardConfigurationFactory {
                     // Celda 5 (PQR)
                     CellConfiguration(
                         cellIndex = 5,
-                        label = "PQR",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('p'),
@@ -392,7 +368,6 @@ object KeyboardConfigurationFactory {
                     // Celda 6 (STU)
                     CellConfiguration(
                         cellIndex = 6,
-                        label = "STU",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('s'),
@@ -403,7 +378,6 @@ object KeyboardConfigurationFactory {
                     // Celda 7 (VWX)
                     CellConfiguration(
                         cellIndex = 7,
-                        label = "VWX",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('v'),
@@ -414,7 +388,6 @@ object KeyboardConfigurationFactory {
                     // Celda 8 (YZ) - Con backspace
                     CellConfiguration(
                         cellIndex = 8,
-                        label = "YZ",
                         actions =
                             mapOf(
                                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('y'),
@@ -451,7 +424,6 @@ object KeyboardConfigurationFactory {
                 (0..8).map { index ->
                     CellConfiguration(
                         cellIndex = index,
-                        label = "Cell $index",
                         actions = emptyMap(),
                     )
                 },

@@ -9,7 +9,10 @@ package com.onehandkeyboard.core.domain.model
  * - accentChars: Los caracteres con acentos disponibles para esta tecla
  */
 data class KeyData(
-    val label: String, // Texto mostrado en el botón (ABC, DEF, etc.)
-    val primaryChar: String, // Carácter principal (a, d, g, etc.)
-    val accentChars: String, // Caracteres con acentos (áàâä, etc.)
+    // Texto mostrado en el botón (ABC, DEF, etc.)
+    val label: String,
+    // Carácter principal (a, d, g, etc.)
+    val primaryChar: String,
+    // Caracteres con acentos (áàâä, etc.)
+    val accentChars: String,
 )
