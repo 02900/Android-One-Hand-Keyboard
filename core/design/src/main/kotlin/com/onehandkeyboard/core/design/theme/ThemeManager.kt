@@ -1,7 +1,10 @@
 package com.onehandkeyboard.core.design.theme
 
+import android.content.Context
+import android.content.SharedPreferences
 import com.onehandkeyboard.core.design.tokens.DesignTokens
 import com.onehandkeyboard.core.design.tokens.ThemePresets
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,19 +16,56 @@ import javax.inject.Singleton
  * Manages the current active theme and provides theme-related utilities
  */
 @Singleton
-class ThemeManager @Inject constructor() {
+class ThemeManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    
+    private val sharedPrefs: SharedPreferences = context.getSharedPreferences(
+        "keyboard_theme_prefs", 
+        Context.MODE_PRIVATE
+    )
+    
+    companion object {
+        private const val PREF_THEME_NAME = "selected_theme_name"
+        private const val DEFAULT_THEME_NAME = "Default Light"
+    }
     
     private val _currentTheme = MutableStateFlow(ThemePresets.DefaultLight)
     val currentTheme: StateFlow<DesignTokens> = _currentTheme.asStateFlow()
     
-    private val _currentThemeName = MutableStateFlow("Default Light")
+    private val _currentThemeName = MutableStateFlow(DEFAULT_THEME_NAME)
     val currentThemeName: StateFlow<String> = _currentThemeName.asStateFlow()
     
     private val _isDarkMode = MutableStateFlow(false)
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
     
+    init {
+        // Load saved theme on initialization
+        loadSavedTheme()
+    }
+    
     /**
-     * Set theme by name
+     * Load theme from SharedPreferences
+     */
+    private fun loadSavedTheme() {
+        val savedThemeName = sharedPrefs.getString(PREF_THEME_NAME, DEFAULT_THEME_NAME) ?: DEFAULT_THEME_NAME
+        val theme = ThemePresets.getThemeByName(savedThemeName)
+        if (theme != null) {
+            _currentTheme.value = theme
+            _currentThemeName.value = savedThemeName
+            _isDarkMode.value = isDarkTheme(savedThemeName)
+        }
+    }
+    
+    /**
+     * Refresh theme from SharedPreferences - useful for IME service to get latest theme
+     */
+    fun refreshTheme() {
+        loadSavedTheme()
+    }
+    
+    /**
+     * Set theme by name and persist to SharedPreferences
      */
     fun setTheme(themeName: String) {
         val theme = ThemePresets.getThemeByName(themeName)
@@ -33,16 +73,26 @@ class ThemeManager @Inject constructor() {
             _currentTheme.value = theme
             _currentThemeName.value = themeName
             _isDarkMode.value = isDarkTheme(themeName)
+            
+            // Persist theme selection
+            sharedPrefs.edit()
+                .putString(PREF_THEME_NAME, themeName)
+                .apply()
         }
     }
     
     /**
-     * Set custom theme with design tokens
+     * Set custom theme with design tokens and persist
      */
     fun setCustomTheme(theme: DesignTokens, themeName: String = "Custom") {
         _currentTheme.value = theme
         _currentThemeName.value = themeName
         _isDarkMode.value = isDarkTheme(themeName)
+        
+        // Persist custom theme selection
+        sharedPrefs.edit()
+            .putString(PREF_THEME_NAME, themeName)
+            .apply()
     }
     
     /**

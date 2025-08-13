@@ -9,13 +9,20 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.toArgb
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.onehandkeyboard.actions.ActionConfig
 import com.onehandkeyboard.config.CellConfiguration
+import com.onehandkeyboard.core.design.theme.ThemeManager
 import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
 import com.onehandkeyboard.gestures.GestureAction
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 /**
  * Builds and creates all keyboard UI components and views.
@@ -36,7 +43,15 @@ class KeyboardViewBuilder(
     private val uiFactory: KeyboardUiFactory,
     private val gestureIntegration: GestureIntegration,
     private val actionProcessor: KeyboardActionProcessor,
+    private val themeManager: ThemeManager,
 ) {
+    
+    /**
+     * Gets current theme tokens synchronously
+     */
+    private fun getCurrentTheme() = runBlocking {
+        themeManager.currentTheme.first()
+    }
     /**
      * Creates the complete keyboard layout with 3x3 grid and controls
      */
@@ -212,17 +227,19 @@ class KeyboardViewBuilder(
     }
 
     /**
-     * Creates a TextView positioned for a specific direction
+     * Creates a TextView positioned for a specific direction using theme tokens
      */
     private fun createDirectionalTextView(
         text: String,
         direction: Direction,
         gestureType: GestureType,
     ): TextView {
+        val theme = getCurrentTheme()
+        
         return TextView(context).apply {
             this.text = text
             textSize = 10f
-            setTextColor(Color.parseColor("#666666"))
+            setTextColor(theme.colors.keyTextSecondary.toArgb())
             gravity = Gravity.CENTER
 
             layoutParams =
@@ -273,13 +290,15 @@ class KeyboardViewBuilder(
     }
 
     /**
-     * Creates center text view for TAP/LONG_PRESS combination
+     * Creates center text view for TAP/LONG_PRESS combination using theme tokens
      */
     private fun createCenterTextView(text: String): TextView {
+        val theme = getCurrentTheme()
+        
         return TextView(context).apply {
             this.text = text
             textSize = 14f
-            setTextColor(Color.parseColor("#333333"))
+            setTextColor(theme.colors.keyText.toArgb())
             gravity = Gravity.CENTER
 
             layoutParams =
@@ -334,14 +353,16 @@ class KeyboardViewBuilder(
     }
 
     /**
-     * Creates the title view with status information
+     * Creates the title view with status information using theme tokens
      */
     fun createTitleView(): TextView {
+        val theme = getCurrentTheme()
+        
         return TextView(context).apply {
             text = "OneHand Keyboard - ${layoutManager.getCurrentLanguageText()} " +
                 "${layoutManager.getCurrentLayoutModeText()} ${layoutManager.getCurrentCaseModeText()}"
             textSize = 14f
-            setTextColor(Color.parseColor("#333333"))
+            setTextColor(theme.colors.keyText.toArgb())
             gravity = Gravity.CENTER
             layoutParams =
                 LinearLayout.LayoutParams(
@@ -373,13 +394,15 @@ class KeyboardViewBuilder(
     }
 
     /**
-     * Creates case mode switch button
+     * Creates case mode switch button using theme tokens
      */
     fun createCaseButton(): Button {
+        val theme = getCurrentTheme()
+        
         return Button(context).apply {
             text = layoutManager.getCurrentCaseModeText()
             textSize = 12f
-            setTextColor(Color.parseColor("#2196F3"))
+            setTextColor(theme.colors.actionKeyText.toArgb())
             layoutParams =
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -392,39 +415,41 @@ class KeyboardViewBuilder(
     }
 
     /**
-     * Creates button background with rounded corners
+     * Creates button background with rounded corners using theme tokens
      */
     private fun createButtonBackground(
         pressed: Boolean,
         isBackspace: Boolean = false,
         isControl: Boolean = false,
     ): GradientDrawable {
+        val theme = getCurrentTheme()
+        
         return GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
-            cornerRadius = if (isControl) 8f else 12f
+            cornerRadius = theme.borderRadius.md.value
 
-            if (pressed) {
-                setColor(Color.parseColor("#4A4A4A"))
-            } else if (isBackspace) {
-                setColor(Color.parseColor("#2D2D2D"))
-            } else if (isControl) {
-                setColor(Color.parseColor("#2A2A2A"))
-            } else {
-                setColor(Color.parseColor("#3A3A3A"))
+            val backgroundColor = when {
+                pressed -> theme.colors.keyBackgroundPressed
+                isBackspace -> theme.colors.actionKeyBackground
+                isControl -> theme.colors.actionKeyBackground
+                else -> theme.colors.keyBackground
             }
-
-            setStroke(2, Color.parseColor("#555555"))
+            
+            setColor(backgroundColor.toArgb())
+            setStroke(2, theme.colors.keyBorder.toArgb())
         }
     }
 
     /**
-     * Creates backspace button
+     * Creates backspace button using theme tokens
      */
     fun createBackspaceButton(): Button {
+        val theme = getCurrentTheme()
+        
         return Button(context).apply {
             text = "⌫"
             textSize = 16f
-            setTextColor(Color.parseColor("#FF5722"))
+            setTextColor(theme.colors.actionKeyText.toArgb())
             layoutParams =
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -458,9 +483,11 @@ class KeyboardViewBuilder(
     }
 
     /**
-     * Creates a full-width spacebar button
+     * Creates a full-width spacebar button using theme tokens
      */
     private fun createFullWidthSpacebar(): Button {
+        val theme = getCurrentTheme()
+        
         return Button(context).apply {
             text = "Espacio"
             layoutParams = LinearLayout.LayoutParams(
@@ -472,7 +499,7 @@ class KeyboardViewBuilder(
             }
             
             textSize = 16f
-            setTextColor(Color.WHITE)
+            setTextColor(theme.colors.keyText.toArgb())
             background = createButtonBackground(false, false, false)
             
             setOnClickListener {

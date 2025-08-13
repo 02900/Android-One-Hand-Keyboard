@@ -4,8 +4,17 @@ import android.inputmethodservice.InputMethodService
 import android.util.Log
 import android.view.View
 import android.widget.LinearLayout
-import com.onehandkeyboard.core.gesture.GestureDetector
+import com.onehandkeyboard.KeyboardActionProcessor
+import com.onehandkeyboard.KeyboardConfigManager
+import com.onehandkeyboard.KeyboardEventCoordinator
+import com.onehandkeyboard.KeyboardLayoutManager
+import com.onehandkeyboard.KeyboardUiFactory
+import com.onehandkeyboard.KeyboardViewBuilder
+import com.onehandkeyboard.core.design.theme.ThemeManager
+import com.onehandkeyboard.core.gesture.DefaultGestureDetector
+import com.onehandkeyboard.GestureIntegration
 import dagger.hilt.android.AndroidEntryPoint
+
 import javax.inject.Inject
 
 /**
@@ -39,10 +48,13 @@ class OneHandKeyboardService : InputMethodService() {
     lateinit var configManager: KeyboardConfigManager
 
     @Inject
-    lateinit var gestureDetector: GestureDetector
+    lateinit var gestureDetector: DefaultGestureDetector
 
     @Inject
     lateinit var layoutManager: KeyboardLayoutManager
+
+    @Inject
+    lateinit var themeManager: ThemeManager
 
     // Components initialized manually due to context dependencies
     private lateinit var uiFactory: KeyboardUiFactory
@@ -55,24 +67,29 @@ class OneHandKeyboardService : InputMethodService() {
     // REGION: LIFECYCLE & CORE SERVICE
     // ============================================================================
 
-    override fun onCreateInputView(): View {
-        Log.d("OneHandKeyboard", "onCreateInputView() called - MODULAR ARCHITECTURE VERSION")
+    override fun onCreateInputView(): View? {
+        Log.d("OneHandKeyboard", "Creating input view")
 
-        try {
-            // Initialize components that require context
+        return try {
+            // Refresh theme from SharedPreferences to get latest selection
+            themeManager.refreshTheme()
+            Log.d("OneHandKeyboard", "Theme refreshed from SharedPreferences")
+            
+            // Initialize all components first
             initializeComponents()
 
-            // Create keyboard view using view builder
-            keyboardView = viewBuilder.createMainKeyboard()
+            // Create the main keyboard view using view builder
+            val mainKeyboard = viewBuilder.createMainKeyboard()
+            keyboardView = mainKeyboard
 
-            // Setup events and gesture integration
-            eventCoordinator.setupKeyboardEvents(keyboardView!!)
+            // Setup events for the keyboard view
+            eventCoordinator.setupKeyboardEvents(mainKeyboard)
 
-            Log.d("OneHandKeyboard", "Modular keyboard created successfully")
-            return keyboardView!!
+            Log.d("OneHandKeyboard", "Input view created successfully")
+            mainKeyboard
         } catch (e: Exception) {
-            Log.e("OneHandKeyboard", "Error creating keyboard", e)
-            return createFallbackView()
+            Log.e("OneHandKeyboard", "Error creating input view", e)
+            createFallbackView()
         }
     }
 
@@ -96,8 +113,8 @@ class OneHandKeyboardService : InputMethodService() {
                 onCaseSwitch = { eventCoordinator.recreateKeyboard() },
             )
 
-        // Initialize view builder (requires context, layout manager, gesture integration, and action processor)
-        viewBuilder = KeyboardViewBuilder(this, layoutManager, uiFactory, gestureIntegration, actionProcessor)
+        // Initialize view builder (requires context, layout manager, gesture integration, action processor, and theme manager)
+        viewBuilder = KeyboardViewBuilder(this, layoutManager, uiFactory, gestureIntegration, actionProcessor, themeManager)
 
         // Initialize event coordinator (coordinates all components)
         eventCoordinator =
@@ -134,28 +151,14 @@ class OneHandKeyboardService : InputMethodService() {
         restarting: Boolean,
     ) {
         super.onStartInputView(info, restarting)
-        Log.d("OneHandKeyboard", "🔥 onStartInputView() called")
-
-        // Setup cell bounds when view is ready - multiple attempts for reliability
+        Log.d("OneHandKeyboard", "Starting input view")
+        
+        // Setup cell bounds when view is ready
         keyboardView?.let { view ->
-            // Attempt 1: Immediate post
             view.post {
-                Log.d("OneHandKeyboard", "🔥 Post runnable executing - about to calculate bounds")
                 gestureIntegration.calculateCellBounds(keyboardView)
             }
-
-            // Attempt 2: Post with delay to ensure view is rendered
-            view.postDelayed({
-                Log.d("OneHandKeyboard", "🔥 Delayed post runnable executing - recalculating bounds")
-                gestureIntegration.calculateCellBounds(keyboardView)
-            }, 100) // 100ms delay
-
-            // Attempt 3: Post with more delay as backup
-            view.postDelayed({
-                Log.d("OneHandKeyboard", "🔥 Final delayed post runnable executing - last attempt")
-                gestureIntegration.calculateCellBounds(keyboardView)
-            }, 500) // 500ms delay
-        } ?: Log.w("OneHandKeyboard", "🔥 keyboardView is null in onStartInputView!")
+        }
     }
 
     override fun onDestroy() {
