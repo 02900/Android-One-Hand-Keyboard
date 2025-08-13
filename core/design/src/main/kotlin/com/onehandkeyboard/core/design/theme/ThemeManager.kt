@@ -1,6 +1,7 @@
 package com.onehandkeyboard.core.design.theme
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import com.onehandkeyboard.core.design.tokens.DesignTokens
 import com.onehandkeyboard.core.design.tokens.ThemePresets
@@ -19,15 +20,17 @@ import javax.inject.Singleton
 class ThemeManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    
-    private val sharedPrefs: SharedPreferences = context.getSharedPreferences(
-        "keyboard_theme_prefs", 
-        Context.MODE_PRIVATE
-    )
+    private val sharedPrefs: SharedPreferences = 
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     
     companion object {
+        private const val PREFS_NAME = "theme_prefs"
         private const val PREF_THEME_NAME = "selected_theme_name"
         private const val DEFAULT_THEME_NAME = "Default Light"
+        
+        // Broadcast constants for theme changes
+        const val ACTION_THEME_CHANGED = "com.onehandkeyboard.THEME_CHANGED"
+        const val EXTRA_THEME_NAME = "theme_name"
     }
     
     private val _currentTheme = MutableStateFlow(ThemePresets.DefaultLight)
@@ -65,6 +68,18 @@ class ThemeManager @Inject constructor(
     }
     
     /**
+     * Send broadcast to notify IME service about theme change
+     */
+    private fun sendThemeChangedBroadcast(themeName: String) {
+        val intent = Intent(ACTION_THEME_CHANGED).apply {
+            putExtra(EXTRA_THEME_NAME, themeName)
+            // Use explicit package to ensure it reaches our IME service
+            setPackage(context.packageName)
+        }
+        context.sendBroadcast(intent)
+    }
+    
+    /**
      * Set theme by name and persist to SharedPreferences
      */
     fun setTheme(themeName: String) {
@@ -78,13 +93,16 @@ class ThemeManager @Inject constructor(
             sharedPrefs.edit()
                 .putString(PREF_THEME_NAME, themeName)
                 .apply()
+            
+            // Notify IME service about theme change
+            sendThemeChangedBroadcast(themeName)
         }
     }
     
     /**
      * Set custom theme with design tokens and persist
      */
-    fun setCustomTheme(theme: DesignTokens, themeName: String = "Custom") {
+    fun setCustomTheme(theme: DesignTokens, themeName: String) {
         _currentTheme.value = theme
         _currentThemeName.value = themeName
         _isDarkMode.value = isDarkTheme(themeName)
@@ -93,6 +111,9 @@ class ThemeManager @Inject constructor(
         sharedPrefs.edit()
             .putString(PREF_THEME_NAME, themeName)
             .apply()
+        
+        // Notify IME service about theme change
+        sendThemeChangedBroadcast(themeName)
     }
     
     /**

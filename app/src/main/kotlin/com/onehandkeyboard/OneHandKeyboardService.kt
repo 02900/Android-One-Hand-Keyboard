@@ -1,6 +1,11 @@
 package com.onehandkeyboard
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.inputmethodservice.InputMethodService
+import android.os.Build
 import android.util.Log
 import android.view.View
 import android.widget.LinearLayout
@@ -55,6 +60,9 @@ class OneHandKeyboardService : InputMethodService() {
 
     @Inject
     lateinit var themeManager: ThemeManager
+    
+    // BroadcastReceiver for theme changes
+    private var themeChangeReceiver: BroadcastReceiver? = null
 
     // Components initialized manually due to context dependencies
     private lateinit var uiFactory: KeyboardUiFactory
@@ -71,24 +79,32 @@ class OneHandKeyboardService : InputMethodService() {
         Log.d("OneHandKeyboard", "Creating input view")
 
         return try {
+            Log.d("OneHandKeyboard", "Step 1: Refreshing theme...")
             // Refresh theme from SharedPreferences to get latest selection
             themeManager.refreshTheme()
-            Log.d("OneHandKeyboard", "Theme refreshed from SharedPreferences")
+            Log.d("OneHandKeyboard", "Step 1: Theme refreshed successfully")
             
+            Log.d("OneHandKeyboard", "Step 2: Initializing components...")
             // Initialize all components first
             initializeComponents()
+            Log.d("OneHandKeyboard", "Step 2: Components initialized successfully")
 
+            Log.d("OneHandKeyboard", "Step 3: Creating main keyboard...")
             // Create the main keyboard view using view builder
             val mainKeyboard = viewBuilder.createMainKeyboard()
             keyboardView = mainKeyboard
+            Log.d("OneHandKeyboard", "Step 3: Main keyboard created successfully")
 
+            Log.d("OneHandKeyboard", "Step 4: Setting up events...")
             // Setup events for the keyboard view
             eventCoordinator.setupKeyboardEvents(mainKeyboard)
+            Log.d("OneHandKeyboard", "Step 4: Events setup successfully")
 
             Log.d("OneHandKeyboard", "Input view created successfully")
             mainKeyboard
         } catch (e: Exception) {
-            Log.e("OneHandKeyboard", "Error creating input view", e)
+            Log.e("OneHandKeyboard", "Error creating input view at step: ${e.message}", e)
+            e.printStackTrace()
             createFallbackView()
         }
     }
@@ -127,6 +143,40 @@ class OneHandKeyboardService : InputMethodService() {
             )
 
         Log.d("OneHandKeyboard", "All components initialized successfully")
+        
+        // Register theme change receiver
+        registerThemeChangeReceiver()
+    }
+    
+    /**
+     * Register BroadcastReceiver to listen for theme changes
+     */
+    private fun registerThemeChangeReceiver() {
+        themeChangeReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == ThemeManager.ACTION_THEME_CHANGED) {
+                    val themeName = intent.getStringExtra(ThemeManager.EXTRA_THEME_NAME)
+                    Log.d("OneHandKeyboard", "Received theme change broadcast: $themeName")
+                    
+                    // Refresh theme and recreate keyboard
+                    themeManager.refreshTheme()
+                    if (::eventCoordinator.isInitialized) {
+                        eventCoordinator.recreateKeyboard()
+                    }
+                }
+            }
+        }
+        
+        val filter = IntentFilter(ThemeManager.ACTION_THEME_CHANGED)
+        
+        // Register receiver with proper flags for Android 14+ compatibility
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(themeChangeReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(themeChangeReceiver, filter)
+        }
+        
+        Log.d("OneHandKeyboard", "Theme change receiver registered")
     }
 
     /**
@@ -164,6 +214,18 @@ class OneHandKeyboardService : InputMethodService() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d("OneHandKeyboard", "Service destroying - cleaning up components")
+
+        // Unregister theme change receiver
+        themeChangeReceiver?.let { receiver ->
+            try {
+                unregisterReceiver(receiver)
+                Log.d("OneHandKeyboard", "Theme change receiver unregistered")
+            } catch (e: IllegalArgumentException) {
+                // Receiver was not registered, ignore
+                Log.w("OneHandKeyboard", "Theme change receiver was not registered")
+            }
+        }
+        themeChangeReceiver = null
 
         // Cleanup through event coordinator
         if (::eventCoordinator.isInitialized) {
