@@ -31,6 +31,7 @@ fun ThemeSelector(
     modifier: Modifier = Modifier
 ) {
     val currentThemeName by themeManager.currentThemeName.collectAsState()
+    val isColorsInverted by themeManager.isColorsInverted.collectAsState()
     val availableThemes = themeManager.getAvailableThemes()
 
     Column(
@@ -43,6 +44,45 @@ fun ThemeSelector(
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = 16.dp)
         )
+
+        // Color inversion toggle
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = "🔄 Invertir Colores de Fondo",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Intercambia los colores entre el grid y la columna de acciones para máximo contraste AAA",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                
+                Switch(
+                    checked = isColorsInverted,
+                    onCheckedChange = { themeManager.toggleColorInversion() },
+                    modifier = Modifier.padding(start = 16.dp)
+                )
+            }
+        }
 
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),

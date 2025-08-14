@@ -107,7 +107,7 @@ fun KeyboardThemeWithTokens(
         currentTheme
     } else {
         // Fallback to default themes when ThemeManager is not available
-        if (fallbackDarkTheme) ThemePresets.DefaultDark else ThemePresets.DefaultLight
+        if (fallbackDarkTheme) ThemePresets.MonokaiDark else ThemePresets.GruvboxLight
     }
     
     val colorScheme = createColorSchemeFromTokens(designTokens)

@@ -10,54 +10,48 @@ import androidx.compose.ui.unit.dp
  */
 
 /**
- * Color tokens for keyboard components
+ * Simplified color tokens for IME keyboard theming
+ * Uses only 5 essential tokens for maximum simplicity and consistency
  */
 data class ColorTokens(
-    // Background colors
-    val keyboardBackground: Color,
-    val keyBackground: Color,
-    val keyBackgroundPressed: Color,
-    val keyBackgroundDisabled: Color,
+    // Core IME keyboard tokens
+    val backgroundRoot: Color,        // Background color of the entire IME keyboard (default black)
+    val backgroundPrimary: Color,     // Background for grid cells (main keys)
+    val backgroundSecondary: Color,   // Background for action buttons and space bar
+    val contentPrimary: Color,        // Text color applied over backgroundPrimary
+    val contentSecondary: Color,      // Text color applied over backgroundSecondary
     
-    // Action key colors (space, backspace, enter, etc.)
-    val actionKeyBackground: Color,
-    val actionKeyBackgroundPressed: Color,
-    val actionKeyBackgroundDisabled: Color,
-    
-    // Control key colors (ABC/123, Aa, etc.)
-    val controlKeyBackground: Color,
-    val controlKeyBackgroundPressed: Color,
-    val controlKeyBackgroundActive: Color,
-    
-    // Text colors
-    val keyText: Color,
-    val keyTextSecondary: Color,
-    val keyTextDisabled: Color,
-    val actionKeyText: Color,
-    val controlKeyText: Color,
-    
-    // Border and outline colors
-    val keyBorder: Color,
-    val keyBorderFocused: Color,
-    val keyBorderPressed: Color,
-    
-    // Surface colors
-    val surface: Color,
-    val surfaceVariant: Color,
-    val onSurface: Color,
-    val onSurfaceVariant: Color,
-    
-    // Accent colors
-    val primary: Color,
-    val primaryVariant: Color,
-    val secondary: Color,
-    val secondaryVariant: Color,
-    
-    // Status colors
-    val error: Color,
-    val warning: Color,
-    val success: Color,
-    val info: Color
+    // Legacy tokens for configuration app compatibility (can use hardcoded colors if needed)
+    val keyboardBackground: Color = backgroundRoot,
+    val keyBackground: Color = backgroundPrimary,
+    val keyBackgroundPressed: Color = backgroundPrimary,
+    val keyBackgroundDisabled: Color = backgroundPrimary,
+    val actionKeyBackground: Color = backgroundSecondary,
+    val actionKeyBackgroundPressed: Color = backgroundSecondary,
+    val actionKeyBackgroundDisabled: Color = backgroundSecondary,
+    val controlKeyBackground: Color = backgroundSecondary,
+    val controlKeyBackgroundPressed: Color = backgroundSecondary,
+    val controlKeyBackgroundActive: Color = backgroundSecondary,
+    val keyText: Color = contentPrimary,
+    val keyTextSecondary: Color = contentPrimary,
+    val keyTextDisabled: Color = contentPrimary,
+    val actionKeyText: Color = contentSecondary,
+    val controlKeyText: Color = contentSecondary,
+    val keyBorder: Color = backgroundPrimary,
+    val keyBorderFocused: Color = backgroundSecondary,
+    val keyBorderPressed: Color = backgroundSecondary,
+    val surface: Color = backgroundRoot,
+    val surfaceVariant: Color = backgroundPrimary,
+    val onSurface: Color = contentPrimary,
+    val onSurfaceVariant: Color = contentPrimary,
+    val primary: Color = backgroundSecondary,
+    val primaryVariant: Color = backgroundSecondary,
+    val secondary: Color = backgroundPrimary,
+    val secondaryVariant: Color = backgroundPrimary,
+    val error: Color = Color.Red,
+    val warning: Color = Color.Yellow,
+    val success: Color = Color.Green,
+    val info: Color = Color.Blue
 )
 
 /**

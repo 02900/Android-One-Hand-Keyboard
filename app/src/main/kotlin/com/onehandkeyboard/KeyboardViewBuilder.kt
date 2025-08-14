@@ -12,7 +12,6 @@ import android.widget.TextView
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.toArgb
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.onehandkeyboard.actions.ActionConfig
 import com.onehandkeyboard.config.CellConfiguration
 import com.onehandkeyboard.core.design.theme.ThemeManager
@@ -21,6 +20,7 @@ import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
 import com.onehandkeyboard.gestures.GestureAction
+import com.onehandkeyboard.ui.ButtonStyleProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
@@ -44,6 +44,7 @@ class KeyboardViewBuilder(
     private val gestureIntegration: GestureIntegration,
     private val actionProcessor: KeyboardActionProcessor,
     private val themeManager: ThemeManager,
+    private val styleProvider: ButtonStyleProvider,
 ) {
     
     /**
@@ -66,6 +67,10 @@ class KeyboardViewBuilder(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                 )
             setPadding(8, 8, 8, 8)
+            
+            // Usar backgroundRoot del tema para el fondo general del teclado IME
+            val theme = getCurrentTheme()
+            setBackgroundColor(theme.colors.backgroundRoot.toArgb())
 
             // Add title view
             addView(createTitleView())
@@ -113,6 +118,8 @@ class KeyboardViewBuilder(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     3f, // Takes 3/4 of horizontal space
                 )
+            
+            // No background on container - will be applied to individual cells
 
             // Create 3 rows
             for (row in 0..2) {
@@ -166,10 +173,12 @@ class KeyboardViewBuilder(
             layoutParams =
                 LinearLayout.LayoutParams(
                     0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT,
                     1f, // Takes 1/4 of horizontal space
                 )
             setPadding(8, 0, 0, 0)
+            
+            // No background on container - will be applied to individual buttons
 
             // Layout button
             addView(createLayoutButton())
@@ -239,7 +248,7 @@ class KeyboardViewBuilder(
         return TextView(context).apply {
             this.text = text
             textSize = 10f
-            setTextColor(theme.colors.keyTextSecondary.toArgb())
+            setTextColor(theme.colors.contentPrimary.toArgb())
             gravity = Gravity.CENTER
 
             layoutParams =
@@ -298,7 +307,7 @@ class KeyboardViewBuilder(
         return TextView(context).apply {
             this.text = text
             textSize = 14f
-            setTextColor(theme.colors.keyText.toArgb())
+            setTextColor(theme.colors.contentPrimary.toArgb())
             gravity = Gravity.CENTER
 
             layoutParams =
@@ -362,7 +371,7 @@ class KeyboardViewBuilder(
             text = "OneHand Keyboard - ${layoutManager.getCurrentLanguageText()} " +
                 "${layoutManager.getCurrentLayoutModeText()} ${layoutManager.getCurrentCaseModeText()}"
             textSize = 14f
-            setTextColor(theme.colors.keyText.toArgb())
+            setTextColor(theme.colors.contentPrimary.toArgb())
             gravity = Gravity.CENTER
             layoutParams =
                 LinearLayout.LayoutParams(
@@ -381,7 +390,7 @@ class KeyboardViewBuilder(
         return Button(context).apply {
             text = layoutManager.getCurrentLayoutModeText()
             textSize = 12f
-            setTextColor(Color.parseColor("#4CAF50"))
+            setTextColor(styleProvider.getTextColor(isControl = true))
             layoutParams =
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -389,7 +398,7 @@ class KeyboardViewBuilder(
                 ).apply {
                     setMargins(0, 4, 0, 4)
                 }
-            background = createButtonBackground(false, false, true)
+            background = styleProvider.createButtonBackground(false, isControl = true)
         }
     }
 
@@ -402,7 +411,7 @@ class KeyboardViewBuilder(
         return Button(context).apply {
             text = layoutManager.getCurrentCaseModeText()
             textSize = 12f
-            setTextColor(theme.colors.actionKeyText.toArgb())
+            setTextColor(styleProvider.getTextColor(isControl = true))
             layoutParams =
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -410,7 +419,7 @@ class KeyboardViewBuilder(
                 ).apply {
                     setMargins(0, 4, 0, 4)
                 }
-            background = createButtonBackground(false, false, true)
+            background = styleProvider.createButtonBackground(false, isControl = true)
         }
     }
 
@@ -449,7 +458,7 @@ class KeyboardViewBuilder(
         return Button(context).apply {
             text = "⌫"
             textSize = 16f
-            setTextColor(theme.colors.actionKeyText.toArgb())
+            setTextColor(Color.WHITE) // Keep white for red backspace button
             layoutParams =
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -466,16 +475,19 @@ class KeyboardViewBuilder(
     }
 
     /**
-     * Creates a full-width spacebar row below the main keyboard content
+     * Creates the spacebar row at the bottom
      */
     private fun createSpacebarRow(): LinearLayout {
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            setPadding(4, 8, 4, 4)
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                )
+            setPadding(0, 8, 0, 0)
+            
+            // No background on container - will be applied to individual buttons
 
             // Create full-width spacebar button
             addView(createFullWidthSpacebar())
@@ -499,8 +511,9 @@ class KeyboardViewBuilder(
             }
             
             textSize = 16f
-            setTextColor(theme.colors.keyText.toArgb())
-            background = createButtonBackground(false, false, false)
+            setTextColor(styleProvider.getTextColor(isControl = true))
+            // Usar backgroundSecondary para la barra espaciadora (isControl = true)
+            background = styleProvider.createButtonBackground(false, isControl = true)
             
             setOnClickListener {
                 actionProcessor.processKeyboardOutput(KeyboardOutput.Action(KeyAction.Space))

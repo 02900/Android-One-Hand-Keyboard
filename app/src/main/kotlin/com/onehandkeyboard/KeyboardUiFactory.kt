@@ -5,7 +5,10 @@ import android.util.Log
 import android.view.MotionEvent
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import com.onehandkeyboard.KeyboardConfigManager
+import com.onehandkeyboard.actions.ActionConfig
 import com.onehandkeyboard.config.CellConfiguration
+import com.onehandkeyboard.core.design.theme.ThemeManager
 import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyData
@@ -31,13 +34,17 @@ import com.onehandkeyboard.ui.LayoutCalculator
 class KeyboardUiFactory(
     private val context: Context,
     private val configManager: KeyboardConfigManager,
+    private val themeManager: ThemeManager,
 ) {
     // Delegated components for specialized responsibilities
     private val layoutCalculator = LayoutCalculator(context)
-    private val styleProvider = ButtonStyleProvider()
+    private val _styleProvider = ButtonStyleProvider(context, themeManager)
     private val hintProvider = GestureHintProvider(configManager)
-    private val controlButtonFactory = ControlButtonFactory(context, styleProvider)
-    private val labelFactory = DirectionalLabelFactory(context, styleProvider, hintProvider)
+    private val controlButtonFactory = ControlButtonFactory(context, _styleProvider)
+    private val labelFactory = DirectionalLabelFactory(context, _styleProvider, hintProvider)
+    
+    // Public accessor for styleProvider
+    val styleProvider: ButtonStyleProvider get() = _styleProvider
 
     // ============================================================================
     // REGION: LAYOUT CALCULATIONS (Delegated)
@@ -78,8 +85,8 @@ class KeyboardUiFactory(
                     setMargins(margins, margins, margins, margins)
                 }
 
-            // Fondo con bordes redondeados
-            background = styleProvider.createButtonBackground(false)
+            // Fondo con bordes redondeados usando backgroundPrimary para celdas del grid
+            background = _styleProvider.createButtonBackground(false, isGridCell = true)
 
             // Crear labels posicionados para cada dirección
             labelFactory.createDirectionalLabelsAbsolute(this, cellConfig, cellIndex)

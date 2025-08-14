@@ -26,6 +26,7 @@ class ThemeManager @Inject constructor(
     companion object {
         private const val PREFS_NAME = "theme_prefs"
         private const val PREF_THEME_NAME = "selected_theme_name"
+        private const val PREF_INVERT_COLORS = "invert_background_colors"
         private const val DEFAULT_THEME_NAME = "Default Light"
         
         // Broadcast constants for theme changes
@@ -33,7 +34,7 @@ class ThemeManager @Inject constructor(
         const val EXTRA_THEME_NAME = "theme_name"
     }
     
-    private val _currentTheme = MutableStateFlow(ThemePresets.DefaultLight)
+    private val _currentTheme = MutableStateFlow(ThemePresets.MonokaiDark)
     val currentTheme: StateFlow<DesignTokens> = _currentTheme.asStateFlow()
     
     private val _currentThemeName = MutableStateFlow(DEFAULT_THEME_NAME)
@@ -42,21 +43,33 @@ class ThemeManager @Inject constructor(
     private val _isDarkMode = MutableStateFlow(false)
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
     
+    private val _isColorsInverted = MutableStateFlow(false)
+    val isColorsInverted: StateFlow<Boolean> = _isColorsInverted.asStateFlow()
+    
     init {
         // Load saved theme on initialization
         loadSavedTheme()
     }
     
     /**
-     * Load theme from SharedPreferences
+     * Load saved theme from SharedPreferences
      */
     private fun loadSavedTheme() {
         val savedThemeName = sharedPrefs.getString(PREF_THEME_NAME, DEFAULT_THEME_NAME) ?: DEFAULT_THEME_NAME
+        val isInverted = sharedPrefs.getBoolean(PREF_INVERT_COLORS, false)
         val theme = ThemePresets.getThemeByName(savedThemeName)
+        
         if (theme != null) {
-            _currentTheme.value = theme
+            _currentTheme.value = if (isInverted) applyColorInversion(theme) else theme
             _currentThemeName.value = savedThemeName
             _isDarkMode.value = isDarkTheme(savedThemeName)
+            _isColorsInverted.value = isInverted
+        } else {
+            // Fallback to default theme if saved theme is not found
+            _currentTheme.value = ThemePresets.MonokaiDark
+            _currentThemeName.value = DEFAULT_THEME_NAME
+            _isDarkMode.value = false
+            _isColorsInverted.value = false
         }
     }
     
@@ -65,6 +78,21 @@ class ThemeManager @Inject constructor(
      */
     fun refreshTheme() {
         loadSavedTheme()
+    }
+    
+    /**
+     * Apply color inversion by swapping backgroundPrimary and backgroundSecondary
+     * Also swaps contentPrimary and contentSecondary to maintain proper contrast
+     */
+    private fun applyColorInversion(theme: DesignTokens): DesignTokens {
+        return theme.copy(
+            colors = theme.colors.copy(
+                backgroundPrimary = theme.colors.backgroundSecondary,
+                backgroundSecondary = theme.colors.backgroundPrimary,
+                contentPrimary = theme.colors.contentSecondary,
+                contentSecondary = theme.colors.contentPrimary
+            )
+        )
     }
     
     /**
@@ -85,7 +113,8 @@ class ThemeManager @Inject constructor(
     fun setTheme(themeName: String) {
         val theme = ThemePresets.getThemeByName(themeName)
         if (theme != null) {
-            _currentTheme.value = theme
+            val finalTheme = if (_isColorsInverted.value) applyColorInversion(theme) else theme
+            _currentTheme.value = finalTheme
             _currentThemeName.value = themeName
             _isDarkMode.value = isDarkTheme(themeName)
             
@@ -103,7 +132,8 @@ class ThemeManager @Inject constructor(
      * Set custom theme with design tokens and persist
      */
     fun setCustomTheme(theme: DesignTokens, themeName: String) {
-        _currentTheme.value = theme
+        val finalTheme = if (_isColorsInverted.value) applyColorInversion(theme) else theme
+        _currentTheme.value = finalTheme
         _currentThemeName.value = themeName
         _isDarkMode.value = isDarkTheme(themeName)
         
@@ -114,6 +144,29 @@ class ThemeManager @Inject constructor(
         
         // Notify IME service about theme change
         sendThemeChangedBroadcast(themeName)
+    }
+    
+    /**
+     * Toggle color inversion (swap backgroundPrimary and backgroundSecondary)
+     */
+    fun toggleColorInversion() {
+        val newInvertedState = !_isColorsInverted.value
+        _isColorsInverted.value = newInvertedState
+        
+        // Apply inversion to current theme
+        val baseTheme = ThemePresets.getThemeByName(_currentThemeName.value)
+        if (baseTheme != null) {
+            val finalTheme = if (newInvertedState) applyColorInversion(baseTheme) else baseTheme
+            _currentTheme.value = finalTheme
+        }
+        
+        // Persist inversion preference
+        sharedPrefs.edit()
+            .putBoolean(PREF_INVERT_COLORS, newInvertedState)
+            .apply()
+        
+        // Notify IME service about theme change
+        sendThemeChangedBroadcast(_currentThemeName.value)
     }
     
     /**
@@ -156,17 +209,17 @@ class ThemeManager @Inject constructor(
     }
     
     /**
-     * Get theme preview colors for UI display
+     * Get theme preview colors for UI display using the 5 core tokens
      */
     fun getThemePreview(themeName: String): ThemePreview? {
         val theme = ThemePresets.getThemeByName(themeName) ?: return null
         return ThemePreview(
             name = themeName,
-            keyboardBackground = theme.colors.keyboardBackground,
-            keyBackground = theme.colors.keyBackground,
-            actionKeyBackground = theme.colors.actionKeyBackground,
-            keyText = theme.colors.keyText,
-            actionKeyText = theme.colors.actionKeyText
+            keyboardBackground = theme.colors.backgroundRoot,
+            keyBackground = theme.colors.backgroundPrimary,
+            actionKeyBackground = theme.colors.backgroundSecondary,
+            keyText = theme.colors.contentPrimary,
+            actionKeyText = theme.colors.contentSecondary
         )
     }
     

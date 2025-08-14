@@ -113,8 +113,8 @@ class OneHandKeyboardService : InputMethodService() {
      * Initializes all components that require context dependencies
      */
     private fun initializeComponents() {
-        // Initialize UI factory (requires service context)
-        uiFactory = KeyboardUiFactory(this, configManager)
+        // Initialize UI factory (requires context, config manager, and theme manager)
+        uiFactory = KeyboardUiFactory(this, configManager, themeManager)
 
         // Initialize gesture integration (requires service callbacks)
         gestureIntegration = GestureIntegration(this, configManager, gestureDetector)
@@ -130,7 +130,7 @@ class OneHandKeyboardService : InputMethodService() {
             )
 
         // Initialize view builder (requires context, layout manager, gesture integration, action processor, and theme manager)
-        viewBuilder = KeyboardViewBuilder(this, layoutManager, uiFactory, gestureIntegration, actionProcessor, themeManager)
+        viewBuilder = KeyboardViewBuilder(this, layoutManager, uiFactory, gestureIntegration, actionProcessor, themeManager, uiFactory.styleProvider)
 
         // Initialize event coordinator (coordinates all components)
         eventCoordinator =
