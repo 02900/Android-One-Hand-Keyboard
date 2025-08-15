@@ -188,13 +188,13 @@ private fun ThemePreviewCard(
                     text = themePreview.name,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = Color.Black
                 )
                 
                 Text(
                     text = getThemeDescription(themePreview.name),
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color.Black.copy(alpha = 0.8f),
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -300,7 +300,26 @@ private fun getThemeDescription(themeName: String): String = when {
     themeName.contains("Monokai") -> "Popular developer theme"
     themeName.contains("Solarized") -> "Low-contrast, eye-friendly"
     themeName.contains("Tokyo") -> "Modern, elegant theme"
+    themeName.contains("Dracula") -> "Vampire theme"
+    themeName.contains("Gruvbox") -> "Retro groove"
     else -> "Custom theme"
+}
+
+/**
+ * Calculate contrasting text color based on background luminance
+ * Uses simplified luminance calculation for better contrast
+ */
+private fun getContrastingTextColor(backgroundColor: Color): Color {
+    // Simplified luminance calculation using perceived brightness
+    val r = backgroundColor.red
+    val g = backgroundColor.green
+    val b = backgroundColor.blue
+    
+    // Calculate perceived brightness (0.299*R + 0.587*G + 0.114*B)
+    val brightness = (0.299f * r + 0.587f * g + 0.114f * b)
+    
+    // Return white for dark backgrounds, black for light backgrounds
+    return if (brightness > 0.5f) Color.Black else Color.White
 }
 
 @Preview(showBackground = true)
