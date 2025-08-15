@@ -1,6 +1,6 @@
 package com.onehandkeyboard.ui
 
-import com.onehandkeyboard.KeyboardConfigManager
+import com.onehandkeyboard.KeyboardLayoutManager
 import com.onehandkeyboard.config.CellConfiguration
 import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.GestureType
@@ -14,13 +14,13 @@ import com.onehandkeyboard.core.domain.model.KeyAction
  * - Proporcionar símbolos para direcciones y acciones
  * - Gestionar la representación visual de configuraciones
  */
-class GestureHintProvider(private val configManager: KeyboardConfigManager) {
+class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
     /**
      * Obtiene hints visuales de los gestos configurados para una celda
      */
     fun getConfigurationHints(cellIndex: Int): String {
         val cellConfig =
-            configManager.keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
+            layoutManager.keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
                 ?: return ""
 
         val hints = mutableListOf<String>()

@@ -6,7 +6,14 @@ import android.view.MotionEvent
 import android.widget.LinearLayout
 import com.onehandkeyboard.actions.ActionConfig
 import com.onehandkeyboard.config.*
-import com.onehandkeyboard.core.domain.model.*
+import com.onehandkeyboard.core.domain.model.Cell
+import com.onehandkeyboard.core.domain.model.Direction
+import com.onehandkeyboard.gestures.GestureAction
+import com.onehandkeyboard.core.domain.model.GestureConfig
+import com.onehandkeyboard.core.domain.model.GestureType
+import com.onehandkeyboard.core.domain.model.KeyAction
+import com.onehandkeyboard.core.domain.model.KeyboardOutput
+import com.onehandkeyboard.core.domain.model.LayoutType
 import com.onehandkeyboard.core.gesture.CellBounds
 import com.onehandkeyboard.core.gesture.GestureDetector
 import com.onehandkeyboard.enums.Language
@@ -34,7 +41,7 @@ import kotlinx.coroutines.launch
  */
 class GestureIntegration(
     private val context: Context,
-    private val configManager: KeyboardConfigManager,
+    private val layoutManager: KeyboardLayoutManager,
     private val gestureDetector: GestureDetector,
 ) {
     // Estado para procesamiento directo de gestos
@@ -177,17 +184,17 @@ class GestureIntegration(
             }
 
         return com.onehandkeyboard.core.domain.model.KeyboardLayout(
-            id = "${configManager.currentLanguage.name.lowercase()}_${configManager.currentMode.name.lowercase()}",
-            name = "${configManager.currentLanguage.name} ${configManager.currentMode.name}",
-            description = "Current active layout: ${configManager.currentLanguage.name} ${configManager.currentMode.name}",
+            id = "${layoutManager.currentLanguage.name.lowercase()}_${layoutManager.currentMode.name.lowercase()}",
+            name = "${layoutManager.currentLanguage.name} ${layoutManager.currentMode.name}",
+            description = "Current active layout: ${layoutManager.currentLanguage.name} ${layoutManager.currentMode.name}",
             cells = cells,
             type =
-                when (configManager.currentMode) {
+                when (layoutManager.currentMode) {
                     LayoutMode.LETTERS -> LayoutType.LETTERS
                     LayoutMode.SYMBOLS -> LayoutType.NUMBERS
                 },
             locale =
-                when (configManager.currentLanguage) {
+                when (layoutManager.currentLanguage) {
                     Language.SPANISH -> "es-MX"
                     Language.ENGLISH -> "en-US"
                 },
@@ -321,7 +328,7 @@ class GestureIntegration(
         }
 
         // Buscar la configuración de la celda
-        val cellConfig = configManager.keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
+        val cellConfig = layoutManager.keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
         if (cellConfig == null) {
             Log.w("OneHandKeyboard", "🎯 No configuration found for cell $cellIndex")
             onGestureProcessed(null)
@@ -329,7 +336,7 @@ class GestureIntegration(
         }
 
         // Buscar la acción configurada para este gesto
-        val actionConfig = cellConfig.getActionFor(gestureType, direction)
+        val actionConfig = cellConfig.actions[GestureAction(gestureType, direction)]
         if (actionConfig == null) {
             Log.d("OneHandKeyboard", "🎯 No action configured for $gestureType + $direction on cell $cellIndex")
             onGestureProcessed(null)
@@ -342,7 +349,7 @@ class GestureIntegration(
         val output =
             when (actionConfig) {
                 is ActionConfig.Character -> {
-                    val char = configManager.applyCase(actionConfig.char.toString())
+                    val char = layoutManager.applyCase(actionConfig.char.toString())
                     Log.d("OneHandKeyboard", "🎯 SENDING CHARACTER: '$char' (original: '${actionConfig.char}')")
                     KeyboardOutput.Character(char)
                 }
@@ -351,7 +358,7 @@ class GestureIntegration(
                     KeyboardOutput.Action(actionConfig.keyAction)
                 }
                 is ActionConfig.Text -> {
-                    val text = configManager.applyCase(actionConfig.text)
+                    val text = layoutManager.applyCase(actionConfig.text)
                     Log.d("OneHandKeyboard", "🎯 SENDING TEXT: '$text'")
                     KeyboardOutput.Character(text)
                 }

@@ -10,7 +10,6 @@ import android.util.Log
 import android.view.View
 import android.widget.LinearLayout
 import com.onehandkeyboard.KeyboardActionProcessor
-import com.onehandkeyboard.KeyboardConfigManager
 import com.onehandkeyboard.KeyboardEventCoordinator
 import com.onehandkeyboard.KeyboardLayoutManager
 import com.onehandkeyboard.KeyboardUiFactory
@@ -49,8 +48,6 @@ class OneHandKeyboardService : InputMethodService() {
     private var keyboardView: LinearLayout? = null
 
     // Core dependencies - injected by Hilt
-    @Inject
-    lateinit var configManager: KeyboardConfigManager
 
     @Inject
     lateinit var gestureDetector: DefaultGestureDetector
@@ -114,17 +111,17 @@ class OneHandKeyboardService : InputMethodService() {
      */
     private fun initializeComponents() {
         // Initialize UI factory (requires context, config manager, and theme manager)
-        uiFactory = KeyboardUiFactory(this, configManager, themeManager)
+        uiFactory = KeyboardUiFactory(this, layoutManager, themeManager)
 
         // Initialize gesture integration (requires service callbacks)
-        gestureIntegration = GestureIntegration(this, configManager, gestureDetector)
+        gestureIntegration = GestureIntegration(this, layoutManager, gestureDetector)
         gestureIntegration.initializeGestureSystem()
 
         // Initialize action processor (requires service callbacks)
         actionProcessor =
             KeyboardActionProcessor(
                 service = this,
-                configManager = configManager,
+                configManager = layoutManager,
                 onLayoutSwitch = { eventCoordinator.recreateKeyboard() },
                 onCaseSwitch = { eventCoordinator.recreateKeyboard() },
             )

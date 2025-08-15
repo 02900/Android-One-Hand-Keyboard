@@ -72,9 +72,6 @@ class KeyboardViewBuilder(
             val theme = getCurrentTheme()
             setBackgroundColor(theme.colors.backgroundRoot.toArgb())
 
-            // Add title view
-            addView(createTitleView())
-
             // Add main content (grid + controls)
             addView(createMainContent())
 
@@ -358,28 +355,6 @@ class KeyboardViewBuilder(
             is KeyAction.Enter -> "↵"
             is KeyAction.ToggleCase -> "Aa"
             else -> "⚡"
-        }
-    }
-
-    /**
-     * Creates the title view with status information using theme tokens
-     */
-    fun createTitleView(): TextView {
-        val theme = getCurrentTheme()
-        
-        return TextView(context).apply {
-            text = "OneHand Keyboard - ${layoutManager.getCurrentLanguageText()} " +
-                "${layoutManager.getCurrentLayoutModeText()} ${layoutManager.getCurrentCaseModeText()}"
-            textSize = 14f
-            setTextColor(theme.colors.contentPrimary.toArgb())
-            gravity = Gravity.CENTER
-            layoutParams =
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                ).apply {
-                    setMargins(0, 0, 0, 8)
-                }
         }
     }
 

@@ -5,7 +5,7 @@ import android.util.Log
 import android.view.MotionEvent
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import com.onehandkeyboard.KeyboardConfigManager
+import com.onehandkeyboard.KeyboardLayoutManager
 import com.onehandkeyboard.actions.ActionConfig
 import com.onehandkeyboard.config.CellConfiguration
 import com.onehandkeyboard.core.design.theme.ThemeManager
@@ -33,13 +33,13 @@ import com.onehandkeyboard.ui.LayoutCalculator
  */
 class KeyboardUiFactory(
     private val context: Context,
-    private val configManager: KeyboardConfigManager,
+    private val layoutManager: KeyboardLayoutManager,
     private val themeManager: ThemeManager,
 ) {
     // Delegated components for specialized responsibilities
     private val layoutCalculator = LayoutCalculator(context)
     private val _styleProvider = ButtonStyleProvider(context, themeManager)
-    private val hintProvider = GestureHintProvider(configManager)
+    private val hintProvider = GestureHintProvider(layoutManager)
     private val controlButtonFactory = ControlButtonFactory(context, _styleProvider)
     private val labelFactory = DirectionalLabelFactory(context, _styleProvider, hintProvider)
     
@@ -71,7 +71,7 @@ class KeyboardUiFactory(
     ): FrameLayout {
         return FrameLayout(context).apply {
             // Obtener configuración de la celda
-            val cellConfig = configManager.keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
+            val cellConfig = layoutManager.keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
 
             // Layout parameters con aspect ratio 1:1
             val squareSize = layoutCalculator.calculateSquareCellSize()

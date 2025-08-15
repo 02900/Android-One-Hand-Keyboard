@@ -20,7 +20,7 @@ import com.onehandkeyboard.core.domain.model.KeyboardOutput
  */
 class KeyboardActionProcessor(
     private val service: InputMethodService,
-    private val configManager: KeyboardConfigManager,
+    private val configManager: KeyboardLayoutManager,
     private val onLayoutSwitch: () -> Unit,
     private val onCaseSwitch: () -> Unit,
 ) {

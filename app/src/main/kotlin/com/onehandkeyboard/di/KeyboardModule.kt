@@ -14,6 +14,6 @@ import dagger.hilt.android.components.ServiceComponent
 @Module
 @InstallIn(ServiceComponent::class)
 object KeyboardModule {
-    // KeyboardConfigManager se inyecta automáticamente como @Singleton
+    // KeyboardLayoutManager se inyecta automáticamente como @Singleton
     // KeyboardUiFactory se inicializa manualmente en el servicio debido a dependencias de contexto
 }
