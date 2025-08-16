@@ -11,7 +11,8 @@ Un teclado Android innovador basado en gestos con diseño 3×3, inspirado en Mes
 - **Modular**: Arquitectura limpia con módulos independientes
 - **Multiidioma**: Soporte para español (es-MX) e inglés (en-US)
 - **Layouts Dinámicos**: Intercambio entre Letters/Symbols y modos de mayúsculas
-- **Gestos Avanzados**: Tap, Long Press y Swipe en 8 direcciones
+- **Gestos Simplificados**: Tap y Swipe en 8 direcciones con detección por desplazamiento
+- **Sistema de Temas**: 5 tokens esenciales con colores diferenciados para grupos de celdas
 
 ## 🏗️ Arquitectura
 
@@ -19,7 +20,7 @@ El proyecto sigue Clean Architecture con arquitectura modular y está organizado
 
 ### Módulos Core
 - `core:domain` - Casos de uso y modelos de dominio
-- `core:gesture` - Motor de detección de gestos con dead zones e histeresis
+- `core:gesture` - Motor de detección de gestos simplificado basado en desplazamiento
 - `core:mapping` - Sistema de mapeo (celda, dirección) → acción
 - `core:text` - Adaptadores InputConnection y comandos
 - `core:design` - Design System y componentes UI
@@ -71,8 +72,8 @@ El proyecto sigue Clean Architecture con arquitectura modular y está organizado
 - [x] Integración básica funcional
 
 #### Etapa 3: Motor de Gestos v1
-- [x] DefaultGestureDetector con dead zones e histeresis
-- [x] Detección de 8 direcciones + tap + long press
+- [x] DefaultGestureDetector simplificado basado en desplazamiento
+- [x] Detección de 8 direcciones + tap (eliminado long press)
 - [x] Tests unitarios para motor de gestos
 
 #### Etapa 4: Layout 3×3 y Mapping Básico
@@ -86,7 +87,7 @@ El proyecto sigue Clean Architecture con arquitectura modular y está organizado
 - [x] Modos de mayúsculas (lowercase, UPPERCASE, Capitalize)
 - [x] Integración completa de gestos en UI
 
-#### Etapa 6: Refactorización Modular (ACTUAL)
+#### Etapa 6: Refactorización Modular
 - [x] Extracción de KeyboardConfigManager (Hilt singleton)
 - [x] Extracción de KeyboardUiFactory (creación de UI)
 - [x] Extracción de GestureIntegration (procesamiento de gestos)
@@ -95,11 +96,20 @@ El proyecto sigue Clean Architecture con arquitectura modular y está organizado
 - [x] Mejora de nombres y documentación
 - [x] Validación de tests y builds exitosos
 
+#### Etapa 7: Sistema de Temas y UI Mejorada (ACTUAL)
+- [x] Sistema de temas simplificado con 5 tokens esenciales
+- [x] Eliminación completa de tokens legacy
+- [x] Colores HEX directos para mejor contraste
+- [x] Bordes selectivos en celdas del teclado IME
+- [x] Labels dinámicos para botón de cambio de layout (ABC ↔ 123)
+- [x] ThemeConfigurationActivity con preview de colores diferenciados
+- [x] Integración completa del ThemeManager
+
 ### 🔄 Próximas Etapas
-- [ ] Etapa 7: Optimización y Performance
-- [ ] Etapa 8: Configuración Avanzada y Personalización
-- [ ] Etapa 9: Accesibilidad y UX Mejorada
-- [ ] Etapa 10: Testing Integral y Estabilización
+- [ ] Etapa 8: Optimización y Performance
+- [ ] Etapa 9: Configuración Avanzada y Personalización
+- [ ] Etapa 10: Accesibilidad y UX Mejorada
+- [ ] Etapa 11: Testing Integral y Estabilización
 
 ## 🏃‍♂️ Inicio Rápido
 
@@ -246,8 +256,11 @@ El proyecto incluye:
 # Configurar JAVA_HOME si es necesario
 $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
 
-# Compilar APK de debug
-./gradlew :app-ime:assembleDebug
+# Compilar APK de debug (recomendado para desarrollo)
+./gradlew assembleDebug --no-daemon -x ktlintCheck -x detekt
+
+# O compilar APK de release (para producción)
+./gradlew assembleRelease --no-daemon
 ```
 
 El APK se generará en: `app/build/outputs/apk/debug/app-ime-debug.apk`
@@ -274,14 +287,16 @@ adb install app/build/outputs/apk/debug/app-ime-debug.apk
 4. Selecciona **"OneHandKeyboard"** de la lista
 
 ### Paso 5: ¡Probar el Teclado!
-- **Toca las letras A-I** para escribir
+- **Toca las celdas del grid 3x3** para escribir letras
+- **Desliza en 8 direcciones** para acceder a caracteres adicionales
+- **Toca la celda 03** para alternar entre ABC ↔ 123 (letras/números)
 - **Usa el botón ⌫** para borrar
 - **Usa "Space"** para espacios
-- **Usa ↵** para Enter/Done
 
 ### Configuración Adicional
-- Para acceder a configuraciones: Abre la app "OneHandKeyboard" desde el launcher
-- Para cambiar idioma: Configuración → Idiomas → Agregar idioma → Español/English
+- **Temas**: Abre la app "OneHandKeyboard" desde el launcher para cambiar temas
+- **Idiomas**: Configuración → Idiomas → Agregar idioma → Español/English
+- **Colores diferenciados**: Las celdas primarias (00-02, 10-12, 20-22) y secundarias (03, 13, 23, 30-33) usan colores distintos
 
 ## 🤝 Contribuir
 
