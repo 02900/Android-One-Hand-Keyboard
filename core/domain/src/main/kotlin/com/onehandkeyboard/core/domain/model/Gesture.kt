@@ -101,10 +101,6 @@ enum class GestureType {
      */
     TAP,
 
-    /**
-     * Long press - press and hold without movement
-     */
-    LONG_PRESS,
 
     /**
      * Swipe - press, move, and release

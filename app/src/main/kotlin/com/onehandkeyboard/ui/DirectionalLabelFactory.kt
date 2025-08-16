@@ -14,7 +14,7 @@ import com.onehandkeyboard.core.domain.model.GestureType
  *
  * Responsabilidades:
  * - Crear TextViews posicionados para cada dirección
- * - Gestionar la combinación de TAP y LONG_PRESS en el centro
+ * * Gestionar el label de TAP en el centro
  * - Posicionar labels absolutamente dentro de FrameLayouts
  * - Aplicar estilos específicos según la dirección
  */
@@ -57,7 +57,7 @@ class DirectionalLabelFactory(
             }
         }
 
-        // Crear label combinado para el centro (TAP + LONG_PRESS)
+        // Crear label para el centro (TAP)
         val centerLabel = hintProvider.getCenterLabel(cellConfig)
         if (centerLabel.isNotEmpty()) {
             val centerTextView = createCenterCombinedTextView(cellConfig)
@@ -127,7 +127,7 @@ class DirectionalLabelFactory(
     }
 
     /**
-     * Maneja la combinación de TAP y LONG_PRESS para el centro
+     * Crea el TextView para el centro (solo TAP)
      */
     fun createCenterCombinedTextView(cellConfig: CellConfiguration): TextView {
         val centerLabel = hintProvider.getCenterLabel(cellConfig)

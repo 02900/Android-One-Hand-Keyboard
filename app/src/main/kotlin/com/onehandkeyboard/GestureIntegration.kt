@@ -48,10 +48,8 @@ class GestureIntegration(
     private var gestureStartTime = 0L
     private var gestureStartX = 0f
     private var gestureStartY = 0f
-    private var isLongPressDetected = false
     private var gestureAlreadyEmitted = false // Prevenir repetición de gestos
-    private val longPressThreshold = 100L // 100ms
-    private val swipeThreshold = 100f // pixels
+    private val swipeThreshold = 50f // pixels
 
     // Sistema de gestos avanzado
     private var currentKeyboardLayout: com.onehandkeyboard.core.domain.model.KeyboardLayout? = null
@@ -220,7 +218,6 @@ class GestureIntegration(
                 gestureStartTime = System.currentTimeMillis()
                 gestureStartX = event.x
                 gestureStartY = event.y
-                isLongPressDetected = false
                 gestureAlreadyEmitted = false
                 Log.d("OneHandKeyboard", "🎯 ACTION_DOWN on cell $cellIndex at (${event.x}, ${event.y})")
             }
@@ -233,14 +230,6 @@ class GestureIntegration(
                 val deltaX = event.x - gestureStartX
                 val deltaY = event.y - gestureStartY
                 val distance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
-
-                // Detectar long press
-                if (!isLongPressDetected && deltaTime >= longPressThreshold && distance < swipeThreshold) {
-                    isLongPressDetected = true
-                    gestureAlreadyEmitted = true
-                    Log.d("OneHandKeyboard", "🎯 LONG_PRESS detected on cell $cellIndex")
-                    handleGestureAction(cellIndex, GestureType.LONG_PRESS, Direction.CENTER, onGestureProcessed)
-                }
 
                 // Detectar swipe
                 if (!gestureAlreadyEmitted && distance >= swipeThreshold) {
@@ -260,18 +249,15 @@ class GestureIntegration(
                 val deltaY = event.y - gestureStartY
                 val distance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
 
-                // Verificar si debería ser long press (si no se detectó en ACTION_MOVE)
-                if (!isLongPressDetected && deltaTime >= longPressThreshold && distance < swipeThreshold) {
-                    Log.d(
-                        "OneHandKeyboard",
-                        "🎯 LONG_PRESS detected on ACTION_UP for cell $cellIndex (deltaTime: ${deltaTime}ms)",
-                    )
-                    handleGestureAction(cellIndex, GestureType.LONG_PRESS, Direction.CENTER, onGestureProcessed)
-                }
-                // Detectar tap (si no hubo long press ni swipe)
-                else if (!isLongPressDetected && distance < swipeThreshold) {
+                // Detectar tap o swipe basado en desplazamiento
+                if (distance < swipeThreshold) {
                     Log.d("OneHandKeyboard", "🎯 TAP detected on cell $cellIndex (deltaTime: ${deltaTime}ms)")
                     handleGestureAction(cellIndex, GestureType.TAP, Direction.CENTER, onGestureProcessed)
+                } else {
+                    // Swipe detectado en ACTION_UP
+                    val direction = getSwipeDirection(deltaX, deltaY)
+                    Log.d("OneHandKeyboard", "🎯 SWIPE detected on ACTION_UP for cell $cellIndex, direction: $direction")
+                    handleGestureAction(cellIndex, GestureType.SWIPE, direction, onGestureProcessed)
                 }
             }
         }
@@ -316,7 +302,7 @@ class GestureIntegration(
         // Validar combinación de gesto y dirección
         val isValidCombination =
             when (gestureType) {
-                GestureType.TAP, GestureType.LONG_PRESS -> direction == Direction.CENTER
+                GestureType.TAP -> direction == Direction.CENTER
                 GestureType.SWIPE -> direction != Direction.CENTER
                 GestureType.DRAG, GestureType.FLICK -> direction != Direction.CENTER
             }

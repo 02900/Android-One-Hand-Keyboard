@@ -37,7 +37,6 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             val gestureSymbol =
                 when (gestureAction.gestureType) {
                     GestureType.SWIPE -> "→"
-                    GestureType.LONG_PRESS -> "⏱"
                     GestureType.TAP -> "●"
                     GestureType.FLICK -> "⚡"
                     GestureType.DRAG -> "↔"
@@ -121,7 +120,7 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
     }
 
     /**
-     * Obtiene el label para el centro (combinando TAP y LONG_PRESS)
+     * Obtiene el label para el centro (solo TAP)
      */
     fun getCenterLabel(cellConfig: CellConfiguration): String {
         val tapActionConfig =
@@ -129,34 +128,11 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
                 it.key.direction == Direction.CENTER && it.key.gestureType == GestureType.TAP
             }?.value
 
-        val longPressActionConfig =
-            cellConfig.actions.entries.find {
-                it.key.direction == Direction.CENTER && it.key.gestureType == GestureType.LONG_PRESS
-            }?.value
-
-        val tapLabel =
-            tapActionConfig?.let { actionConfig ->
-                when (actionConfig) {
-                    is com.onehandkeyboard.actions.ActionConfig.Character -> actionConfig.char.toString()
-                    is com.onehandkeyboard.actions.ActionConfig.Text -> actionConfig.text
-                    is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
-                }
-            } ?: ""
-
-        val longPressLabel =
-            longPressActionConfig?.let { actionConfig ->
-                when (actionConfig) {
-                    is com.onehandkeyboard.actions.ActionConfig.Character -> actionConfig.char.toString()
-                    is com.onehandkeyboard.actions.ActionConfig.Text -> actionConfig.text
-                    is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
-                }
-            } ?: ""
-
-        return when {
-            tapLabel.isNotEmpty() && longPressLabel.isNotEmpty() -> "$tapLabel ($longPressLabel)"
-            tapLabel.isNotEmpty() -> tapLabel
-            longPressLabel.isNotEmpty() -> "($longPressLabel)"
-            else -> ""
+        return when (tapActionConfig) {
+            is com.onehandkeyboard.actions.ActionConfig.Character -> tapActionConfig.char.toString()
+            is com.onehandkeyboard.actions.ActionConfig.Text -> tapActionConfig.text
+            is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(tapActionConfig.keyAction)
+            null -> ""
         }
     }
 }

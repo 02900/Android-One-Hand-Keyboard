@@ -18,17 +18,12 @@ data class CellConfiguration(
             throw IllegalArgumentException("Cell index must be between 0 and 8, got: $cellIndex")
         }
 
-        // Validar que no haya más de un TAP o LONG_PRESS para CENTER
+        // Validar que no haya más de un TAP para CENTER
         val centerActions = actions.keys.filter { it.direction == Direction.CENTER }
         val tapActions = centerActions.filter { it.gestureType == GestureType.TAP }
-        val longPressActions = centerActions.filter { it.gestureType == GestureType.LONG_PRESS }
 
         if (tapActions.size > 1) {
             throw IllegalArgumentException("Cell $cellIndex has multiple TAP actions for CENTER direction")
-        }
-
-        if (longPressActions.size > 1) {
-            throw IllegalArgumentException("Cell $cellIndex has multiple LONG_PRESS actions for CENTER direction")
         }
 
         // Validar que no haya múltiples SWIPE para la misma dirección

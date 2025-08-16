@@ -317,21 +317,11 @@ class KeyboardViewBuilder(
     }
 
     /**
-     * Gets the center label combining TAP and LONG_PRESS
+     * Gets the center label for TAP gesture
      */
     private fun getCenterLabel(cellConfig: CellConfiguration): String {
         val tapAction = cellConfig.actions[GestureAction(GestureType.TAP, Direction.CENTER)]
-        val longPressAction = cellConfig.actions[GestureAction(GestureType.LONG_PRESS, Direction.CENTER)]
-
-        val tapLabel = tapAction?.let { getActionLabel(it) } ?: ""
-        val longPressLabel = longPressAction?.let { getActionLabel(it) } ?: ""
-
-        return when {
-            tapLabel.isNotEmpty() && longPressLabel.isNotEmpty() -> "$tapLabel ($longPressLabel)"
-            tapLabel.isNotEmpty() -> tapLabel
-            longPressLabel.isNotEmpty() -> "($longPressLabel)"
-            else -> ""
-        }
+        return tapAction?.let { getActionLabel(it) } ?: ""
     }
 
     /**

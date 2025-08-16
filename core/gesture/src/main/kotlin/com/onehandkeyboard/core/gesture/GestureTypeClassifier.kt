@@ -23,20 +23,13 @@ class GestureTypeClassifier
         /**
          * Determina el tipo de gesto basado en las métricas proporcionadas
          */
-        fun determineGestureType(
+        fun classifyGesture(
             distance: Float,
-            duration: Long,
             velocity: Float,
-            startCell: Int,
-            currentCell: Int,
+            duration: Long,
         ): GestureType {
             return when {
-                // Long press: mantenido presionado por un tiempo sin mucho movimiento
-                duration >= config.longPressThreshold && distance <= config.maxTapDistance -> {
-                    GestureType.LONG_PRESS
-                }
-
-                // Tap: movimiento rápido y corto
+                // Tap: movimiento corto (sin considerar duración)
                 distance <= config.maxTapDistance -> {
                     GestureType.TAP
                 }
@@ -46,8 +39,8 @@ class GestureTypeClassifier
                     GestureType.FLICK
                 }
 
-                // Drag: movimiento a través de celdas
-                startCell != currentCell && startCell != -1 && currentCell != -1 -> {
+                // Drag: movimiento con alta velocidad
+                velocity > config.flickSpeedThreshold * 0.5f -> {
                     GestureType.DRAG
                 }
 
@@ -68,17 +61,7 @@ class GestureTypeClassifier
             distance: Float,
             duration: Long,
         ): Boolean {
-            return distance <= config.maxTapDistance && duration < config.longPressThreshold
-        }
-
-        /**
-         * Verifica si un gesto califica como LONG_PRESS
-         */
-        fun isLongPress(
-            distance: Float,
-            duration: Long,
-        ): Boolean {
-            return duration >= config.longPressThreshold && distance <= config.maxTapDistance
+            return distance <= config.maxTapDistance
         }
 
         /**
@@ -119,12 +102,6 @@ class GestureTypeClassifier
             return config.maxTapDistance
         }
 
-        /**
-         * Obtiene el umbral de tiempo para LONG_PRESS
-         */
-        fun getLongPressThreshold(): Long {
-            return config.longPressThreshold
-        }
 
         /**
          * Obtiene el umbral de distancia mínima para SWIPE
@@ -150,20 +127,13 @@ class GestureTypeClassifier
             startCell: Int,
             currentCell: Int,
         ): GestureClassificationResult {
-            val gestureType = determineGestureType(distance, duration, velocity, startCell, currentCell)
+            val gestureType = classifyGesture(distance, velocity, duration)
 
             val reasons = mutableListOf<String>()
 
             when (gestureType) {
-                GestureType.LONG_PRESS -> {
-                    reasons.add("Duration ${duration}ms >= ${config.longPressThreshold}ms")
-                    reasons.add("Distance ${distance}px <= ${config.maxTapDistance}px")
-                }
                 GestureType.TAP -> {
                     reasons.add("Distance ${distance}px <= ${config.maxTapDistance}px")
-                    if (duration < config.longPressThreshold) {
-                        reasons.add("Duration ${duration}ms < ${config.longPressThreshold}ms")
-                    }
                 }
                 GestureType.FLICK -> {
                     reasons.add("Velocity ${velocity}px/s >= ${config.flickSpeedThreshold}px/s")

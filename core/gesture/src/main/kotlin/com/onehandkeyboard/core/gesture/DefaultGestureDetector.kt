@@ -120,9 +120,6 @@ class DefaultGestureDetector
             // For distance calculation, we need to track the start position
             // This will be handled by the gesture type classifier
 
-            if (duration >= config.longPressThreshold) {
-                currentState = GestureState.LONG_PRESS
-            }
         }
 
         private fun handleActionUp(
@@ -158,18 +155,14 @@ class DefaultGestureDetector
 
             // Determine gesture type and direction using specialized components
             val gestureType =
-                gestureTypeClassifier.determineGestureType(
+                gestureTypeClassifier.classifyGesture(
                     distance = distance,
-                    duration = duration,
                     velocity = velocity,
-                    startCell = startCell,
-                    currentCell = touchInfo.cell,
+                    duration = duration,
                 )
 
             val direction =
-                if (gestureType == com.onehandkeyboard.core.domain.model.GestureType.TAP ||
-                    gestureType == com.onehandkeyboard.core.domain.model.GestureType.LONG_PRESS
-                ) {
+                if (gestureType == com.onehandkeyboard.core.domain.model.GestureType.TAP) {
                     com.onehandkeyboard.core.domain.model.Direction.CENTER
                 } else {
                     directionDetector.detectDirectionWithDeadZones(startPosition, touchInfo.position)
@@ -222,6 +215,5 @@ class DefaultGestureDetector
         private enum class GestureState {
             IDLE,
             TRACKING,
-            LONG_PRESS,
         }
     }

@@ -44,12 +44,13 @@ class ButtonStyleProvider(
 
             when {
                 isBackspace -> {
-                    // Usar colores específicos para backspace (rojo)
+                    // Backspace usa backgroundSecondary como los otros botones de control
+                    val baseColor = theme.colors.backgroundSecondary.toArgb()
                     colors =
                         if (pressed) {
-                            intArrayOf(Color.parseColor("#D32F2F"), Color.parseColor("#B71C1C"))
+                            intArrayOf(adjustBrightness(baseColor, 0.8f), adjustBrightness(baseColor, 0.6f))
                         } else {
-                            intArrayOf(Color.parseColor("#F44336"), Color.parseColor("#D32F2F"))
+                            intArrayOf(baseColor, adjustBrightness(baseColor, 0.9f))
                         }
                 }
                 isControl -> {
@@ -117,7 +118,7 @@ class ButtonStyleProvider(
     ): Int {
         val theme = getCurrentTheme()
         return when {
-            isBackspace -> Color.WHITE // Mantener blanco para backspace rojo
+            isBackspace -> theme.colors.contentSecondary.toArgb() // Texto sobre backgroundSecondary
             isControl -> theme.colors.contentSecondary.toArgb() // Texto sobre backgroundSecondary
             isGridCell -> theme.colors.contentPrimary.toArgb() // Texto sobre backgroundPrimary
             else -> theme.colors.contentPrimary.toArgb() // Fallback a contentPrimary

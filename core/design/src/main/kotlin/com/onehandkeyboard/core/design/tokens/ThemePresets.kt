@@ -13,8 +13,8 @@ object ThemePresets {
     val MonokaiDark = DesignTokens(
         colors = ColorTokens(
             // Core 5 IME keyboard tokens
-            backgroundRoot = Color(0xFF272822),       // Monokai background
-            backgroundPrimary = Color(0xFF3E3D32),    // Grid cells
+            backgroundRoot = Color(0xFF000000),       // Monokai background
+            backgroundPrimary = Color(0xFF000000),    // Grid cells
             backgroundSecondary = Color(0xFFF92672),  // Action buttons/space bar
             contentPrimary = Color(0xFFF8F8F2),       // Text on grid cells
             contentSecondary = Color(0xFFFFFFFF)      // Text on action buttons

@@ -30,7 +30,7 @@ data class GestureAction(
             direction: Direction,
         ): Boolean {
             return when (gestureType) {
-                GestureType.TAP, GestureType.LONG_PRESS -> direction == Direction.CENTER
+                GestureType.TAP -> direction == Direction.CENTER
                 GestureType.SWIPE, GestureType.DRAG, GestureType.FLICK -> direction != Direction.CENTER
             }
         }
@@ -40,7 +40,7 @@ data class GestureAction(
          */
         fun getValidDirectionsFor(gestureType: GestureType): List<Direction> {
             return when (gestureType) {
-                GestureType.TAP, GestureType.LONG_PRESS -> listOf(Direction.CENTER)
+                GestureType.TAP -> listOf(Direction.CENTER)
                 GestureType.SWIPE, GestureType.DRAG, GestureType.FLICK -> Direction.values().filter { it != Direction.CENTER }
             }
         }
@@ -50,7 +50,7 @@ data class GestureAction(
          */
         fun getValidGestureTypesFor(direction: Direction): List<GestureType> {
             return when (direction) {
-                Direction.CENTER -> listOf(GestureType.TAP, GestureType.LONG_PRESS)
+                Direction.CENTER -> listOf(GestureType.TAP)
                 else -> listOf(GestureType.SWIPE, GestureType.DRAG, GestureType.FLICK)
             }
         }
