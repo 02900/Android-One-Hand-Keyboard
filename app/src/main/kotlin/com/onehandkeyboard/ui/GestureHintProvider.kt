@@ -36,7 +36,7 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
                     is com.onehandkeyboard.actions.ActionConfig.Character -> applyCaseTransformation(actionConfig.char.toString())
                     is com.onehandkeyboard.actions.ActionConfig.Text -> applyCaseTransformation(actionConfig.text)
                     is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
-                    is com.onehandkeyboard.actions.ActionConfig.SwitchLayout -> "ABC"
+                    is com.onehandkeyboard.actions.ActionConfig.SwitchLayout -> getSwitchLayoutLabel()
                     is com.onehandkeyboard.actions.ActionConfig.SwitchCase -> getCaseModeLabel()
                     is com.onehandkeyboard.actions.ActionConfig.Backspace -> "⌫"
                     is com.onehandkeyboard.actions.ActionConfig.Space -> "␣"
@@ -127,7 +127,7 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             is com.onehandkeyboard.actions.ActionConfig.Character -> applyCaseTransformation(actionConfig.char.toString())
             is com.onehandkeyboard.actions.ActionConfig.Text -> applyCaseTransformation(actionConfig.text)
             is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
-            is com.onehandkeyboard.actions.ActionConfig.SwitchLayout -> "ABC"
+            is com.onehandkeyboard.actions.ActionConfig.SwitchLayout -> getSwitchLayoutLabel()
             is com.onehandkeyboard.actions.ActionConfig.SwitchCase -> "Aa"
             is com.onehandkeyboard.actions.ActionConfig.Backspace -> "⌫"
             is com.onehandkeyboard.actions.ActionConfig.Space -> "␣"
@@ -151,7 +151,7 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             is com.onehandkeyboard.actions.ActionConfig.Character -> applyCaseTransformation(tapActionConfig.char.toString())
             is com.onehandkeyboard.actions.ActionConfig.Text -> applyCaseTransformation(tapActionConfig.text)
             is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(tapActionConfig.keyAction)
-            is com.onehandkeyboard.actions.ActionConfig.SwitchLayout -> "ABC"
+            is com.onehandkeyboard.actions.ActionConfig.SwitchLayout -> getSwitchLayoutLabel()
             is com.onehandkeyboard.actions.ActionConfig.SwitchCase -> "Aa"
             is com.onehandkeyboard.actions.ActionConfig.Backspace -> "⌫"
             is com.onehandkeyboard.actions.ActionConfig.Space -> "Space"
@@ -182,6 +182,16 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             CaseMode.LOWERCASE -> "AA"  // Show uppercase indicator when in lowercase
             CaseMode.UPPERCASE -> "aa"  // Show lowercase indicator when in uppercase
             CaseMode.CAPITALIZE -> "aa" // Fallback to lowercase
+        }
+    }
+
+    /**
+     * Get the appropriate layout switch label based on current layout
+     */
+    private fun getSwitchLayoutLabel(): String {
+        return when (layoutManager.currentMode) {
+            com.onehandkeyboard.enums.LayoutMode.LETTERS -> "123"  // Show numbers when in letters
+            com.onehandkeyboard.enums.LayoutMode.SYMBOLS -> "ABC"  // Show letters when in symbols
         }
     }
 }
