@@ -67,19 +67,19 @@ class KeyboardLayoutManager
         }
 
         /**
-         * Cycles through case modes: lowercase → UPPERCASE → Capitalize
+         * Toggles between case modes: lowercase ↔ UPPERCASE
          */
         fun switchCaseMode(): Boolean {
             val previousCaseMode = currentCaseMode
             currentCaseMode =
                 when (currentCaseMode) {
                     CaseMode.LOWERCASE -> CaseMode.UPPERCASE
-                    CaseMode.UPPERCASE -> CaseMode.CAPITALIZE
-                    CaseMode.CAPITALIZE -> CaseMode.LOWERCASE
+                    CaseMode.UPPERCASE -> CaseMode.LOWERCASE
+                    CaseMode.CAPITALIZE -> CaseMode.LOWERCASE // Fallback for existing state
                 }
 
             // Reset capitalize flag
-            isCapitalizeNext = currentCaseMode == CaseMode.CAPITALIZE
+            isCapitalizeNext = false
 
             Log.d("KeyboardLayoutManager", "Case mode switched from $previousCaseMode to $currentCaseMode")
             return previousCaseMode != currentCaseMode

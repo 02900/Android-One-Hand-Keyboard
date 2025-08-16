@@ -349,12 +349,10 @@ class GestureIntegration(
                     KeyboardOutput.Character(text)
                 }
                 is ActionConfig.SwitchLayout -> {
-                    layoutManager.switchLayout()
-                    null
+                    KeyboardOutput.Action(KeyAction.SwitchToNumbers) // This will trigger UI refresh
                 }
                 is ActionConfig.SwitchCase -> {
-                    layoutManager.switchCaseMode()
-                    null
+                    KeyboardOutput.Action(KeyAction.ToggleCase) // This will trigger UI refresh
                 }
                 is ActionConfig.Backspace -> {
                     KeyboardOutput.Action(KeyAction.Backspace)
@@ -366,12 +364,10 @@ class GestureIntegration(
                     KeyboardOutput.Action(KeyAction.Enter)
                 }
                 is ActionConfig.ShowNumbers -> {
-                    layoutManager.switchToSymbols()
-                    null
+                    KeyboardOutput.Action(KeyAction.SwitchToNumbers) // This will trigger UI refresh
                 }
                 is ActionConfig.ShowLetters -> {
-                    layoutManager.switchToLetters()
-                    null
+                    KeyboardOutput.Action(KeyAction.SwitchToLetters) // This will trigger UI refresh
                 }
                 is ActionConfig.CustomFunction -> {
                     Log.d("OneHandKeyboard", "🎯 CUSTOM FUNCTION: ${actionConfig.functionId}")

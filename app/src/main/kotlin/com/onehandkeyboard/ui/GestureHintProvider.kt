@@ -1,8 +1,11 @@
 package com.onehandkeyboard.ui
 
 import com.onehandkeyboard.KeyboardLayoutManager
+import com.onehandkeyboard.actions.ActionConfig
 import com.onehandkeyboard.config.CellConfiguration
+import com.onehandkeyboard.core.domain.model.CaseMode
 import com.onehandkeyboard.core.domain.model.Direction
+import com.onehandkeyboard.gestures.GestureAction
 import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
 
@@ -30,11 +33,11 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             val directionSymbol = getDirectionSymbol(gestureAction.direction)
             val actionSymbol =
                 when (actionConfig) {
-                    is com.onehandkeyboard.actions.ActionConfig.Character -> actionConfig.char.toString()
-                    is com.onehandkeyboard.actions.ActionConfig.Text -> actionConfig.text
+                    is com.onehandkeyboard.actions.ActionConfig.Character -> applyCaseTransformation(actionConfig.char.toString())
+                    is com.onehandkeyboard.actions.ActionConfig.Text -> applyCaseTransformation(actionConfig.text)
                     is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
                     is com.onehandkeyboard.actions.ActionConfig.SwitchLayout -> "ABC"
-                    is com.onehandkeyboard.actions.ActionConfig.SwitchCase -> "Aa"
+                    is com.onehandkeyboard.actions.ActionConfig.SwitchCase -> getCaseModeLabel()
                     is com.onehandkeyboard.actions.ActionConfig.Backspace -> "⌫"
                     is com.onehandkeyboard.actions.ActionConfig.Space -> "␣"
                     is com.onehandkeyboard.actions.ActionConfig.Enter -> "↵"
@@ -121,8 +124,8 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
                 ?: return ""
 
         return when (actionConfig) {
-            is com.onehandkeyboard.actions.ActionConfig.Character -> actionConfig.char.toString()
-            is com.onehandkeyboard.actions.ActionConfig.Text -> actionConfig.text
+            is com.onehandkeyboard.actions.ActionConfig.Character -> applyCaseTransformation(actionConfig.char.toString())
+            is com.onehandkeyboard.actions.ActionConfig.Text -> applyCaseTransformation(actionConfig.text)
             is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(actionConfig.keyAction)
             is com.onehandkeyboard.actions.ActionConfig.SwitchLayout -> "ABC"
             is com.onehandkeyboard.actions.ActionConfig.SwitchCase -> "Aa"
@@ -145,8 +148,8 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             }?.value
 
         return when (tapActionConfig) {
-            is com.onehandkeyboard.actions.ActionConfig.Character -> tapActionConfig.char.toString()
-            is com.onehandkeyboard.actions.ActionConfig.Text -> tapActionConfig.text
+            is com.onehandkeyboard.actions.ActionConfig.Character -> applyCaseTransformation(tapActionConfig.char.toString())
+            is com.onehandkeyboard.actions.ActionConfig.Text -> applyCaseTransformation(tapActionConfig.text)
             is com.onehandkeyboard.actions.ActionConfig.Action -> getActionSymbol(tapActionConfig.keyAction)
             is com.onehandkeyboard.actions.ActionConfig.SwitchLayout -> "ABC"
             is com.onehandkeyboard.actions.ActionConfig.SwitchCase -> "Aa"
@@ -157,6 +160,28 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             is com.onehandkeyboard.actions.ActionConfig.ShowLetters -> "ABC"
             is com.onehandkeyboard.actions.ActionConfig.CustomFunction -> tapActionConfig.functionId
             null -> ""
+        }
+    }
+
+    /**
+     * Apply case transformation based on current case mode
+     */
+    private fun applyCaseTransformation(text: String): String {
+        return when (layoutManager.currentCaseMode) {
+            CaseMode.UPPERCASE -> text.uppercase()
+            CaseMode.LOWERCASE -> text.lowercase()
+            CaseMode.CAPITALIZE -> text.lowercase().replaceFirstChar { it.uppercase() }
+        }
+    }
+
+    /**
+     * Get the appropriate case mode label for the switch case button
+     */
+    private fun getCaseModeLabel(): String {
+        return when (layoutManager.currentCaseMode) {
+            CaseMode.LOWERCASE -> "AA"  // Show uppercase indicator when in lowercase
+            CaseMode.UPPERCASE -> "aa"  // Show lowercase indicator when in uppercase
+            CaseMode.CAPITALIZE -> "aa" // Fallback to lowercase
         }
     }
 }

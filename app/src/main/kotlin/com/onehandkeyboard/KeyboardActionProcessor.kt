@@ -162,6 +162,7 @@ class KeyboardActionProcessor(
      * Ejecuta acción de cambio de modo de mayúsculas
      */
     private fun executeToggleCase() {
+        configManager.switchCaseMode()
         onCaseSwitch()
         Log.d("OneHandKeyboard", "🎯 Case mode toggled")
     }
@@ -170,7 +171,7 @@ class KeyboardActionProcessor(
      * Ejecuta acción de cambio a números
      */
     private fun executeSwitchToNumbers() {
-        configManager.switchLayout()
+        configManager.switchToSymbols()
         onLayoutSwitch()
         Log.d("OneHandKeyboard", "🎯 Switched to numbers layout")
     }
@@ -179,7 +180,7 @@ class KeyboardActionProcessor(
      * Ejecuta acción de cambio a letras
      */
     private fun executeSwitchToLetters() {
-        configManager.switchLayout()
+        configManager.switchToLetters()
         onLayoutSwitch()
         Log.d("OneHandKeyboard", "🎯 Switched to letters layout")
     }

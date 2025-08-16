@@ -203,7 +203,7 @@ class KeyboardConfigurationFactory @Inject constructor() {
                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('%'),
             )),
             CellConfiguration(3, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.SwitchLayout,
+                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.ShowLetters,
             )),
             
             // Row 1: Numbers 4-6, Action cell
@@ -250,13 +250,10 @@ class KeyboardConfigurationFactory @Inject constructor() {
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Backspace,
             )),
             
-            // Row 3: 0, 0, Space, Enter
+            // Row 3: 0, Spacebar (spans 2 cols), Enter
             CellConfiguration(12, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('0'),
-            )),
-            CellConfiguration(13, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('0'),
-            )),
+            ), colSpan = 2),
             CellConfiguration(14, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Space,
             )),
@@ -285,7 +282,7 @@ class KeyboardConfigurationFactory @Inject constructor() {
                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('y'),
             )),
             CellConfiguration(3, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.SwitchLayout,
+                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.ShowNumbers,
             )),
             
             CellConfiguration(4, mapOf(
