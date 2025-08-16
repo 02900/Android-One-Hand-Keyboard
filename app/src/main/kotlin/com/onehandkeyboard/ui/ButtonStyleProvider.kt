@@ -31,7 +31,7 @@ class ButtonStyleProvider(
      * Crea el fondo del botón con bordes redondeados usando tokens del tema
      */
     fun createButtonBackground(
-        pressed: Boolean,
+        pressed: Boolean = false, // Ignorar estado pressed para apariencia plana
         isBackspace: Boolean = false,
         isControl: Boolean = false,
         isGridCell: Boolean = false,
@@ -46,22 +46,22 @@ class ButtonStyleProvider(
                 isBackspace -> {
                     // Backspace usa backgroundSecondary como los otros botones de control
                     val baseColor = theme.colors.backgroundSecondary.toArgb()
-                    setColor(if (pressed) adjustBrightness(baseColor, 0.8f) else baseColor)
+                    setColor(baseColor)
                 }
                 isControl -> {
                     // Botones de control usan backgroundSecondary
                     val baseColor = theme.colors.backgroundSecondary.toArgb()
-                    setColor(if (pressed) adjustBrightness(baseColor, 0.8f) else baseColor)
+                    setColor(baseColor)
                 }
                 isGridCell -> {
                     // Celdas del grid usan backgroundPrimary
                     val baseColor = theme.colors.backgroundPrimary.toArgb()
-                    setColor(if (pressed) adjustBrightness(baseColor, 0.8f) else baseColor)
+                    setColor(baseColor)
                 }
                 else -> {
                     // Fallback a backgroundPrimary para compatibilidad
                     val baseColor = theme.colors.backgroundPrimary.toArgb()
-                    setColor(if (pressed) adjustBrightness(baseColor, 0.8f) else baseColor)
+                    setColor(baseColor)
                 }
             }
 

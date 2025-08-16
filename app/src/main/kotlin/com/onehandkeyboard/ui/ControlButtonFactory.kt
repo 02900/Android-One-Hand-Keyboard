@@ -99,20 +99,7 @@ class ControlButtonFactory(
             // Configurar click listener
             setOnClickListener { onClickListener() }
 
-            // Feedback visual al presionar
-            setOnTouchListener { _, event ->
-                when (event.action) {
-                    android.view.MotionEvent.ACTION_DOWN -> {
-                        background = styleProvider.createButtonBackground(true, true)
-                        false
-                    }
-                    android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
-                        background = styleProvider.createButtonBackground(false, true)
-                        false
-                    }
-                    else -> false
-                }
-            }
+            // Sin feedback visual al presionar para apariencia plana
         }
     }
 
@@ -154,20 +141,7 @@ class ControlButtonFactory(
             // Configurar click listener
             setOnClickListener { onClickListener(keyData.primaryChar) }
 
-            // Feedback visual al presionar
-            setOnTouchListener { _, event ->
-                when (event.action) {
-                    android.view.MotionEvent.ACTION_DOWN -> {
-                        background = styleProvider.createButtonBackground(true)
-                        false
-                    }
-                    android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
-                        background = styleProvider.createButtonBackground(false)
-                        false
-                    }
-                    else -> false
-                }
-            }
+            // Sin feedback visual al presionar para apariencia plana
         }
     }
 }

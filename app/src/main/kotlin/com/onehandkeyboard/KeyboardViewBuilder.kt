@@ -66,7 +66,7 @@ class KeyboardViewBuilder(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                 )
-            setPadding(8, 8, 8, 8)
+            setPadding(0, 0, 0, 0)
             
             // Usar backgroundRoot del tema para el fondo general del teclado IME
             val theme = getCurrentTheme()
