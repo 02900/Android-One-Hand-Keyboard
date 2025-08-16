@@ -40,56 +40,35 @@ class ButtonStyleProvider(
         
         return GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
-            cornerRadius = 12f
+            cornerRadius = 0f // Sin bordes redondeados para ningún botón
 
             when {
                 isBackspace -> {
                     // Backspace usa backgroundSecondary como los otros botones de control
                     val baseColor = theme.colors.backgroundSecondary.toArgb()
-                    colors =
-                        if (pressed) {
-                            intArrayOf(adjustBrightness(baseColor, 0.8f), adjustBrightness(baseColor, 0.6f))
-                        } else {
-                            intArrayOf(baseColor, adjustBrightness(baseColor, 0.9f))
-                        }
+                    setColor(if (pressed) adjustBrightness(baseColor, 0.8f) else baseColor)
                 }
                 isControl -> {
                     // Botones de control usan backgroundSecondary
                     val baseColor = theme.colors.backgroundSecondary.toArgb()
-                    colors =
-                        if (pressed) {
-                            intArrayOf(adjustBrightness(baseColor, 0.8f), adjustBrightness(baseColor, 0.6f))
-                        } else {
-                            intArrayOf(baseColor, adjustBrightness(baseColor, 0.9f))
-                        }
+                    setColor(if (pressed) adjustBrightness(baseColor, 0.8f) else baseColor)
                 }
                 isGridCell -> {
                     // Celdas del grid usan backgroundPrimary
                     val baseColor = theme.colors.backgroundPrimary.toArgb()
-                    colors =
-                        if (pressed) {
-                            intArrayOf(adjustBrightness(baseColor, 0.8f), adjustBrightness(baseColor, 0.6f))
-                        } else {
-                            intArrayOf(baseColor, adjustBrightness(baseColor, 0.9f))
-                        }
+                    setColor(if (pressed) adjustBrightness(baseColor, 0.8f) else baseColor)
                 }
                 else -> {
                     // Fallback a backgroundPrimary para compatibilidad
                     val baseColor = theme.colors.backgroundPrimary.toArgb()
-                    colors =
-                        if (pressed) {
-                            intArrayOf(adjustBrightness(baseColor, 0.8f), adjustBrightness(baseColor, 0.6f))
-                        } else {
-                            intArrayOf(baseColor, adjustBrightness(baseColor, 0.9f))
-                        }
+                    setColor(if (pressed) adjustBrightness(baseColor, 0.8f) else baseColor)
                 }
             }
 
-            gradientType = GradientDrawable.LINEAR_GRADIENT
-            orientation = GradientDrawable.Orientation.TOP_BOTTOM
+            // Sin gradiente para apariencia plana
 
-            // Borde sutil usando color gris por defecto
-            setStroke(1, Color.parseColor("#757575"))
+            // Sin bordes
+            setStroke(0, Color.TRANSPARENT)
         }
     }
 

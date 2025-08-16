@@ -105,7 +105,6 @@ class KeyboardViewBuilder(
      */
     private fun create3x3Grid(): LinearLayout {
         val keyData = layoutManager.getCurrentKeyData()
-        val cellSize = calculateSquareCellSize()
 
         return LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -173,7 +172,7 @@ class KeyboardViewBuilder(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     1f, // Takes 1/4 of horizontal space
                 )
-            setPadding(8, 0, 0, 0)
+            setPadding(0, 0, 0, 0) // Sin padding entre grid y columna de controles
             
             // No background on container - will be applied to individual buttons
 
@@ -356,12 +355,13 @@ class KeyboardViewBuilder(
             text = layoutManager.getCurrentLayoutModeText()
             textSize = 12f
             setTextColor(styleProvider.getTextColor(isControl = true))
+            val cellHeight = uiFactory.calculateCellHeight()
             layoutParams =
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    cellHeight, // Usar la misma altura que las celdas
                 ).apply {
-                    setMargins(0, 4, 0, 4)
+                    setMargins(0, 0, 0, 0) // Sin márgenes entre botones
                 }
             background = styleProvider.createButtonBackground(false, isControl = true)
         }
@@ -377,12 +377,13 @@ class KeyboardViewBuilder(
             text = layoutManager.getCurrentCaseModeText()
             textSize = 12f
             setTextColor(styleProvider.getTextColor(isControl = true))
+            val cellHeight = uiFactory.calculateCellHeight()
             layoutParams =
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    cellHeight, // Usar la misma altura que las celdas
                 ).apply {
-                    setMargins(0, 4, 0, 4)
+                    setMargins(0, 0, 0, 0) // Sin márgenes entre botones
                 }
             background = styleProvider.createButtonBackground(false, isControl = true)
         }
@@ -423,15 +424,16 @@ class KeyboardViewBuilder(
         return Button(context).apply {
             text = "⌫"
             textSize = 16f
-            setTextColor(Color.WHITE) // Keep white for red backspace button
+            setTextColor(styleProvider.getTextColor(isBackspace = true))
+            val cellHeight = uiFactory.calculateCellHeight()
             layoutParams =
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    cellHeight, // Usar la misma altura que las celdas
                 ).apply {
-                    setMargins(0, 4, 0, 4)
+                    setMargins(0, 0, 0, 0) // Sin márgenes entre botones
                 }
-            background = createButtonBackground(false, true, true)
+            background = styleProvider.createButtonBackground(false, isBackspace = true)
             
             setOnClickListener {
                 actionProcessor.processKeyboardOutput(KeyboardOutput.Action(KeyAction.Backspace))
@@ -450,7 +452,7 @@ class KeyboardViewBuilder(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                 )
-            setPadding(0, 8, 0, 0)
+            setPadding(0, 0, 0, 0) // Sin padding entre contenido principal y spacebar
             
             // No background on container - will be applied to individual buttons
 
@@ -464,15 +466,16 @@ class KeyboardViewBuilder(
      */
     private fun createFullWidthSpacebar(): Button {
         val theme = getCurrentTheme()
+        val cellHeight = uiFactory.calculateCellHeight() // Usar la misma altura que las celdas
         
         return Button(context).apply {
             text = "Espacio"
             layoutParams = LinearLayout.LayoutParams(
                 0, // width = 0 to use weight
-                200 // height in pixels
+                cellHeight // Usar la misma altura que las celdas
             ).apply {
                 weight = 1.0f // Take all available horizontal space
-                setMargins(4, 4, 4, 4)
+                setMargins(0, 0, 0, 0) // Sin márgenes en el spacebar
             }
             
             textSize = 16f

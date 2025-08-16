@@ -6,20 +6,39 @@ import android.content.Context
  * Calculadora de layouts y dimensiones para el teclado.
  *
  * Responsabilidades:
- * - Calcular tamaños de celdas con aspect ratio 1:1
+ * - Calcular dimensiones de celdas con altura configurable
  * - Determinar dimensiones basadas en el tamaño de pantalla
  * - Gestionar márgenes y espaciado del grid
  */
 class LayoutCalculator(private val context: Context) {
+    // Altura configurable de celda en dp
+    private val cellHeightDp = 60f
+    
     /**
-     * Calcula el tamaño de celda cuadrada basado en el ancho disponible para el grid
+     * Calcula la altura de celda en pixels basada en la configuración
      */
-    fun calculateSquareCellSize(): Int {
+    fun calculateCellHeight(): Int {
+        val displayMetrics = context.resources.displayMetrics
+        return (cellHeightDp * displayMetrics.density).toInt()
+    }
+    
+    /**
+     * Calcula el ancho de celda basado en el ancho disponible para el grid
+     */
+    fun calculateCellWidth(): Int {
         val displayMetrics = context.resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
         val gridWidth = (screenWidth * 0.75).toInt() // 75% del ancho para el grid (25% para controles)
-        val cellSize = (gridWidth - 60) / 3 // 60px para márgenes totales entre 3 celdas
-        return cellSize
+        val cellWidth = (gridWidth - 60) / 3 // 60px para márgenes totales entre 3 celdas
+        return cellWidth
+    }
+    
+    /**
+     * @deprecated Use calculateCellWidth() and calculateCellHeight() instead
+     */
+    @Deprecated("Use calculateCellWidth() and calculateCellHeight() for flexible sizing")
+    fun calculateSquareCellSize(): Int {
+        return calculateCellWidth()
     }
 
     /**

@@ -17,6 +17,7 @@ import android.widget.LinearLayout
  */
 class ControlButtonFactory(
     private val context: Context,
+    private val layoutCalculator: LayoutCalculator,
     private val styleProvider: ButtonStyleProvider,
 ) {
     /**
@@ -27,10 +28,11 @@ class ControlButtonFactory(
             text = "Layout"
             textSize = styleProvider.getControlTextSize()
             setTextColor(Color.parseColor("#4CAF50"))
+            val cellHeight = layoutCalculator.calculateCellHeight()
             layoutParams =
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    cellHeight, // Usar la misma altura que las celdas
                 ).apply {
                     setMargins(0, 4, 0, 4)
                 }
@@ -48,10 +50,11 @@ class ControlButtonFactory(
             text = "Aa"
             textSize = styleProvider.getControlTextSize()
             setTextColor(Color.parseColor("#2196F3"))
+            val cellHeight = layoutCalculator.calculateCellHeight()
             layoutParams =
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    cellHeight, // Usar la misma altura que las celdas
                 ).apply {
                     setMargins(0, 4, 0, 4)
                 }
@@ -66,10 +69,11 @@ class ControlButtonFactory(
      */
     fun createBackspaceButton(onClickListener: () -> Unit): FrameLayout {
         return FrameLayout(context).apply {
+            val cellHeight = layoutCalculator.calculateCellHeight()
             layoutParams =
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    cellHeight, // Usar la misma altura que las celdas
                 ).apply {
                     setMargins(8, 8, 8, 8)
                 }

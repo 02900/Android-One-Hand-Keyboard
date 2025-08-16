@@ -40,7 +40,7 @@ class KeyboardUiFactory(
     private val layoutCalculator = LayoutCalculator(context)
     private val _styleProvider = ButtonStyleProvider(context, themeManager)
     private val hintProvider = GestureHintProvider(layoutManager)
-    private val controlButtonFactory = ControlButtonFactory(context, _styleProvider)
+    private val controlButtonFactory = ControlButtonFactory(context, layoutCalculator, _styleProvider)
     private val labelFactory = DirectionalLabelFactory(context, _styleProvider, hintProvider)
     
     // Public accessor for styleProvider
@@ -51,8 +51,16 @@ class KeyboardUiFactory(
     // ============================================================================
 
     /**
-     * Calcula el tamaño de celda cuadrada basado en el ancho disponible para el grid
+     * Calcula la altura de celda configurable
      */
+    fun calculateCellHeight(): Int {
+        return layoutCalculator.calculateCellHeight()
+    }
+    
+    /**
+     * @deprecated Use calculateCellHeight() instead
+     */
+    @Deprecated("Use calculateCellHeight() for flexible sizing")
     fun calculateSquareCellSize(): Int {
         return layoutCalculator.calculateSquareCellSize()
     }
@@ -73,16 +81,15 @@ class KeyboardUiFactory(
             // Obtener configuración de la celda
             val cellConfig = layoutManager.keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
 
-            // Layout parameters con aspect ratio 1:1
-            val squareSize = layoutCalculator.calculateSquareCellSize()
-            val margins = layoutCalculator.getStandardCellMargins()
+            // Layout parameters con altura configurable y ancho flexible - sin márgenes
+            val cellHeight = layoutCalculator.calculateCellHeight()
             layoutParams =
                 LinearLayout.LayoutParams(
                     0,
-                    squareSize, // Altura fija para aspect ratio 1:1
-                    1f,
+                    cellHeight, // Altura configurable
+                    1f, // Peso 1 para usar todo el ancho disponible
                 ).apply {
-                    setMargins(margins, margins, margins, margins)
+                    setMargins(0, 0, 0, 0) // Sin márgenes entre celdas
                 }
 
             // Fondo con bordes redondeados usando backgroundPrimary para celdas del grid
