@@ -48,7 +48,7 @@ class GestureIntegration(
     private var gestureStartTime = 0L
     private var gestureStartX = 0f
     private var gestureStartY = 0f
-    private var gestureAlreadyEmitted = false // Prevenir repetición de gestos
+    private var gestureOriginCellIndex = -1 // Celda donde inició el gesto
     private val swipeThreshold = 50f // pixels
 
     // Sistema de gestos avanzado
@@ -206,7 +206,8 @@ class GestureIntegration(
     // ============================================================================
 
     /**
-     * Procesa eventos de gesto en tiempo real
+     * Procesa eventos de gesto determinando tap/swipe solo en ACTION_UP
+     * Permite gestos que inicien en una celda y terminen fuera de ella
      */
     fun processGestureEvent(
         event: MotionEvent,
@@ -216,48 +217,38 @@ class GestureIntegration(
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 gestureStartTime = System.currentTimeMillis()
-                gestureStartX = event.x
-                gestureStartY = event.y
-                gestureAlreadyEmitted = false
-                Log.d("OneHandKeyboard", "🎯 ACTION_DOWN on cell $cellIndex at (${event.x}, ${event.y})")
+                gestureStartX = event.rawX // Usar coordenadas absolutas de pantalla
+                gestureStartY = event.rawY
+                gestureOriginCellIndex = cellIndex // Recordar celda de origen
+                Log.d("OneHandKeyboard", "🎯 ACTION_DOWN on cell $cellIndex at screen coords (${event.rawX}, ${event.rawY})")
             }
 
             MotionEvent.ACTION_MOVE -> {
-                if (gestureAlreadyEmitted) return
-
-                val currentTime = System.currentTimeMillis()
-                val deltaTime = currentTime - gestureStartTime
-                val deltaX = event.x - gestureStartX
-                val deltaY = event.y - gestureStartY
+                // Solo registrar el movimiento, no procesar gestos aún
+                val deltaX = event.rawX - gestureStartX
+                val deltaY = event.rawY - gestureStartY
                 val distance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
-
-                // Detectar swipe
-                if (!gestureAlreadyEmitted && distance >= swipeThreshold) {
-                    val direction = getSwipeDirection(deltaX, deltaY)
-                    gestureAlreadyEmitted = true
-                    Log.d("OneHandKeyboard", "🎯 SWIPE detected on cell $cellIndex, direction: $direction")
-                    handleGestureAction(cellIndex, GestureType.SWIPE, direction, onGestureProcessed)
-                }
+                Log.d("OneHandKeyboard", "🎯 ACTION_MOVE: distance=${distance}px from origin cell $gestureOriginCellIndex")
             }
 
             MotionEvent.ACTION_UP -> {
-                if (gestureAlreadyEmitted) return
-
                 val currentTime = System.currentTimeMillis()
                 val deltaTime = currentTime - gestureStartTime
-                val deltaX = event.x - gestureStartX
-                val deltaY = event.y - gestureStartY
+                val deltaX = event.rawX - gestureStartX // Desplazamiento total desde inicio
+                val deltaY = event.rawY - gestureStartY
                 val distance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
 
-                // Detectar tap o swipe basado en desplazamiento
+                Log.d("OneHandKeyboard", "🎯 ACTION_UP: total displacement=${distance}px from cell $gestureOriginCellIndex to current position")
+
+                // Determinar gesto basado en desplazamiento total
                 if (distance < swipeThreshold) {
-                    Log.d("OneHandKeyboard", "🎯 TAP detected on cell $cellIndex (deltaTime: ${deltaTime}ms)")
-                    handleGestureAction(cellIndex, GestureType.TAP, Direction.CENTER, onGestureProcessed)
+                    Log.d("OneHandKeyboard", "🎯 TAP detected on origin cell $gestureOriginCellIndex (displacement: ${distance}px)")
+                    handleGestureAction(gestureOriginCellIndex, GestureType.TAP, Direction.CENTER, onGestureProcessed)
                 } else {
-                    // Swipe detectado en ACTION_UP
+                    // Swipe: aplicar dirección a la celda de origen
                     val direction = getSwipeDirection(deltaX, deltaY)
-                    Log.d("OneHandKeyboard", "🎯 SWIPE detected on ACTION_UP for cell $cellIndex, direction: $direction")
-                    handleGestureAction(cellIndex, GestureType.SWIPE, direction, onGestureProcessed)
+                    Log.d("OneHandKeyboard", "🎯 SWIPE detected from origin cell $gestureOriginCellIndex, direction: $direction (displacement: ${distance}px)")
+                    handleGestureAction(gestureOriginCellIndex, GestureType.SWIPE, direction, onGestureProcessed)
                 }
             }
         }
