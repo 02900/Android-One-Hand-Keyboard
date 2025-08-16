@@ -19,39 +19,7 @@ data class ColorTokens(
     val backgroundPrimary: Color,     // Background for grid cells (main keys)
     val backgroundSecondary: Color,   // Background for action buttons and space bar
     val contentPrimary: Color,        // Text color applied over backgroundPrimary
-    val contentSecondary: Color,      // Text color applied over backgroundSecondary
-    
-    // Legacy tokens for configuration app compatibility (can use hardcoded colors if needed)
-    val keyboardBackground: Color = backgroundRoot,
-    val keyBackground: Color = backgroundPrimary,
-    val keyBackgroundPressed: Color = backgroundPrimary,
-    val keyBackgroundDisabled: Color = backgroundPrimary,
-    val actionKeyBackground: Color = backgroundSecondary,
-    val actionKeyBackgroundPressed: Color = backgroundSecondary,
-    val actionKeyBackgroundDisabled: Color = backgroundSecondary,
-    val controlKeyBackground: Color = backgroundSecondary,
-    val controlKeyBackgroundPressed: Color = backgroundSecondary,
-    val controlKeyBackgroundActive: Color = backgroundSecondary,
-    val keyText: Color = contentPrimary,
-    val keyTextSecondary: Color = contentPrimary,
-    val keyTextDisabled: Color = contentPrimary,
-    val actionKeyText: Color = contentSecondary,
-    val controlKeyText: Color = contentSecondary,
-    val keyBorder: Color = backgroundPrimary,
-    val keyBorderFocused: Color = backgroundSecondary,
-    val keyBorderPressed: Color = backgroundSecondary,
-    val surface: Color = backgroundRoot,
-    val surfaceVariant: Color = backgroundPrimary,
-    val onSurface: Color = contentPrimary,
-    val onSurfaceVariant: Color = contentPrimary,
-    val primary: Color = backgroundSecondary,
-    val primaryVariant: Color = backgroundSecondary,
-    val secondary: Color = backgroundPrimary,
-    val secondaryVariant: Color = backgroundPrimary,
-    val error: Color = Color.Red,
-    val warning: Color = Color.Yellow,
-    val success: Color = Color.Green,
-    val info: Color = Color.Blue
+    val contentSecondary: Color       // Text color applied over backgroundSecondary
 )
 
 /**

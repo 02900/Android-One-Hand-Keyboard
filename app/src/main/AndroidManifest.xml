@@ -42,6 +42,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Theme Configuration Activity -->
+        <activity
+            android:name=".ui.ThemeConfigurationActivity"
+            android:exported="true"
+            android:label="Configuración de Temas"
+            android:theme="@style/Theme.OneHandKeyboard">
+        </activity>
+
     </application>
 
 </manifest>

@@ -60,7 +60,7 @@ class DirectionalLabelFactory(
         // Crear label para el centro (TAP)
         val centerLabel = hintProvider.getCenterLabel(cellConfig)
         if (centerLabel.isNotEmpty()) {
-            val centerTextView = createCenterCombinedTextView(cellConfig)
+            val centerTextView = createCenterCombinedTextView(cellConfig, cellIndex)
             container.addView(centerTextView)
         }
     }
@@ -129,13 +129,15 @@ class DirectionalLabelFactory(
     /**
      * Crea el TextView para el centro (solo TAP)
      */
-    fun createCenterCombinedTextView(cellConfig: CellConfiguration): TextView {
+    fun createCenterCombinedTextView(cellConfig: CellConfiguration, cellIndex: Int): TextView {
         val centerLabel = hintProvider.getCenterLabel(cellConfig)
 
         return TextView(context).apply {
             text = centerLabel
             textSize = styleProvider.getCenterTextSize()
-            setTextColor(styleProvider.getCenterTextColor())
+            // Color del texto usando tokens del tema
+            val textColor = styleProvider.getTextColor(isGridCell = true, cellIndex = cellIndex)
+            setTextColor(textColor)
             gravity = Gravity.CENTER
 
             layoutParams =

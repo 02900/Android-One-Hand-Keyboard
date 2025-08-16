@@ -77,6 +77,48 @@ object ThemePresets {
         )
     )
 
+    /**
+     * Tokyo Night theme - Modern dark theme with purple accents
+     */
+    val TokyoNight = DesignTokens(
+        colors = ColorTokens(
+            // Core 5 IME keyboard tokens
+            backgroundRoot = Color(0xFF1A1B26),       // Tokyo Night background
+            backgroundPrimary = Color(0xFF24283B),    // Grid cells
+            backgroundSecondary = Color(0xFF7AA2F7),  // Action buttons/space bar
+            contentPrimary = Color(0xFFC0CAF5),       // Text on grid cells
+            contentSecondary = Color(0xFF1A1B26)      // Text on action buttons
+        )
+    )
+
+    /**
+     * Ocean Blue theme - Cool blue theme
+     */
+    val OceanBlue = DesignTokens(
+        colors = ColorTokens(
+            // Core 5 IME keyboard tokens
+            backgroundRoot = Color(0xFF0F172A),       // Deep ocean background
+            backgroundPrimary = Color(0xFF1E293B),    // Grid cells
+            backgroundSecondary = Color(0xFF0EA5E9),  // Action buttons/space bar
+            contentPrimary = Color(0xFFE2E8F0),       // Text on grid cells
+            contentSecondary = Color(0xFF0F172A)      // Text on action buttons
+        )
+    )
+
+    /**
+     * Forest Green theme - Nature-inspired green theme
+     */
+    val ForestGreen = DesignTokens(
+        colors = ColorTokens(
+            // Core 5 IME keyboard tokens
+            backgroundRoot = Color(0xFF0F1419),       // Dark forest background
+            backgroundPrimary = Color(0xFF1B2B1B),    // Grid cells
+            backgroundSecondary = Color(0xFF22C55E),  // Action buttons/space bar
+            contentPrimary = Color(0xFFD1FAE5),       // Text on grid cells
+            contentSecondary = Color(0xFF0F1419)      // Text on action buttons
+        )
+    )
+
     
     /**
      * Get all available theme presets
@@ -87,6 +129,9 @@ object ThemePresets {
         "Dracula Dark" to DraculaDark,
         "Gruvbox Dark" to GruvboxDark,
         "Gruvbox Light" to GruvboxLight,
+        "Tokyo Night" to TokyoNight,
+        "Ocean Blue" to OceanBlue,
+        "Forest Green" to ForestGreen,
     )
     
     /**

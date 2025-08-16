@@ -35,6 +35,7 @@ class ButtonStyleProvider(
         isBackspace: Boolean = false,
         isControl: Boolean = false,
         isGridCell: Boolean = false,
+        cellIndex: Int = -1, // Índice de celda para aplicar colores diferenciados
     ): GradientDrawable {
         val theme = getCurrentTheme()
         
@@ -54,8 +55,12 @@ class ButtonStyleProvider(
                     setColor(baseColor)
                 }
                 isGridCell -> {
-                    // Celdas del grid usan backgroundPrimary
-                    val baseColor = theme.colors.backgroundPrimary.toArgb()
+                    // Aplicar colores diferenciados según la posición de la celda
+                    val baseColor = if (isPrimaryCellGroup(cellIndex)) {
+                        theme.colors.backgroundPrimary.toArgb()
+                    } else {
+                        theme.colors.backgroundSecondary.toArgb()
+                    }
                     setColor(baseColor)
                 }
                 else -> {
@@ -88,18 +93,39 @@ class ButtonStyleProvider(
     }
 
     /**
+     * Determina si una celda pertenece al grupo primario (00-02, 10-12, 20-22)
+     */
+    private fun isPrimaryCellGroup(cellIndex: Int): Boolean {
+        return when (cellIndex) {
+            0, 1, 2,    // Row 0: 00, 01, 02
+            4, 5, 6,    // Row 1: 10, 11, 12 (mapped as 4, 5, 6)
+            8, 9, 10    // Row 2: 20, 21, 22 (mapped as 8, 9, 10)
+            -> true
+            else -> false // 03, 13, 23, 30, 31, 32, 33 are secondary
+        }
+    }
+
+    /**
      * Obtiene el color de texto para diferentes tipos de botones usando tokens del tema
      */
     fun getTextColor(
         isBackspace: Boolean = false,
         isControl: Boolean = false,
         isGridCell: Boolean = false,
+        cellIndex: Int = -1, // Índice de celda para aplicar colores diferenciados
     ): Int {
         val theme = getCurrentTheme()
         return when {
             isBackspace -> theme.colors.contentSecondary.toArgb() // Texto sobre backgroundSecondary
             isControl -> theme.colors.contentSecondary.toArgb() // Texto sobre backgroundSecondary
-            isGridCell -> theme.colors.contentPrimary.toArgb() // Texto sobre backgroundPrimary
+            isGridCell -> {
+                // Aplicar colores de texto diferenciados según la posición de la celda
+                if (isPrimaryCellGroup(cellIndex)) {
+                    theme.colors.contentPrimary.toArgb() // Texto sobre backgroundPrimary
+                } else {
+                    theme.colors.contentSecondary.toArgb() // Texto sobre backgroundSecondary
+                }
+            }
             else -> theme.colors.contentPrimary.toArgb() // Fallback a contentPrimary
         }
     }

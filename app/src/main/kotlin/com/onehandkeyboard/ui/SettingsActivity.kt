@@ -3,6 +3,7 @@ package com.onehandkeyboard.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,8 +23,6 @@ import androidx.compose.ui.unit.sp
 import com.onehandkeyboard.R
 import com.onehandkeyboard.core.design.theme.KeyboardThemeWithTokens
 import com.onehandkeyboard.core.design.theme.ThemeManager
-import com.onehandkeyboard.ui.components.ThemeSelector
-import com.onehandkeyboard.ui.components.ThemeSelectorContent
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -67,6 +66,8 @@ private fun OneHandKeyboardTheme(
 
 @Composable
 private fun SettingsScreen(themeManager: ThemeManager) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -93,10 +94,26 @@ private fun SettingsScreen(themeManager: ThemeManager) {
             }
         }
 
-        // Theme Selection Section
+        // Theme Configuration Button
         item {
-            ThemeSelectorContent(themeManager = themeManager)
+            Button(
+                onClick = {
+                    val intent = Intent(context, ThemeConfigurationActivity::class.java)
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    text = "🎨 Configurar Temas",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
+
 
         // Divider
         item {

@@ -93,7 +93,7 @@ class KeyboardUiFactory(
                 }
 
             // Fondo con bordes redondeados usando backgroundPrimary para celdas del grid
-            background = _styleProvider.createButtonBackground(false, isGridCell = true)
+            background = _styleProvider.createButtonBackground(false, isGridCell = true, cellIndex = cellIndex)
 
             // Crear labels posicionados para cada dirección
             labelFactory.createDirectionalLabelsAbsolute(this, cellConfig, cellIndex)
