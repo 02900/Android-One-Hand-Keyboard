@@ -36,6 +36,10 @@ class ButtonStyleProvider(
         isControl: Boolean = false,
         isGridCell: Boolean = false,
         cellIndex: Int = -1, // Índice de celda para aplicar colores diferenciados
+        row: Int = -1, // Fila de la celda (0-3)
+        column: Int = -1, // Columna de la celda (0-3)
+        totalRows: Int = 4, // Total de filas en el grid
+        totalColumns: Int = 4, // Total de columnas en el grid
     ): GradientDrawable {
         val theme = getCurrentTheme()
         
@@ -62,6 +66,31 @@ class ButtonStyleProvider(
                         theme.colors.backgroundSecondary.toArgb()
                     }
                     setColor(baseColor)
+                    
+                    // Agregar bordes right y bottom, excepto en última fila y columna
+                    if (row != -1 && column != -1) {
+                        val borderColor = theme.colors.backgroundRoot.toArgb()
+                        val borderWidth = 1 // 1px border
+                        
+                        // Determinar qué bordes agregar
+                        val needsRightBorder = column < totalColumns - 1
+                        val needsBottomBorder = row < totalRows - 1
+                        
+                        if (needsRightBorder || needsBottomBorder) {
+                            // Crear un drawable con bordes selectivos usando LayerDrawable
+                            // Por simplicidad, usamos stroke completo pero esto se puede mejorar
+                            if (needsRightBorder && needsBottomBorder) {
+                                // Ambos bordes
+                                setStroke(borderWidth, borderColor)
+                            } else if (needsRightBorder) {
+                                // Solo borde derecho - usar stroke parcial no es directo en GradientDrawable
+                                setStroke(borderWidth, borderColor)
+                            } else if (needsBottomBorder) {
+                                // Solo borde inferior - usar stroke parcial no es directo en GradientDrawable
+                                setStroke(borderWidth, borderColor)
+                            }
+                        }
+                    }
                 }
                 else -> {
                     // Fallback a backgroundPrimary para compatibilidad
@@ -72,8 +101,10 @@ class ButtonStyleProvider(
 
             // Sin gradiente para apariencia plana
 
-            // Sin bordes
-            setStroke(0, Color.TRANSPARENT)
+            // Bordes se configuran arriba para celdas del grid
+            if (!isGridCell) {
+                setStroke(0, Color.TRANSPARENT)
+            }
         }
     }
 

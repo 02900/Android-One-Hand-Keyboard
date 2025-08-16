@@ -93,7 +93,18 @@ class KeyboardUiFactory(
                 }
 
             // Fondo con bordes redondeados usando backgroundPrimary para celdas del grid
-            background = _styleProvider.createButtonBackground(false, isGridCell = true, cellIndex = cellIndex)
+            // Calcular fila y columna desde cellIndex para bordes selectivos
+            val row = cellIndex / 4
+            val column = cellIndex % 4
+            background = _styleProvider.createButtonBackground(
+                pressed = false, 
+                isGridCell = true, 
+                cellIndex = cellIndex,
+                row = row,
+                column = column,
+                totalRows = 4,
+                totalColumns = 4
+            )
 
             // Crear labels posicionados para cada dirección
             labelFactory.createDirectionalLabelsAbsolute(this, cellConfig, cellIndex)

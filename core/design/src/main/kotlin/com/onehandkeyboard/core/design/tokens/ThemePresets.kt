@@ -14,7 +14,7 @@ object ThemePresets {
         colors = ColorTokens(
             // Core 5 IME keyboard tokens
             backgroundRoot = Color(0xFF000000),       // Monokai background
-            backgroundPrimary = Color(0xFF000000),    // Grid cells
+            backgroundPrimary = Color(0xFF2E2E2E),    // Grid cells
             backgroundSecondary = Color(0xFFF92672),  // Action buttons/space bar
             contentPrimary = Color(0xFFF8F8F2),       // Text on grid cells
             contentSecondary = Color(0xFFFFFFFF)      // Text on action buttons
