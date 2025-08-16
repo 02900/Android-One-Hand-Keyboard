@@ -2,6 +2,7 @@ package com.onehandkeyboard
 
 import android.util.Log
 import com.onehandkeyboard.config.KeyboardConfiguration
+import com.onehandkeyboard.config.KeyboardConfigurationFactory
 import com.onehandkeyboard.core.domain.model.CaseMode
 import com.onehandkeyboard.core.domain.model.KeyData
 import com.onehandkeyboard.enums.Language
@@ -24,7 +25,9 @@ import javax.inject.Singleton
 @Singleton
 class KeyboardLayoutManager
     @Inject
-    constructor() {
+    constructor(
+        private val configFactory: KeyboardConfigurationFactory
+    ) {
     
     // Estado del teclado
     var currentLanguage = Language.SPANISH
@@ -38,15 +41,17 @@ class KeyboardLayoutManager
 
     // Sistema de configuración externa
     var keyboardConfiguration: KeyboardConfiguration =
-        KeyboardConfiguration.getConfiguration(
+        configFactory.getConfiguration(
             Language.SPANISH,
             LayoutMode.LETTERS,
         )
         private set
-        /**
-         * Switches between LETTERS and SYMBOLS modes for the current language
-         */
-        fun switchLayout(): Boolean {
+
+
+    /**
+     * Switches between LETTERS and SYMBOLS modes for the current language
+     */
+    fun switchLayout(): Boolean {
             val previousMode = currentMode
             currentMode =
                 when (currentMode) {
@@ -55,7 +60,7 @@ class KeyboardLayoutManager
                 }
 
             // Actualizar configuración del teclado
-            keyboardConfiguration = KeyboardConfiguration.getConfiguration(currentLanguage, currentMode)
+            keyboardConfiguration = configFactory.getConfiguration(currentLanguage, currentMode)
 
             Log.d("KeyboardLayoutManager", "Layout switched from $previousMode to $currentMode")
             return previousMode != currentMode
@@ -92,7 +97,7 @@ class KeyboardLayoutManager
                 }
 
             // Actualizar configuración del teclado
-            keyboardConfiguration = KeyboardConfiguration.getConfiguration(currentLanguage, currentMode)
+            keyboardConfiguration = configFactory.getConfiguration(currentLanguage, currentMode)
 
             Log.d("KeyboardLayoutManager", "Language switched from $previousLanguage to $currentLanguage")
             return true
@@ -140,6 +145,46 @@ class KeyboardLayoutManager
             if (currentCaseMode == CaseMode.CAPITALIZE && isCapitalizeNext) {
                 isCapitalizeNext = false
             }
+        }
+
+        /**
+         * Switches to symbols mode
+         */
+        fun switchToSymbols(): Boolean {
+            if (currentMode != LayoutMode.SYMBOLS) {
+                currentMode = LayoutMode.SYMBOLS
+                keyboardConfiguration = configFactory.getConfiguration(currentLanguage, currentMode)
+                Log.d("KeyboardLayoutManager", "Switched to symbols mode")
+                return true
+            }
+            return false
+        }
+
+        /**
+         * Switches to letters mode
+         */
+        fun switchToLetters(): Boolean {
+            if (currentMode != LayoutMode.LETTERS) {
+                currentMode = LayoutMode.LETTERS
+                keyboardConfiguration = configFactory.getConfiguration(currentLanguage, currentMode)
+                Log.d("KeyboardLayoutManager", "Switched to letters mode")
+                return true
+            }
+            return false
+        }
+
+        /**
+         * Toggles caps lock (permanent uppercase)
+         */
+        fun toggleCapsLock(): Boolean {
+            currentCaseMode = if (currentCaseMode == CaseMode.UPPERCASE) {
+                CaseMode.LOWERCASE
+            } else {
+                CaseMode.UPPERCASE
+            }
+            isCapitalizeNext = false
+            Log.d("KeyboardLayoutManager", "Caps lock toggled to: $currentCaseMode")
+            return true
         }
 
         /**

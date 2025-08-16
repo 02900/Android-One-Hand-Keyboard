@@ -10,10 +10,8 @@ import android.util.Log
 import android.view.View
 import android.widget.LinearLayout
 import com.onehandkeyboard.KeyboardActionProcessor
-import com.onehandkeyboard.KeyboardEventCoordinator
 import com.onehandkeyboard.KeyboardLayoutManager
 import com.onehandkeyboard.KeyboardUiFactory
-import com.onehandkeyboard.KeyboardViewBuilder
 import com.onehandkeyboard.core.design.theme.ThemeManager
 import com.onehandkeyboard.core.gesture.DefaultGestureDetector
 import com.onehandkeyboard.GestureIntegration
@@ -58,15 +56,17 @@ class OneHandKeyboardService : InputMethodService() {
     @Inject
     lateinit var themeManager: ThemeManager
     
+    @Inject
+    lateinit var configFactory: com.onehandkeyboard.config.KeyboardConfigurationFactory
+    
     // BroadcastReceiver for theme changes
     private var themeChangeReceiver: BroadcastReceiver? = null
 
     // Components initialized manually due to context dependencies
     private lateinit var uiFactory: KeyboardUiFactory
-    private lateinit var viewBuilder: KeyboardViewBuilder
+    private lateinit var unifiedGridBuilder: UnifiedGridKeyboardBuilder
     private lateinit var gestureIntegration: GestureIntegration
     private lateinit var actionProcessor: KeyboardActionProcessor
-    private lateinit var eventCoordinator: KeyboardEventCoordinator
 
     // ============================================================================
     // REGION: LIFECYCLE & CORE SERVICE
@@ -87,15 +87,12 @@ class OneHandKeyboardService : InputMethodService() {
             Log.d("OneHandKeyboard", "Step 2: Components initialized successfully")
 
             Log.d("OneHandKeyboard", "Step 3: Creating main keyboard...")
-            // Create the main keyboard view using view builder
-            val mainKeyboard = viewBuilder.createMainKeyboard()
+            // Create the main keyboard view using unified grid builder
+            val mainKeyboard = unifiedGridBuilder.createKeyboardLayout()
             keyboardView = mainKeyboard
             Log.d("OneHandKeyboard", "Step 3: Main keyboard created successfully")
 
-            Log.d("OneHandKeyboard", "Step 4: Setting up events...")
-            // Setup events for the keyboard view
-            eventCoordinator.setupKeyboardEvents(mainKeyboard)
-            Log.d("OneHandKeyboard", "Step 4: Events setup successfully")
+            Log.d("OneHandKeyboard", "Step 4: Keyboard ready")
 
             Log.d("OneHandKeyboard", "Input view created successfully")
             mainKeyboard
@@ -122,27 +119,26 @@ class OneHandKeyboardService : InputMethodService() {
             KeyboardActionProcessor(
                 service = this,
                 configManager = layoutManager,
-                onLayoutSwitch = { eventCoordinator.recreateKeyboard() },
-                onCaseSwitch = { eventCoordinator.recreateKeyboard() },
+                onLayoutSwitch = { recreateKeyboard() },
+                onCaseSwitch = { recreateKeyboard() },
             )
-
-        // Initialize view builder (requires context, layout manager, gesture integration, action processor, and theme manager)
-        viewBuilder = KeyboardViewBuilder(this, layoutManager, uiFactory, gestureIntegration, actionProcessor, themeManager, uiFactory.styleProvider)
-
-        // Initialize event coordinator (coordinates all components)
-        eventCoordinator =
-            KeyboardEventCoordinator(
-                service = this,
-                layoutManager = layoutManager,
-                viewBuilder = viewBuilder,
-                gestureIntegration = gestureIntegration,
-                actionProcessor = actionProcessor,
-            )
+        
+        // Initialize unified grid builder (new 4x4 grid system)
+        unifiedGridBuilder = UnifiedGridKeyboardBuilder(this, themeManager, uiFactory.styleProvider, layoutManager, gestureIntegration, actionProcessor, uiFactory, configFactory)
 
         Log.d("OneHandKeyboard", "All components initialized successfully")
         
         // Register theme change receiver
         registerThemeChangeReceiver()
+    }
+    
+    /**
+     * Recreates the keyboard when layout or case mode changes
+     */
+    private fun recreateKeyboard() {
+        Log.d("OneHandKeyboard", "Recreating keyboard due to layout/case change")
+        keyboardView = unifiedGridBuilder.createKeyboardLayout()
+        setInputView(keyboardView)
     }
     
     /**
@@ -157,9 +153,7 @@ class OneHandKeyboardService : InputMethodService() {
                     
                     // Refresh theme and recreate keyboard
                     themeManager.refreshTheme()
-                    if (::eventCoordinator.isInitialized) {
-                        eventCoordinator.recreateKeyboard()
-                    }
+                    recreateKeyboard()
                 }
             }
         }
@@ -224,9 +218,9 @@ class OneHandKeyboardService : InputMethodService() {
         }
         themeChangeReceiver = null
 
-        // Cleanup through event coordinator
-        if (::eventCoordinator.isInitialized) {
-            eventCoordinator.cleanup()
+        // Cleanup components
+        if (::gestureIntegration.isInitialized) {
+            gestureIntegration.cleanup()
         }
 
         // Reset gesture detector

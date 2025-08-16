@@ -348,9 +348,39 @@ class GestureIntegration(
                     Log.d("OneHandKeyboard", "🎯 SENDING TEXT: '$text'")
                     KeyboardOutput.Character(text)
                 }
+                is ActionConfig.SwitchLayout -> {
+                    layoutManager.switchLayout()
+                    null
+                }
+                is ActionConfig.SwitchCase -> {
+                    layoutManager.switchCaseMode()
+                    null
+                }
+                is ActionConfig.Backspace -> {
+                    KeyboardOutput.Action(KeyAction.Backspace)
+                }
+                is ActionConfig.Space -> {
+                    KeyboardOutput.Action(KeyAction.Space)
+                }
+                is ActionConfig.Enter -> {
+                    KeyboardOutput.Action(KeyAction.Enter)
+                }
+                is ActionConfig.ShowNumbers -> {
+                    layoutManager.switchToSymbols()
+                    null
+                }
+                is ActionConfig.ShowLetters -> {
+                    layoutManager.switchToLetters()
+                    null
+                }
+                is ActionConfig.CustomFunction -> {
+                    Log.d("OneHandKeyboard", "🎯 CUSTOM FUNCTION: ${actionConfig.functionId}")
+                    // Process custom function here or delegate to ActionProcessor
+                    null
+                }
             }
 
-        onGestureProcessed(output)
+        output?.let { onGestureProcessed(it) }
     }
 
     // TODO: Implement handleGesture function when needed

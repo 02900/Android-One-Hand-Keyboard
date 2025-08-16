@@ -6,16 +6,20 @@ import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.gestures.GestureAction
 
 /**
- * Configuración de una celda individual
+ * Configuración de una celda individual en grid 4x4
  */
 data class CellConfiguration(
     val cellIndex: Int,
     val actions: Map<GestureAction, ActionConfig>,
+    val row: Int = cellIndex / 4,
+    val col: Int = cellIndex % 4,
+    val colSpan: Int = 1, // Cuántas columnas ocupa esta celda
+    val rowSpan: Int = 1, // Cuántas filas ocupa esta celda
 ) {
     init {
-        // Validar que el índice de celda esté en el rango válido (0-8 para grid 3x3)
-        if (cellIndex !in 0..8) {
-            throw IllegalArgumentException("Cell index must be between 0 and 8, got: $cellIndex")
+        // Validar que el índice de celda esté en el rango válido (0-15 para grid 4x4)
+        if (cellIndex !in 0..15) {
+            throw IllegalArgumentException("Cell index must be between 0 and 15, got: $cellIndex")
         }
 
         // Validar que no haya más de un TAP para CENTER
