@@ -70,6 +70,16 @@ sealed class KeyAction {
     object Paste : KeyAction()
 
     /**
+     * Copy all text to clipboard
+     */
+    object CopyAll : KeyAction()
+
+    /**
+     * Delete all text in the input field
+     */
+    object DeleteAll : KeyAction()
+
+    /**
      * Custom action with a specific function
      */
     data class Custom(val action: () -> Unit) : KeyAction()

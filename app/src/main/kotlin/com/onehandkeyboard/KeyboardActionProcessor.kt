@@ -1,9 +1,11 @@
 package com.onehandkeyboard
 
+import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.inputmethodservice.InputMethodService
 import android.util.Log
+import android.view.inputmethod.InputConnection
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
 
@@ -103,6 +105,12 @@ class KeyboardActionProcessor(
             }
             is KeyAction.Paste -> {
                 executePaste()
+            }
+            is KeyAction.CopyAll -> {
+                executeCopyAll()
+            }
+            is KeyAction.DeleteAll -> {
+                executeDeleteAll()
             }
             else -> {
                 Log.d("OneHandKeyboard", "Action not implemented: $action")
@@ -208,28 +216,13 @@ class KeyboardActionProcessor(
      */
     private fun executePaste() {
         val inputConnection = service.currentInputConnection
-        if (inputConnection == null) {
-            Log.e("OneHandKeyboard", "🎯 ERROR: Cannot paste - no input connection")
-            return
-        }
-
         val clipboardManager = service.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        if (clipboardManager == null) {
-            Log.e("OneHandKeyboard", "🎯 ERROR: Cannot access clipboard manager")
-            return
-        }
-
-        if (!clipboardManager.hasPrimaryClip()) {
-            Log.d("OneHandKeyboard", "🎯 No content in clipboard to paste")
-            return
-        }
-
-        val clipData = clipboardManager.primaryClip
-        if (clipData != null && clipData.itemCount > 0) {
-            val clipText = clipData.getItemAt(0).text
+        
+        if (clipboardManager?.hasPrimaryClip() == true) {
+            val clipText = clipboardManager.primaryClip?.getItemAt(0)?.text
             if (clipText != null) {
                 val textToPaste = clipText.toString()
-                inputConnection.commitText(textToPaste, 1)
+                inputConnection?.commitText(textToPaste, 1)
                 Log.d("OneHandKeyboard", "🎯 Pasted text: '$textToPaste'")
                 
                 // Manejar modo capitalize si es necesario
@@ -240,6 +233,42 @@ class KeyboardActionProcessor(
         } else {
             Log.d("OneHandKeyboard", "🎯 Clipboard is empty")
         }
+    }
+
+    /**
+     * Ejecuta acción de copiar todo el texto al portapapeles
+     */
+    private fun executeCopyAll() {
+        val inputConnection = service.currentInputConnection ?: return
+        val clipboardManager = service.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
+        
+        // Get all text by getting text before and after cursor
+        val textBefore = inputConnection.getTextBeforeCursor(10000, 0) ?: ""
+        val textAfter = inputConnection.getTextAfterCursor(10000, 0) ?: ""
+        val allText = textBefore.toString() + textAfter.toString()
+        
+        if (allText.isNotEmpty()) {
+            val clip = ClipData.newPlainText("OneHandKeyboard", allText)
+            clipboardManager.setPrimaryClip(clip)
+            Log.d("OneHandKeyboard", "🎯 Copied all text: '${allText.take(50)}...'")
+        }
+    }
+
+    /**
+     * Ejecuta acción de eliminar todo el texto
+     */
+    private fun executeDeleteAll() {
+        val inputConnection = service.currentInputConnection ?: return
+        
+        // Get text lengths to delete everything
+        val textBefore = inputConnection.getTextBeforeCursor(10000, 0)
+        val textAfter = inputConnection.getTextAfterCursor(10000, 0)
+        val beforeLength = textBefore?.length ?: 0
+        val afterLength = textAfter?.length ?: 0
+        
+        // Delete all text
+        inputConnection.deleteSurroundingText(beforeLength, afterLength)
+        Log.d("OneHandKeyboard", "🎯 Deleted all text")
     }
 
     // ============================================================================

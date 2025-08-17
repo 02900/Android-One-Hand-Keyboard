@@ -23,4 +23,6 @@ sealed class ActionConfig {
     object ShowNumbers : ActionConfig()
     object ShowLetters : ActionConfig()
     object Paste : ActionConfig()
+    object CopyAll : ActionConfig()
+    object DeleteAll : ActionConfig()
 }

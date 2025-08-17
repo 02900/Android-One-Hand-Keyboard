@@ -68,6 +68,12 @@ class ActionProcessor(
             is ActionConfig.Paste -> {
                 KeyboardOutput.Action(KeyAction.Paste)
             }
+            is ActionConfig.CopyAll -> {
+                KeyboardOutput.Action(KeyAction.CopyAll)
+            }
+            is ActionConfig.DeleteAll -> {
+                KeyboardOutput.Action(KeyAction.DeleteAll)
+            }
             
             is ActionConfig.CustomFunction -> {
                 processCustomFunction(actionConfig.functionId, actionConfig.parameters)
