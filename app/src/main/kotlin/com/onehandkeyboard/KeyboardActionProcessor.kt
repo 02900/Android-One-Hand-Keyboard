@@ -1,5 +1,7 @@
 package com.onehandkeyboard
 
+import android.content.ClipboardManager
+import android.content.Context
 import android.inputmethodservice.InputMethodService
 import android.util.Log
 import com.onehandkeyboard.core.domain.model.KeyAction
@@ -99,6 +101,9 @@ class KeyboardActionProcessor(
             is KeyAction.InsertText -> {
                 executeInsertText(action.text)
             }
+            is KeyAction.Paste -> {
+                executePaste()
+            }
             else -> {
                 Log.d("OneHandKeyboard", "Action not implemented: $action")
             }
@@ -195,6 +200,45 @@ class KeyboardActionProcessor(
             Log.d("OneHandKeyboard", "🎯 Text inserted: '$text'")
         } else {
             Log.e("OneHandKeyboard", "🎯 ERROR: Cannot insert text - no input connection")
+        }
+    }
+
+    /**
+     * Ejecuta acción de pegar desde el portapapeles
+     */
+    private fun executePaste() {
+        val inputConnection = service.currentInputConnection
+        if (inputConnection == null) {
+            Log.e("OneHandKeyboard", "🎯 ERROR: Cannot paste - no input connection")
+            return
+        }
+
+        val clipboardManager = service.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        if (clipboardManager == null) {
+            Log.e("OneHandKeyboard", "🎯 ERROR: Cannot access clipboard manager")
+            return
+        }
+
+        if (!clipboardManager.hasPrimaryClip()) {
+            Log.d("OneHandKeyboard", "🎯 No content in clipboard to paste")
+            return
+        }
+
+        val clipData = clipboardManager.primaryClip
+        if (clipData != null && clipData.itemCount > 0) {
+            val clipText = clipData.getItemAt(0).text
+            if (clipText != null) {
+                val textToPaste = clipText.toString()
+                inputConnection.commitText(textToPaste, 1)
+                Log.d("OneHandKeyboard", "🎯 Pasted text: '$textToPaste'")
+                
+                // Manejar modo capitalize si es necesario
+                configManager.onCharacterWritten()
+            } else {
+                Log.d("OneHandKeyboard", "🎯 Clipboard contains non-text content")
+            }
+        } else {
+            Log.d("OneHandKeyboard", "🎯 Clipboard is empty")
         }
     }
 

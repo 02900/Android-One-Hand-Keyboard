@@ -43,6 +43,7 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
                     is com.onehandkeyboard.actions.ActionConfig.Enter -> "↵"
                     is com.onehandkeyboard.actions.ActionConfig.ShowNumbers -> "123"
                     is com.onehandkeyboard.actions.ActionConfig.ShowLetters -> "ABC"
+                    is com.onehandkeyboard.actions.ActionConfig.Paste -> "📋"
                     is com.onehandkeyboard.actions.ActionConfig.CustomFunction -> actionConfig.functionId
                 }
             val gestureSymbol =
@@ -134,6 +135,7 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             is com.onehandkeyboard.actions.ActionConfig.Enter -> "↵"
             is com.onehandkeyboard.actions.ActionConfig.ShowNumbers -> "123"
             is com.onehandkeyboard.actions.ActionConfig.ShowLetters -> "ABC"
+            is com.onehandkeyboard.actions.ActionConfig.Paste -> "📋"
             is com.onehandkeyboard.actions.ActionConfig.CustomFunction -> actionConfig.functionId
         }
     }
@@ -154,10 +156,11 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             is com.onehandkeyboard.actions.ActionConfig.SwitchLayout -> getSwitchLayoutLabel()
             is com.onehandkeyboard.actions.ActionConfig.SwitchCase -> "Aa"
             is com.onehandkeyboard.actions.ActionConfig.Backspace -> "⌫"
-            is com.onehandkeyboard.actions.ActionConfig.Space -> "Space"
+            is com.onehandkeyboard.actions.ActionConfig.Space -> "␣"
             is com.onehandkeyboard.actions.ActionConfig.Enter -> "↵"
             is com.onehandkeyboard.actions.ActionConfig.ShowNumbers -> "123"
             is com.onehandkeyboard.actions.ActionConfig.ShowLetters -> "ABC"
+            is com.onehandkeyboard.actions.ActionConfig.Paste -> "📋"
             is com.onehandkeyboard.actions.ActionConfig.CustomFunction -> tapActionConfig.functionId
             null -> ""
         }

@@ -144,6 +144,7 @@ class KeyboardConfigurationFactory @Inject constructor() {
             )),
             CellConfiguration(7, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.SwitchCase,
+                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Paste,
             )),
             
             // Row 2: Main grid cells 8-10, Action cell 11
@@ -226,6 +227,7 @@ class KeyboardConfigurationFactory @Inject constructor() {
             )),
             CellConfiguration(7, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.SwitchCase,
+                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Paste,
             )),
             
             // Row 2: Numbers 7-9, Action cell

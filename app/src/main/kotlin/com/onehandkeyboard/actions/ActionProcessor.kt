@@ -65,6 +65,10 @@ class ActionProcessor(
                 null
             }
             
+            is ActionConfig.Paste -> {
+                KeyboardOutput.Action(KeyAction.Paste)
+            }
+            
             is ActionConfig.CustomFunction -> {
                 processCustomFunction(actionConfig.functionId, actionConfig.parameters)
             }

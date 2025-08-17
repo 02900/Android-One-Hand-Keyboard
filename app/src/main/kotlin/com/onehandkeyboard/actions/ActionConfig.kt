@@ -22,4 +22,5 @@ sealed class ActionConfig {
     object Enter : ActionConfig()
     object ShowNumbers : ActionConfig()
     object ShowLetters : ActionConfig()
+    object Paste : ActionConfig()
 }

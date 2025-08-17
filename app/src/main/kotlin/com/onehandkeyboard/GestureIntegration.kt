@@ -360,6 +360,9 @@ class GestureIntegration(
                 is ActionConfig.ShowLetters -> {
                     KeyboardOutput.Action(KeyAction.SwitchToLetters) // This will trigger UI refresh
                 }
+                is ActionConfig.Paste -> {
+                    KeyboardOutput.Action(KeyAction.Paste)
+                }
                 is ActionConfig.CustomFunction -> {
                     Log.d("OneHandKeyboard", "🎯 CUSTOM FUNCTION: ${actionConfig.functionId}")
                     // Process custom function here or delegate to ActionProcessor
