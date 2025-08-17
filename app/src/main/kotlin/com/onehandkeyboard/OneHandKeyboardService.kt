@@ -119,8 +119,10 @@ class OneHandKeyboardService : InputMethodService() {
             KeyboardActionProcessor(
                 service = this,
                 configManager = layoutManager,
+                layoutCalculator = uiFactory.layoutCalculator,
                 onLayoutSwitch = { recreateKeyboard() },
                 onCaseSwitch = { recreateKeyboard() },
+                onHeightChanged = { recreateKeyboard() },
             )
         
         // Initialize unified grid builder (new 4x4 grid system)

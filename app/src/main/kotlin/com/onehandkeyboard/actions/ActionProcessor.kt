@@ -71,8 +71,17 @@ class ActionProcessor(
             is ActionConfig.CopyAll -> {
                 KeyboardOutput.Action(KeyAction.CopyAll)
             }
-            is ActionConfig.DeleteAll -> {
+            ActionConfig.DeleteAll -> {
                 KeyboardOutput.Action(KeyAction.DeleteAll)
+            }
+            ActionConfig.IncreaseCellHeight -> {
+                KeyboardOutput.Action(KeyAction.IncreaseCellHeight)
+            }
+            ActionConfig.DecreaseCellHeight -> {
+                KeyboardOutput.Action(KeyAction.DecreaseCellHeight)
+            }
+            ActionConfig.ResetCellHeight -> {
+                KeyboardOutput.Action(KeyAction.ResetCellHeight)
             }
             
             is ActionConfig.CustomFunction -> {

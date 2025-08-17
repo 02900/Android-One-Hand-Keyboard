@@ -46,6 +46,9 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
                     is com.onehandkeyboard.actions.ActionConfig.Paste -> "📋"
                     is com.onehandkeyboard.actions.ActionConfig.CopyAll -> "📄"
                     is com.onehandkeyboard.actions.ActionConfig.DeleteAll -> "🗑️"
+                    is com.onehandkeyboard.actions.ActionConfig.IncreaseCellHeight -> "⬆️"
+                    is com.onehandkeyboard.actions.ActionConfig.DecreaseCellHeight -> "⬇️"
+                    is com.onehandkeyboard.actions.ActionConfig.ResetCellHeight -> "🔄"
                     is com.onehandkeyboard.actions.ActionConfig.CustomFunction -> actionConfig.functionId
                 }
             val gestureSymbol =
@@ -140,6 +143,9 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             is com.onehandkeyboard.actions.ActionConfig.Paste -> "📋"
             is com.onehandkeyboard.actions.ActionConfig.CopyAll -> "📄"
             is com.onehandkeyboard.actions.ActionConfig.DeleteAll -> "🗑️"
+            is com.onehandkeyboard.actions.ActionConfig.IncreaseCellHeight -> "⬆️"
+            is com.onehandkeyboard.actions.ActionConfig.DecreaseCellHeight -> "⬇️"
+            is com.onehandkeyboard.actions.ActionConfig.ResetCellHeight -> "🔄"
             is com.onehandkeyboard.actions.ActionConfig.CustomFunction -> actionConfig.functionId
         }
     }
@@ -167,6 +173,9 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             is com.onehandkeyboard.actions.ActionConfig.Paste -> "📋"
             is com.onehandkeyboard.actions.ActionConfig.CopyAll -> "📄"
             is com.onehandkeyboard.actions.ActionConfig.DeleteAll -> "🗑️"
+            is com.onehandkeyboard.actions.ActionConfig.IncreaseCellHeight -> "⬆️"
+            is com.onehandkeyboard.actions.ActionConfig.DecreaseCellHeight -> "⬇️"
+            is com.onehandkeyboard.actions.ActionConfig.ResetCellHeight -> "🔄"
             is com.onehandkeyboard.actions.ActionConfig.CustomFunction -> tapActionConfig.functionId
             null -> ""
         }

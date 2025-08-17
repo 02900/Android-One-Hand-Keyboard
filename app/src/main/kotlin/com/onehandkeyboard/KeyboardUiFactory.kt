@@ -37,7 +37,7 @@ class KeyboardUiFactory(
     private val themeManager: ThemeManager,
 ) {
     // Delegated components for specialized responsibilities
-    private val layoutCalculator = LayoutCalculator(context)
+    val layoutCalculator = LayoutCalculator(context)
     private val _styleProvider = ButtonStyleProvider(context, themeManager)
     private val hintProvider = GestureHintProvider(layoutManager)
     private val controlButtonFactory = ControlButtonFactory(context, layoutCalculator, _styleProvider)

@@ -25,4 +25,7 @@ sealed class ActionConfig {
     object Paste : ActionConfig()
     object CopyAll : ActionConfig()
     object DeleteAll : ActionConfig()
+    object IncreaseCellHeight : ActionConfig()
+    object DecreaseCellHeight : ActionConfig()
+    object ResetCellHeight : ActionConfig()
 }

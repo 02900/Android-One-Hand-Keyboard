@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.inputmethod.InputConnection
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
+import com.onehandkeyboard.ui.LayoutCalculator
 
 /**
  * Processes keyboard actions and text input for the OneHandKeyboard.
@@ -25,8 +26,10 @@ import com.onehandkeyboard.core.domain.model.KeyboardOutput
 class KeyboardActionProcessor(
     private val service: InputMethodService,
     private val configManager: KeyboardLayoutManager,
+    private val layoutCalculator: LayoutCalculator,
     private val onLayoutSwitch: () -> Unit,
     private val onCaseSwitch: () -> Unit,
+    private val onHeightChanged: () -> Unit,
 ) {
     // ============================================================================
     // REGION: KEYBOARD OUTPUT PROCESSING
@@ -111,6 +114,15 @@ class KeyboardActionProcessor(
             }
             is KeyAction.DeleteAll -> {
                 executeDeleteAll()
+            }
+            is KeyAction.IncreaseCellHeight -> {
+                executeIncreaseCellHeight()
+            }
+            is KeyAction.DecreaseCellHeight -> {
+                executeDecreaseCellHeight()
+            }
+            is KeyAction.ResetCellHeight -> {
+                executeResetCellHeight()
             }
             else -> {
                 Log.d("OneHandKeyboard", "Action not implemented: $action")
@@ -280,6 +292,45 @@ class KeyboardActionProcessor(
      */
     fun hasValidInputConnection(): Boolean {
         return service.currentInputConnection != null
+    }
+
+    /**
+     * Ejecuta acción de aumentar altura de celda
+     */
+    private fun executeIncreaseCellHeight() {
+        val increased = layoutCalculator.increaseCellHeight()
+        if (increased) {
+            Log.d("OneHandKeyboard", "🎯 Cell height increased to ${layoutCalculator.getCurrentCellHeightDp()}dp")
+            onHeightChanged()
+        } else {
+            Log.d("OneHandKeyboard", "🎯 Cell height already at maximum (${layoutCalculator.getCurrentCellHeightDp()}dp)")
+        }
+    }
+
+    /**
+     * Ejecuta acción de disminuir altura de celda
+     */
+    private fun executeDecreaseCellHeight() {
+        val decreased = layoutCalculator.decreaseCellHeight()
+        if (decreased) {
+            Log.d("OneHandKeyboard", "🎯 Cell height decreased to ${layoutCalculator.getCurrentCellHeightDp()}dp")
+            onHeightChanged()
+        } else {
+            Log.d("OneHandKeyboard", "🎯 Cell height already at minimum (${layoutCalculator.getCurrentCellHeightDp()}dp)")
+        }
+    }
+
+    /**
+     * Ejecuta acción de resetear altura de celda al valor por defecto
+     */
+    private fun executeResetCellHeight() {
+        val reset = layoutCalculator.resetCellHeight()
+        if (reset) {
+            Log.d("OneHandKeyboard", "🎯 Cell height reset to default (${layoutCalculator.getCurrentCellHeightDp()}dp)")
+            onHeightChanged()
+        } else {
+            Log.d("OneHandKeyboard", "🎯 Cell height already at default (${layoutCalculator.getCurrentCellHeightDp()}dp)")
+        }
     }
 
     /**

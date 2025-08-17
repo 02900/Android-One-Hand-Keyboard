@@ -120,6 +120,9 @@ class KeyboardConfigurationFactory @Inject constructor() {
             )),
             CellConfiguration(3, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.SwitchLayout,
+                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.IncreaseCellHeight,
+                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.DecreaseCellHeight,
+                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.ResetCellHeight,
             )),
             
             // Row 1: Main grid cells 4-6, Action cell 7
@@ -207,6 +210,9 @@ class KeyboardConfigurationFactory @Inject constructor() {
             )),
             CellConfiguration(3, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.ShowLetters,
+                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.IncreaseCellHeight,
+                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.DecreaseCellHeight,
+                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.ResetCellHeight,
             )),
             
             // Row 1: Numbers 4-6, Action cell
@@ -289,6 +295,9 @@ class KeyboardConfigurationFactory @Inject constructor() {
             )),
             CellConfiguration(3, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.ShowNumbers,
+                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.IncreaseCellHeight,
+                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.DecreaseCellHeight,
+                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.ResetCellHeight,
             )),
             
             CellConfiguration(4, mapOf(

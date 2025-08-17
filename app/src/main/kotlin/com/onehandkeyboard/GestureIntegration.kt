@@ -369,6 +369,15 @@ class GestureIntegration(
                 is ActionConfig.DeleteAll -> {
                     KeyboardOutput.Action(KeyAction.DeleteAll)
                 }
+                is ActionConfig.IncreaseCellHeight -> {
+                    KeyboardOutput.Action(KeyAction.IncreaseCellHeight)
+                }
+                is ActionConfig.DecreaseCellHeight -> {
+                    KeyboardOutput.Action(KeyAction.DecreaseCellHeight)
+                }
+                is ActionConfig.ResetCellHeight -> {
+                    KeyboardOutput.Action(KeyAction.ResetCellHeight)
+                }
                 is ActionConfig.CustomFunction -> {
                     Log.d("OneHandKeyboard", "🎯 CUSTOM FUNCTION: ${actionConfig.functionId}")
                     // Process custom function here or delegate to ActionProcessor

@@ -11,8 +11,12 @@ import android.content.Context
  * - Gestionar márgenes y espaciado del grid
  */
 class LayoutCalculator(private val context: Context) {
-    // Altura configurable de celda en dp
-    private val cellHeightDp = 60f
+    // Altura configurable de celda en dp (mutable para ajustes dinámicos)
+    private var cellHeightDp = 60f
+    
+    // Límites para la altura de celda
+    private val minCellHeightDp = 40f
+    private val maxCellHeightDp = 80f
     
     /**
      * Calcula la altura de celda en pixels basada en la configuración
@@ -68,4 +72,49 @@ class LayoutCalculator(private val context: Context) {
      * Obtiene el margen total entre celdas para cálculos
      */
     fun getTotalCellMargins(): Int = 60
+    
+    /**
+     * Aumenta la altura de celda en 1dp
+     * @return true si se pudo aumentar, false si ya está en el máximo
+     */
+    fun increaseCellHeight(): Boolean {
+        return if (cellHeightDp < maxCellHeightDp) {
+            cellHeightDp += 1f
+            true
+        } else {
+            false
+        }
+    }
+    
+    /**
+     * Disminuye la altura de celda en 1dp
+     * @return true si se pudo disminuir, false si ya está en el mínimo
+     */
+    fun decreaseCellHeight(): Boolean {
+        return if (cellHeightDp > minCellHeightDp) {
+            cellHeightDp -= 1f
+            true
+        } else {
+            false
+        }
+    }
+    
+    /**
+     * Obtiene la altura actual de celda en dp
+     */
+    fun getCurrentCellHeightDp(): Float = cellHeightDp
+    
+    /**
+     * Resetea la altura de celda al valor por defecto (60dp)
+     * @return true si se cambió la altura, false si ya estaba en el valor por defecto
+     */
+    fun resetCellHeight(): Boolean {
+        val defaultHeight = 60f
+        return if (cellHeightDp != defaultHeight) {
+            cellHeightDp = defaultHeight
+            true
+        } else {
+            false
+        }
+    }
 }
