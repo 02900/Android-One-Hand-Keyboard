@@ -20,6 +20,7 @@ sealed class ActionConfig {
     object Backspace : ActionConfig()
     object Space : ActionConfig()
     object Enter : ActionConfig()
+    object Submit : ActionConfig()
     object ShowNumbers : ActionConfig()
     object ShowLetters : ActionConfig()
     object Paste : ActionConfig()

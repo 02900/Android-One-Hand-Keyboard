@@ -354,6 +354,9 @@ class GestureIntegration(
                 is ActionConfig.Enter -> {
                     KeyboardOutput.Action(KeyAction.Enter)
                 }
+                is ActionConfig.Submit -> {
+                    KeyboardOutput.Action(KeyAction.Submit)
+                }
                 is ActionConfig.ShowNumbers -> {
                     KeyboardOutput.Action(KeyAction.SwitchToNumbers) // This will trigger UI refresh
                 }

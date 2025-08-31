@@ -178,6 +178,7 @@ class KeyboardConfigurationFactory @Inject constructor() {
             ), colSpan = 3),
             CellConfiguration(15, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Enter,
+                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Submit,
             )),
         )
     }
@@ -271,6 +272,7 @@ class KeyboardConfigurationFactory @Inject constructor() {
             )),
             CellConfiguration(15, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Enter,
+                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Submit,
             )),
         )
     }
@@ -347,6 +349,7 @@ class KeyboardConfigurationFactory @Inject constructor() {
             ), colSpan = 3),
             CellConfiguration(15, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Enter,
+                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Submit,
             )),
         )
     }

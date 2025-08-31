@@ -94,6 +94,9 @@ class KeyboardActionProcessor(
             is KeyAction.Enter -> {
                 executeEnter()
             }
+            is KeyAction.Submit -> {
+                executeSubmit()
+            }
             is KeyAction.ToggleCase -> {
                 executeToggleCase()
             }
@@ -180,6 +183,19 @@ class KeyboardActionProcessor(
             Log.d("OneHandKeyboard", "🎯 Enter executed")
         } else {
             Log.e("OneHandKeyboard", "🎯 ERROR: Cannot execute enter - no input connection")
+        }
+    }
+
+    /**
+     * Ejecuta acción de submit (envío de formulario)
+     */
+    private fun executeSubmit() {
+        val inputConnection = service.currentInputConnection
+        if (inputConnection != null) {
+            inputConnection.performEditorAction(android.view.inputmethod.EditorInfo.IME_ACTION_SEND)
+            Log.d("OneHandKeyboard", "🎯 Submit executed")
+        } else {
+            Log.e("OneHandKeyboard", "🎯 ERROR: Cannot execute submit - no input connection")
         }
     }
 

@@ -20,6 +20,11 @@ sealed class KeyAction {
     object Enter : KeyAction()
 
     /**
+     * Submit form/send action (alternative to Enter)
+     */
+    object Submit : KeyAction()
+
+    /**
      * Switch to uppercase/lowercase mode
      */
     object ToggleCase : KeyAction()

@@ -53,6 +53,10 @@ class ActionProcessor(
                 KeyboardOutput.Action(KeyAction.Enter)
             }
             
+            is ActionConfig.Submit -> {
+                KeyboardOutput.Action(KeyAction.Submit)
+            }
+            
             is ActionConfig.ShowNumbers -> {
                 // Switch to numbers mode
                 layoutManager.switchToSymbols()
