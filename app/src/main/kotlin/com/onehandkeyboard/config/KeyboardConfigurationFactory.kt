@@ -163,6 +163,8 @@ class KeyboardConfigurationFactory @Inject constructor() {
                 GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('z'),
                 GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character(','),
                 GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('.'),
+                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character(':'),
+                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('\''),
             )),
             CellConfiguration(10, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('s'),
@@ -196,18 +198,20 @@ class KeyboardConfigurationFactory @Inject constructor() {
             // Row 0: Numbers 1-3, Action cell
             CellConfiguration(0, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('1'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('!'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('@'),
+                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('-'),
+                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character('$'),
             )),
             CellConfiguration(1, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('2'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('"'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('#'),
+                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('^'),
+                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('!'),
+                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('+'),
             )),
             CellConfiguration(2, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('3'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('$'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('%'),
+                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character('€'),
+                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('='),
+                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('?'),
             )),
             CellConfiguration(3, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.ShowLetters,
@@ -219,20 +223,22 @@ class KeyboardConfigurationFactory @Inject constructor() {
             // Row 1: Numbers 4-6, Action cell
             CellConfiguration(4, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('4'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('&'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('*'),
+                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('%'),
+                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character('_'),
+                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character('['),
+                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('('),
+                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.Character('{'),
             )),
             CellConfiguration(5, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('5'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('('),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character(')'),
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('-'),
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('='),
             )),
             CellConfiguration(6, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('6'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('['),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character(']'),
+                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('}'),
+                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character(')'),
+                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character(']'),
+                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.Character('|'),
+                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character('@'),
             )),
             CellConfiguration(7, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.SwitchCase,
@@ -244,20 +250,23 @@ class KeyboardConfigurationFactory @Inject constructor() {
             // Row 2: Numbers 7-9, Action cell
             CellConfiguration(8, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('7'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('{'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('}'),
+                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('*'),
+                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('<'),
             )),
             CellConfiguration(9, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('8'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('|'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('\\'),
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character(','),
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('.'),
+                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.Character('"'),
+                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('.'),
+                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character(':'),
+                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character(','),
+                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('\''),
             )),
             CellConfiguration(10, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('9'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('?'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('¿'),
+                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('&'),
+                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('>'),
+                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('#'),
+                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.Character(';'),
             )),
             CellConfiguration(11, mapOf(
                 GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Backspace,
