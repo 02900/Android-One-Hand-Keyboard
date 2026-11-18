@@ -1,5 +1,6 @@
 package com.onehandkeyboard
 
+import android.text.InputType
 import android.util.Log
 import com.onehandkeyboard.config.KeyboardConfiguration
 import com.onehandkeyboard.config.KeyboardConfigurationFactory
@@ -7,6 +8,7 @@ import com.onehandkeyboard.core.domain.model.CaseMode
 import com.onehandkeyboard.core.domain.model.KeyData
 import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
+import com.onehandkeyboard.input.DeadKeys
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -126,12 +128,51 @@ class KeyboardLayoutManager
             }
         }
 
-        /** Called when a new field gets focus: back to letters, lowercase. */
-        fun resetForNewInput() {
-            if (currentMode != LayoutMode.LETTERS) switchToLetters()
+        /** Dead key waiting for the next character (´ or ¨), or null. */
+        var pendingDeadKey: Char? = null
+            private set
+
+        /** Arms (or, if pressed again, cancels) a dead key. Returns true: labels must refresh. */
+        fun setDeadKey(accent: Char): Boolean {
+            pendingDeadKey = if (pendingDeadKey == accent) null else accent
+            return true
+        }
+
+        /** Clears a pending dead key. Returns true if there was one. */
+        fun clearDeadKey(): Boolean {
+            if (pendingDeadKey == null) return false
+            pendingDeadKey = null
+            return true
+        }
+
+        /** Applies the pending dead key and the case mode to a typed character. */
+        fun transformChar(text: String): String {
+            val cased = applyCase(text)
+            val accent = pendingDeadKey ?: return cased
+            return DeadKeys.compose(accent, cased)
+        }
+
+        /**
+         * Called when a new field gets focus: lowercase, and the layer that suits the field
+         * (numbers/phone/date fields open on the symbols layer).
+         */
+        fun resetForNewInput(inputType: Int = InputType.TYPE_CLASS_TEXT) {
+            when (initialModeFor(inputType)) {
+                LayoutMode.LETTERS -> if (currentMode != LayoutMode.LETTERS) switchToLetters()
+                LayoutMode.SYMBOLS -> if (currentMode != LayoutMode.SYMBOLS) switchToSymbols()
+            }
             currentCaseMode = CaseMode.LOWERCASE
             isCapitalizeNext = false
             isAutoShifted = false
+            pendingDeadKey = null
+        }
+
+        /** Selects a language explicitly (e.g. from the system IME subtype). */
+        fun setLanguage(language: Language): Boolean {
+            if (language == currentLanguage) return false
+            currentLanguage = language
+            keyboardConfiguration = configFactory.getConfiguration(currentLanguage, currentMode)
+            return true
         }
 
         /**
@@ -193,13 +234,14 @@ class KeyboardLayoutManager
          * @return true if the case mode changed (labels must be refreshed)
          */
         fun onCharacterWritten(): Boolean {
+            val hadDeadKey = clearDeadKey()
             if (currentCaseMode == CaseMode.CAPITALIZE && isCapitalizeNext) {
                 currentCaseMode = CaseMode.LOWERCASE
                 isCapitalizeNext = false
                 isAutoShifted = false
                 return true
             }
-            return false
+            return hadDeadKey
         }
 
         /**
@@ -378,5 +420,15 @@ class KeyboardLayoutManager
     
         companion object {
             const val DOUBLE_TAP_MS = 300L
+
+            /** Numeric, phone and date/time fields start on the symbols (numbers) layer. */
+            fun initialModeFor(inputType: Int): LayoutMode =
+                when (inputType and InputType.TYPE_MASK_CLASS) {
+                    InputType.TYPE_CLASS_NUMBER,
+                    InputType.TYPE_CLASS_PHONE,
+                    InputType.TYPE_CLASS_DATETIME,
+                    -> LayoutMode.SYMBOLS
+                    else -> LayoutMode.LETTERS
+                }
         }
     }

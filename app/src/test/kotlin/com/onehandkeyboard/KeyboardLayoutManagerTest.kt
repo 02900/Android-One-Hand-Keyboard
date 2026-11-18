@@ -1,8 +1,10 @@
 package com.onehandkeyboard
 
+import android.text.InputType
 import com.onehandkeyboard.config.KeyboardConfigurationFactory
 import com.onehandkeyboard.core.domain.model.CaseMode
 import com.onehandkeyboard.enums.LayoutMode
+import com.onehandkeyboard.input.DeadKeys
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -77,6 +79,41 @@ class KeyboardLayoutManagerTest {
         tapShift(afterMs = 100)
         assertFalse(manager.updateAutoShift(shouldCapitalize = false))
         assertEquals(CaseMode.UPPERCASE, manager.currentCaseMode)
+    }
+
+    @Test
+    fun `numeric phone and date fields open on the symbols layer`() {
+        assertEquals(LayoutMode.SYMBOLS, KeyboardLayoutManager.initialModeFor(InputType.TYPE_CLASS_NUMBER))
+        assertEquals(LayoutMode.SYMBOLS, KeyboardLayoutManager.initialModeFor(InputType.TYPE_CLASS_PHONE))
+        assertEquals(LayoutMode.SYMBOLS, KeyboardLayoutManager.initialModeFor(InputType.TYPE_CLASS_DATETIME))
+        val email = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        assertEquals(LayoutMode.LETTERS, KeyboardLayoutManager.initialModeFor(email))
+
+        manager.resetForNewInput(InputType.TYPE_CLASS_PHONE)
+        assertEquals(LayoutMode.SYMBOLS, manager.currentMode)
+    }
+
+    @Test
+    fun `dead key accents the next vowel once`() {
+        manager.setDeadKey(DeadKeys.ACUTE)
+        assertEquals("é", manager.transformChar("e"))
+
+        assertTrue("labels must drop the accent preview", manager.onCharacterWritten())
+        assertEquals("e", manager.transformChar("e"))
+    }
+
+    @Test
+    fun `pressing the same dead key twice cancels it`() {
+        manager.setDeadKey(DeadKeys.ACUTE)
+        manager.setDeadKey(DeadKeys.ACUTE)
+        assertEquals(null, manager.pendingDeadKey)
+    }
+
+    @Test
+    fun `dead key respects one-shot capital`() {
+        tapShift()
+        manager.setDeadKey(DeadKeys.ACUTE)
+        assertEquals("Á", manager.transformChar("a"))
     }
 
     @Test

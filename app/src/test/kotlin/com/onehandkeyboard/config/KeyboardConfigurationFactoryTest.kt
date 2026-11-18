@@ -6,6 +6,7 @@ import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
+import com.onehandkeyboard.input.DeadKeys
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -59,6 +60,49 @@ class KeyboardConfigurationFactoryTest {
                 ActionConfig.Action(KeyAction.UndoDelete),
                 backspace.getActionFor(GestureType.SWIPE, Direction.E),
             )
+        }
+    }
+
+    @Test
+    fun `english letters contain the whole alphabet`() {
+        val letters = factory.getConfiguration(Language.ENGLISH, LayoutMode.LETTERS).characters()
+        ('a'..'z').forEach { char ->
+            assertTrue("English layout should contain '$char'", char in letters)
+        }
+    }
+
+    @Test
+    fun `spanish letters offer accents, inverted marks and email characters`() {
+        val config = factory.getConfiguration(Language.SPANISH, LayoutMode.LETTERS)
+        val chars = config.characters()
+        listOf('¿', '¡', '!', '?', '@', '/', '-').forEach { char ->
+            assertTrue("Spanish layout should contain '$char'", char in chars)
+        }
+
+        val deadKeys =
+            config.cells.flatMap { it.actions.values }
+                .filterIsInstance<ActionConfig.Action>()
+                .mapNotNull { (it.keyAction as? KeyAction.DeadKey)?.accent }
+                .toSet()
+        assertEquals(setOf(DeadKeys.ACUTE, DeadKeys.DIAERESIS), deadKeys)
+        "aeiou".forEach { vowel -> assertTrue(vowel in chars) }
+    }
+
+    @Test
+    fun `control keys expose delete word, one-hand and no 1dp height steps`() {
+        allConfigurations().forEach { config ->
+            val backspace = config.cells.first { it.cellIndex == 11 }
+            assertEquals(
+                ActionConfig.Action(KeyAction.DeleteWord),
+                backspace.getActionFor(GestureType.SWIPE, Direction.W),
+            )
+            val layoutKey = config.cells.first { it.cellIndex == 3 }
+            assertEquals(
+                ActionConfig.Action(KeyAction.ToggleOneHand),
+                layoutKey.getActionFor(GestureType.SWIPE, Direction.S),
+            )
+            assertFalse(layoutKey.actions.values.contains(ActionConfig.IncreaseCellHeight))
+            assertFalse(layoutKey.actions.values.contains(ActionConfig.DecreaseCellHeight))
         }
     }
 
