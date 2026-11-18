@@ -39,8 +39,21 @@ class KeyboardPreferences
             get() = prefs.getBoolean(KEY_SUGGESTIONS, true)
             set(value) = prefs.edit().putBoolean(KEY_SUGGESTIONS, value).apply()
 
+        /** Folder (Storage Access Framework tree URI) with the user's memes, or null if not set. */
+        var memeFolderUri: String?
+            get() = prefs.getString(KEY_MEME_FOLDER, null)
+            set(value) = prefs.edit().putString(KEY_MEME_FOLDER, value).apply()
+
+        /** URIs of the last memes sent, most recent first. */
+        var recentMemes: List<String>
+            get() = prefs.getString(KEY_RECENT_MEMES, null)?.split(LIST_SEPARATOR)?.filter { it.isNotEmpty() }.orEmpty()
+            set(value) = prefs.edit().putString(KEY_RECENT_MEMES, value.joinToString(LIST_SEPARATOR)).apply()
+
         companion object {
             const val DEFAULT_CELL_HEIGHT_DP = 60f
+            private const val KEY_MEME_FOLDER = "meme_folder_uri"
+            private const val KEY_RECENT_MEMES = "recent_memes"
+            private const val LIST_SEPARATOR = "\n"
             private const val KEY_AUTOCORRECT = "autocorrect_enabled"
             private const val KEY_SUGGESTIONS = "suggestions_enabled"
             private const val PREFS_NAME = "keyboard_prefs"

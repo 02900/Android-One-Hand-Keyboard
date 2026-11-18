@@ -3,11 +3,14 @@ package com.onehandkeyboard.ui
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,9 +43,12 @@ import androidx.compose.ui.unit.sp
 import com.onehandkeyboard.R
 import com.onehandkeyboard.core.design.theme.KeyboardThemeWithTokens
 import com.onehandkeyboard.core.design.theme.ThemeManager
+import com.onehandkeyboard.memes.MemeLibrary
 import com.onehandkeyboard.prefs.KeyboardPreferences
 import com.onehandkeyboard.spell.SpellEngines
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -147,6 +154,11 @@ private fun SettingsScreen(
             WritingSettings(preferences, onClearLearnedWords)
         }
 
+        // Meme library: a folder of GIFs and stickers picked by the user
+        item {
+            MemeSettings(preferences)
+        }
+
         // Opens the system list of keyboards, where this one is enabled
         item {
             OutlinedButton(
@@ -218,6 +230,107 @@ private fun WritingSettings(
                 Text("Borrar palabras aprendidas")
             }
         }
+    }
+}
+
+@Composable
+private fun MemeSettings(preferences: KeyboardPreferences) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val library = remember { MemeLibrary(context.applicationContext) }
+    var folder by remember { mutableStateOf(preferences.memeFolderUri) }
+    var summary by remember { mutableStateOf("") }
+    val picker =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            uri ?: return@rememberLauncherForActivityResult
+            val picked = uri.toString()
+            try {
+                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (_: SecurityException) {
+                Toast.makeText(context, "No se pudo dar acceso a esa carpeta", Toast.LENGTH_SHORT).show()
+                return@rememberLauncherForActivityResult
+            }
+            folder?.takeIf { it != picked }?.let { releaseFolder(context, it) }
+            preferences.memeFolderUri = picked
+            preferences.recentMemes = emptyList()
+            folder = picked
+        }
+    LaunchedEffect(folder) {
+        summary = "Leyendo la carpeta…"
+        summary = withContext(Dispatchers.IO) { describeLibrary(library, folder) }
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "🖼️ Biblioteca de memes",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text =
+                    "Copia tu pack de GIFs y stickers a una carpeta del teléfono (una subcarpeta por " +
+                        "categoría) y elígela aquí. En el teclado, desliza hacia abajo en la tecla 123.",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Text(
+                text = summary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Button(
+                onClick = { picker.launch(null) },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                Text(if (folder == null) "Elegir carpeta" else "Cambiar carpeta")
+            }
+            if (folder != null) {
+                OutlinedButton(
+                    onClick = {
+                        folder?.let { releaseFolder(context, it) }
+                        preferences.memeFolderUri = null
+                        preferences.recentMemes = emptyList()
+                        folder = null
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Quitar carpeta")
+                }
+            }
+        }
+    }
+}
+
+private fun describeLibrary(
+    library: MemeLibrary,
+    folder: String?,
+): String =
+    when (val result = library.load(folder)) {
+        MemeLibrary.Result.NotConfigured -> "Sin carpeta elegida."
+        MemeLibrary.Result.NoAccess -> "No se puede leer la carpeta (¿se movió o borró?). Vuelve a elegirla."
+        is MemeLibrary.Result.Loaded -> {
+            val name = folder?.let(library::folderName) ?: "Carpeta"
+            val memes = result.categories.sumOf { it.memes.size }
+            "📁 $name · $memes memes en ${result.categories.size} categorías"
+        }
+    }
+
+/** Gives back the read access to a folder that is no longer used. */
+private fun releaseFolder(
+    context: Context,
+    folder: String,
+) {
+    try {
+        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        context.contentResolver.releasePersistableUriPermission(Uri.parse(folder), flags)
+    } catch (_: SecurityException) {
+        // Already released (e.g. the folder was deleted).
     }
 }
 

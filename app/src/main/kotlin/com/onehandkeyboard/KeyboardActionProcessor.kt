@@ -29,6 +29,7 @@ class KeyboardActionProcessor(
     private val onHeightChanged: () -> Unit,
     private val committer: InputCommitter = InputCommitter(),
     private val corrector: AutoCorrector? = null,
+    private val onShowMemes: () -> Unit = {},
 ) {
     private val ic get() = service.currentInputConnection
     private val editorInfo get() = service.currentInputEditorInfo
@@ -118,6 +119,7 @@ class KeyboardActionProcessor(
             is KeyAction.IncreaseCellHeight -> if (layoutCalculator.increaseCellHeight()) onHeightChanged()
             is KeyAction.DecreaseCellHeight -> if (layoutCalculator.decreaseCellHeight()) onHeightChanged()
             is KeyAction.ResetCellHeight -> if (layoutCalculator.resetCellHeight()) onHeightChanged()
+            is KeyAction.ShowMemes -> onShowMemes()
             else -> Log.d(TAG, "Action not implemented: ${action::class.simpleName}")
         }
     }

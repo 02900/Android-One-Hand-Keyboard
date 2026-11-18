@@ -309,13 +309,14 @@ class KeyboardConfigurationFactory
         // ------------------------------------------------------------------
 
         /**
-         * Layer key: tap = switch layer, left = default height. Long-press starts the live
-         * height resize (touch layer).
+         * Layer key: tap = switch layer, left = default height, down = meme library. Long-press
+         * starts the live height resize (touch layer).
          */
         private fun GridBuilder.layoutCell(switchAction: ActionConfig) =
             cell(3) {
                 tap(switchAction)
                 swipe(W, ActionConfig.ResetCellHeight)
+                swipe(S, ActionConfig.Action(KeyAction.ShowMemes))
             }
 
         /** Shift has no meaning on the symbols layer, so there it only keeps the clipboard swipes. */
