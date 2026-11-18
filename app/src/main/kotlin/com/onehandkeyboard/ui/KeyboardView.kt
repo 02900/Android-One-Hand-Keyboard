@@ -91,6 +91,14 @@ class KeyboardView(
     /** Show the preview bubble (disabled for password fields). */
     var previewEnabled = true
 
+    /** A newer build is waiting in settings: marked next to the version label. */
+    var updateWaiting = false
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
+
     /** Called when the user taps a suggestion in the strip. */
     var onSuggestionPicked: (Suggestion) -> Unit = {}
 
@@ -346,7 +354,7 @@ class KeyboardView(
         versionPaint.color = ColorUtils.setAlphaComponent(color, (Color.alpha(color) * VERSION_ALPHA).toInt())
         val margin = LABEL_MARGIN_DP * density
         canvas.drawText(
-            versionText,
+            if (updateWaiting) "$versionText  ⬆ actualización" else versionText,
             gridRect.left + margin,
             gridRect.bottom - margin - versionPaint.descent(),
             versionPaint,

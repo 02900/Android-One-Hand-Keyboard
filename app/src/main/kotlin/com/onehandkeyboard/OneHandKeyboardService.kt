@@ -37,6 +37,8 @@ import com.onehandkeyboard.ui.KeyboardView
 import com.onehandkeyboard.ui.LayoutCalculator
 import com.onehandkeyboard.ui.MemePanelView
 import com.onehandkeyboard.ui.SettingsActivity
+import com.onehandkeyboard.update.KeyboardUpdates
+import com.onehandkeyboard.update.SelfUpdater
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.Executors
 import javax.inject.Inject
@@ -79,6 +81,7 @@ class OneHandKeyboardService : InputMethodService() {
     private lateinit var memeLibrary: MemeLibrary
     private lateinit var memeSender: MemeSender
     private lateinit var memeThumbnails: MemeThumbnails
+    private lateinit var keyboardUpdates: KeyboardUpdates
     private val memeExecutor = Executors.newSingleThreadExecutor()
 
     /** Bumped each time the panel opens or closes, so a late scan does not reopen it. */
@@ -88,6 +91,21 @@ class OneHandKeyboardService : InputMethodService() {
         super.onCreate() // Hilt injects here
         initializeComponents()
         registerThemeChangeReceiver()
+        announceUpdate()
+    }
+
+    /** After a self-update the keyboard restarts: say which build is running now. */
+    private fun announceUpdate() {
+        val previous = preferences.lastRunCommit
+        if (previous == BuildConfig.GIT_COMMIT) return
+        preferences.lastRunCommit = BuildConfig.GIT_COMMIT
+        preferences.updateNeedsConfirmation = false
+        if (previous != null) toast("Teclado actualizado · ${BuildConfig.GIT_COMMIT}")
+    }
+
+    override fun onWindowHidden() {
+        super.onWindowHidden()
+        keyboardUpdates.onKeyboardHidden()
     }
 
     @Suppress("TooGenericExceptionCaught") // any failure must still leave the user a usable view
@@ -106,6 +124,7 @@ class OneHandKeyboardService : InputMethodService() {
                     prefs = preferences,
                 ).also { view ->
                     view.onSuggestionPicked = actionProcessor::pickSuggestion
+                    view.updateWaiting = keyboardUpdates.waiting
                     keyboardView = view
                 }
             val panel =
@@ -137,6 +156,9 @@ class OneHandKeyboardService : InputMethodService() {
         memeLibrary = MemeLibrary(this)
         memeSender = MemeSender(this)
         memeThumbnails = MemeThumbnails(this, ContextCompat.getMainExecutor(this))
+        keyboardUpdates =
+            KeyboardUpdates(SelfUpdater(this, preferences), preferences, ContextCompat.getMainExecutor(this))
+        keyboardUpdates.onWaitingChanged = { keyboardView?.updateWaiting = it }
         labels = GestureHintProvider(layoutManager)
         gestureIntegration = GestureIntegration(this, layoutManager, KeyFeedback(this, preferences))
 
@@ -177,6 +199,7 @@ class OneHandKeyboardService : InputMethodService() {
             hideMemes()
             layoutManager.resetForNewInput(info?.inputType ?: InputType.TYPE_CLASS_TEXT)
             keyboardView?.showCurrentLayout(animate = false)
+            keyboardUpdates.onKeyboardShown()
         }
         keyboardView?.previewEnabled = !InputCommitter.isPassword(info)
         labels.enterLabel = GestureHintProvider.enterLabelFor(info)
@@ -360,6 +383,7 @@ class OneHandKeyboardService : InputMethodService() {
             gestureIntegration.cleanup()
         }
         if (::memeThumbnails.isInitialized) memeThumbnails.shutdown()
+        if (::keyboardUpdates.isInitialized) keyboardUpdates.shutdown()
         memeExecutor.shutdownNow()
         super.onDestroy()
     }

@@ -20,6 +20,19 @@ val gitCommit: String =
             .trim()
     }.getOrNull().orEmpty().ifEmpty { "dev" }
 
+// Commit date (epoch seconds): the in-app updater only moves forward, never to an older build.
+val gitCommitTime: Long =
+    runCatching {
+        providers
+            .exec {
+                commandLine("git", "log", "-1", "--format=%ct")
+                isIgnoreExitValue = true
+            }.standardOutput.asText
+            .get()
+            .trim()
+            .toLong()
+    }.getOrDefault(0L)
+
 android {
     namespace = "com.onehandkeyboard"
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -31,6 +44,7 @@ android {
         versionCode = 1
         versionName = "1.0.0"
         buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
+        buildConfigField("long", "GIT_COMMIT_TIME", "${gitCommitTime}L")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -41,8 +55,11 @@ android {
             isMinifyEnabled = false
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            // Updates itself from tools/serve_updates.py on the LAN (permissions in src/debug).
+            buildConfigField("boolean", "SELF_UPDATE", "true")
         }
         release {
+            buildConfigField("boolean", "SELF_UPDATE", "false")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
