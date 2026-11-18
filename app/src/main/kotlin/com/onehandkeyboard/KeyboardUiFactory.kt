@@ -8,6 +8,7 @@ import com.onehandkeyboard.KeyboardLayoutManager
 import com.onehandkeyboard.actions.ActionConfig
 import com.onehandkeyboard.config.CellConfiguration
 import com.onehandkeyboard.core.design.theme.ThemeManager
+import com.onehandkeyboard.prefs.KeyboardPreferences
 import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyData
@@ -34,11 +35,12 @@ class KeyboardUiFactory(
     private val context: Context,
     private val layoutManager: KeyboardLayoutManager,
     private val themeManager: ThemeManager,
+    prefs: KeyboardPreferences? = null,
 ) {
     // Delegated components for specialized responsibilities
-    val layoutCalculator = LayoutCalculator(context)
+    val layoutCalculator = LayoutCalculator(context, prefs)
     private val _styleProvider = ButtonStyleProvider(context, themeManager)
-    private val hintProvider = GestureHintProvider(layoutManager)
+    val hintProvider = GestureHintProvider(layoutManager)
     private val controlButtonFactory = ControlButtonFactory(context, layoutCalculator, _styleProvider)
     private val labelFactory = DirectionalLabelFactory(context, _styleProvider, hintProvider)
     

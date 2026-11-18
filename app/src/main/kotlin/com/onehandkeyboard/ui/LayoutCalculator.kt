@@ -1,6 +1,7 @@
 package com.onehandkeyboard.ui
 
 import android.content.Context
+import com.onehandkeyboard.prefs.KeyboardPreferences
 
 /**
  * Calculadora de layouts y dimensiones para el teclado.
@@ -10,9 +11,16 @@ import android.content.Context
  * - Determinar dimensiones basadas en el tamaño de pantalla
  * - Gestionar márgenes y espaciado del grid
  */
-class LayoutCalculator(private val context: Context) {
-    // Altura configurable de celda en dp (mutable para ajustes dinámicos)
-    private var cellHeightDp = 60f
+class LayoutCalculator(
+    private val context: Context,
+    private val prefs: KeyboardPreferences? = null,
+) {
+    // Altura configurable de celda en dp, persistida en KeyboardPreferences
+    private var cellHeightDp = prefs?.cellHeightDp ?: KeyboardPreferences.DEFAULT_CELL_HEIGHT_DP
+        set(value) {
+            field = value
+            prefs?.cellHeightDp = value
+        }
     
     // Límites para la altura de celda
     private val minCellHeightDp = 40f
@@ -109,7 +117,7 @@ class LayoutCalculator(private val context: Context) {
      * @return true si se cambió la altura, false si ya estaba en el valor por defecto
      */
     fun resetCellHeight(): Boolean {
-        val defaultHeight = 60f
+        val defaultHeight = KeyboardPreferences.DEFAULT_CELL_HEIGHT_DP
         return if (cellHeightDp != defaultHeight) {
             cellHeightDp = defaultHeight
             true
