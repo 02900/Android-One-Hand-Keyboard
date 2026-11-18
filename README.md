@@ -89,7 +89,7 @@ Memes/
 
 La app busca el build más nuevo en dos lugares y se queda con el más reciente:
 
-1. **GitHub Releases** (desde cualquier red). Cada push a `main`, o cada tag `v*`, ejecuta `.github/workflows/release.yml`: compila, firma con la clave fija y publica una release con el APK y `update.json`. La app lee `releases/latest/download/update.json`, que no pasa por la API de GitHub, así que no hay límite de cupo. También se puede lanzar a mano desde la pestaña Actions.
+1. **GitHub Releases** (desde cualquier red). La app lee `releases/latest/download/update.json`, que no pasa por la API de GitHub, así que no hay límite de cupo. Cómo publicar: [Publicar una versión](#-publicar-una-versión-github-actions).
 2. **Tu PC en la red local**, para probar un build antes de publicarlo:
 
 ```bash
@@ -100,18 +100,18 @@ python tools/serve_updates.py   # compila, publica y sirve; Ctrl+C para parar
 - **Ajustes → Versión** busca al abrir y muestra **Actualizar** si hay un build más nuevo (otro commit, no más viejo). La primera vez Android pide confirmar y permitir "instalar apps de esta fuente".
 - **Actualizar sola** (Android 12+): después de la primera actualización desde la app, el teclado busca cada 10 min mientras escribes, descarga en segundo plano e instala **al ocultarse**. Si Android pide confirmar, aparece "⬆ actualización" junto a la versión del teclado.
 - El APK se verifica con el SHA-256 de `update.json`, y Android solo lo instala si tiene la misma firma que la app instalada.
-- Solo el build de debug tiene permiso de red (`src/debug/AndroidManifest.xml`); el de release sigue sin red.
+- Solo el build de debug (el que se publica) tiene permiso de red (`src/debug/AndroidManifest.xml`); el de release sigue sin red.
 - La primera vez que corre el script, Windows puede preguntar si Python puede usar redes privadas: hay que permitirlo.
 
 ### Clave de firma
 
 Todas las builds publicadas se firman con la misma clave, para que cada actualización se instale sobre la anterior:
 
-- **Local:** `keystore.properties` en la raíz del repo (no está en git) con `storeFile`, `storePassword`, `keyAlias` y `keyPassword`. Sin ese archivo, Gradle usa la clave de debug de la máquina.
-- **GitHub Actions:** los secretos `OHK_KEYSTORE_BASE64`, `OHK_KEYSTORE_PASSWORD`, `OHK_KEY_ALIAS` y `OHK_KEY_PASSWORD`.
+- **Local:** `keystore.properties` en la raíz del repo (no está en git). Ver [Restaurar la clave de firma](#4-restaurar-la-clave-de-firma). Sin ese archivo, Gradle usa la clave de debug de la máquina.
+- **GitHub Actions:** los secretos `OHK_KEYSTORE_*`. Ver [Publicar una versión](#-publicar-una-versión-github-actions).
 - ⚠️ **Haz una copia de seguridad del `.jks` y de `keystore.properties`.** Si se pierde la clave, las apps instaladas ya no aceptan actualizaciones: hay que desinstalar y volver a instalar.
 
-**Compartir app:** Ajustes → Compartir envía el APK instalado como archivo (Telegram, WhatsApp…).
+**Compartir app:** Ajustes → Compartir envía el APK instalado como archivo (Telegram, WhatsApp…). Si viene de una release firmada con la clave fija, el teléfono de tu amigo también se actualiza solo desde GitHub.
 
 ## 🛠️ Stack Tecnológico
 
@@ -184,131 +184,150 @@ Todas las builds publicadas se firman con la misma clave, para que cada actualiz
 - [ ] Etapa 10: Accesibilidad y UX Mejorada
 - [ ] Etapa 11: Testing Integral y Estabilización
 
-## 🏃‍♂️ Inicio Rápido
+## 🏃‍♂️ Inicio Rápido: PC con instalación limpia
 
-### Prerrequisitos
-- **Android Studio**: Ladybug (2024.2.1) o superior
-- **JDK**: 17 (recomendado usar el JDK incluido en Android Studio)
-- **Android SDK**: API 26+ (Android 8.0) como mínimo
-- **Git**: Para clonar el repositorio
+Pasos para dejar una PC nueva (Windows) lista para compilar, probar y publicar. En macOS o Linux los pasos son los mismos con el gestor de paquetes de cada sistema.
 
-### Configuración del Entorno
+### 1. Instalar las herramientas
 
-#### Opción 1: Usando Android Studio (Recomendado)
-1. Clona el repositorio:
-   ```bash
-   git clone <repository-url>
-   cd OneHandKeyboard
+| Herramienta | Para qué | Notas |
+|---|---|---|
+| **Git** | Clonar y hacer commits | |
+| **Android Studio** | SDK de Android, `adb` y un JDK incluido | Ladybug (2024.2) o superior |
+| **JDK 17+** | Gradle | Sirve el JBR de Android Studio o Temurin 17 |
+| **Python 3.10+** | `tools/serve_updates.py` (servidor local) | Solo usa la librería estándar, no hay que instalar paquetes con pip |
+| **GitHub CLI (`gh`)** | PRs, releases y secretos | Opcional, pero los comandos de esta guía lo usan |
+
+Con winget (PowerShell):
+
+```powershell
+winget install Git.Git Google.AndroidStudio EclipseAdoptium.Temurin.17.JDK Python.Python.3.12 GitHub.cli
+```
+
+### 2. Preparar el SDK de Android
+
+1. Abre Android Studio una vez y completa el asistente. Instala el SDK en la ruta por defecto: `C:\Users\<usuario>\AppData\Local\Android\Sdk`.
+2. En **SDK Manager**, instala **Android SDK Platform 35**, **Build-Tools** y **Platform-Tools**.
+3. Agrega `adb` al `PATH`: `C:\Users\<usuario>\AppData\Local\Android\Sdk\platform-tools`.
+4. Si `java -version` no muestra la versión 17 o mayor, configura `JAVA_HOME`:
+   ```powershell
+   setx JAVA_HOME "C:\Program Files\Android\Android Studio\jbr"
    ```
 
-2. Abre el proyecto en Android Studio
-3. Android Studio configurará automáticamente el JDK y SDK
-4. Sincroniza el proyecto (Sync Project with Gradle Files)
+### 3. Clonar el repositorio
 
-#### Opción 2: Línea de Comandos
-1. Clona el repositorio:
+```bash
+gh auth login                     # una vez: cuenta de GitHub con acceso al repo
+git clone https://github.com/02900/Android-One-Hand-Keyboard.git
+cd Android-One-Hand-Keyboard
+```
+
+Si abres el proyecto en Android Studio, se crea solo `local.properties` con la ruta del SDK. Si solo usas la terminal, créalo a mano en la raíz del repo:
+
+```properties
+sdk.dir=C\:\\Users\\<usuario>\\AppData\\Local\\Android\\Sdk
+```
+
+### 4. Restaurar la clave de firma
+
+Sin la clave fija, Gradle firma con la clave de debug de **esa** PC. Ese APK sirve para desarrollar, pero **no actualiza** la app que ya está instalada en los teléfonos.
+
+1. Copia el `.jks` de tu copia de seguridad a `C:\Users\<usuario>\.keystores\one-hand-keyboard.jks`.
+2. Copia `keystore.properties` a la raíz del repo y corrige `storeFile` si la ruta cambió:
+   ```properties
+   storeFile=C:/Users/<usuario>/.keystores/one-hand-keyboard.jks
+   storePassword=...
+   keyAlias=onehandkeyboard
+   keyPassword=...
+   ```
+3. Comprueba que el APK salga con la firma correcta. La huella SHA-256 debe ser `44e84cd552db74c14fda088fb8210d8643a556367ec551d3e627883c8a6fcf41`:
    ```bash
-   git clone <repository-url>
-   cd OneHandKeyboard
+   ./gradlew assembleDebug
+   "$ANDROID_HOME/build-tools/<versión>/apksigner" verify --print-certs app/build/outputs/apk/debug/app-ime-debug.apk
    ```
 
-2. Configura JAVA_HOME (Windows):
-   ```bash
-   # Usando el JDK de Android Studio
-   $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
-   
-   # O usando tu JDK instalado
-   $env:JAVA_HOME = "C:\Program Files\Java\jdk-17"
-   ```
+Los dos archivos están en `.gitignore` y nunca se suben al repo.
 
-3. Verifica la configuración:
-   ```bash
-   java -version
-   ./gradlew --version
-   ```
+### 5. Compilar y verificar
 
-### Compilación
+Con poca memoria, conviene correr los pasos por separado:
 
-#### Compilar Todo el Proyecto
 ```bash
-# Dry run para verificar configuración
-./gradlew build --dry-run
-
-# Compilación completa
-./gradlew build
+./gradlew testDebugUnitTest      # tests unitarios (JVM + Robolectric)
+./gradlew ktlintCheck detekt     # estilo y análisis estático (ktlintFormat arregla el formato)
+./gradlew assembleDebug          # APK: app/build/outputs/apk/debug/app-ime-debug.apk
 ```
 
-#### Compilar Solo el APK
-```bash
-# APK de debug
-./gradlew :app-ime:assembleDebug
+En PowerShell usa `.\gradlew`. La primera compilación descarga Gradle 8.13 y las dependencias, y tarda varios minutos.
 
-# APK de release
-./gradlew :app-ime:assembleRelease
+### 6. Instalar en el teléfono
+
+- **Desde GitHub** (recomendado): abre en el teléfono https://github.com/02900/Android-One-Hand-Keyboard/releases/latest e instala el APK.
+- **Por cable:** activa la depuración USB y ejecuta `adb install -r app/build/outputs/apk/debug/app-ime-debug.apk`.
+- **Por Wi-Fi:** ejecuta `python tools/serve_updates.py` y abre en el teléfono la URL que imprime. La primera vez, Windows pregunta si Python puede usar **redes privadas**: hay que permitirlo.
+
+Si el teléfono tiene una versión firmada con otra clave, Android rechaza la instalación: desinstálala primero.
+
+Después, activa el teclado:
+
+1. **Configuración** → **Sistema** → **Idiomas e introducción de texto** → **Teclado en pantalla**, y activa **OneHandKeyboard**. También puedes usar el botón **Activar** en los ajustes de la app.
+2. En cualquier campo de texto, toca el ícono de teclado y elige **OneHandKeyboard**.
+3. **Toca una celda** para escribir su letra central y **desliza** hacia una etiqueta para escribirla. Las teclas de control se describen en [Arquitectura](#️-arquitectura). Con **TalkBack**, cada tecla es un elemento navegable y los swipes están en el menú de acciones.
+
+### Solución de problemas
+
+| Problema | Solución |
+|---|---|
+| `No Java compiler found` / `JAVA_HOME` | Apunta `JAVA_HOME` a un JDK 17+ (paso 2.4) |
+| `SDK location not found` | Crea `local.properties` (paso 3) |
+| `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | La app instalada tiene otra firma: desinstálala, o restaura la clave (paso 4) |
+| Gradle se queda sin memoria | Corre tests, lint y build por separado; o sube `org.gradle.jvmargs` en `gradle.properties` |
+| El teléfono no encuentra el servidor local | Misma Wi-Fi, Python permitido en el firewall (UDP 47800 y TCP 8000), y el script corriendo |
+
+## 🚀 Publicar una versión (GitHub Actions)
+
+El workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) compila el APK, lo firma con la clave fija y publica una **GitHub Release** con el APK y su `update.json`. Los teléfonos lo detectan solos (ver [Actualizaciones](#-actualizaciones-build-de-debug)).
+
+**Cuándo se ejecuta**
+
+| Evento | Nombre de la release |
+|---|---|
+| Push a `main` (incluye mergear un PR) | `build-<commit>` |
+| Push de un tag `v*` | el tag, por ejemplo `v1.0.1` |
+| Manual: **Actions → Release → Run workflow** | `build-<commit>` (solo cuando el workflow ya está en `main`) |
+
+**Publicar con un tag**
+
+```bash
+git tag -a v1.0.1 -m "Qué cambia"
+git push origin v1.0.1
+gh run watch                       # sigue el workflow (~5 min)
+gh release list                    # la nueva aparece como "Latest"
 ```
 
-#### Compilar Módulos Específicos
+**Qué hace, paso a paso:** restaura la clave desde los secretos, compila con `assembleDebug`, escribe `update.json` (`python3 tools/serve_updates.py --no-build --no-serve --dir dist`), crea la release y la marca como *Latest*. Si la release ya existía (por ejemplo, al reintentar), reemplaza los archivos. Al final borra la clave del runner.
+
+**Secretos del repo** (Settings → Secrets and variables → Actions)
+
+| Secreto | Contenido |
+|---|---|
+| `OHK_KEYSTORE_BASE64` | El `.jks` en base64 |
+| `OHK_KEYSTORE_PASSWORD` | Contraseña del keystore |
+| `OHK_KEY_ALIAS` | `onehandkeyboard` |
+| `OHK_KEY_PASSWORD` | Contraseña de la clave |
+
+Para volver a cargarlos desde una PC que tenga la clave (Git Bash):
+
 ```bash
-# Solo módulos core
-./gradlew :core:domain:build :core:gesture:build
+base64 -w0 ~/.keystores/one-hand-keyboard.jks | gh secret set OHK_KEYSTORE_BASE64
+gh secret set OHK_KEYSTORE_PASSWORD   # pide el valor (storePassword de keystore.properties)
+gh secret set OHK_KEY_ALIAS --body onehandkeyboard
+gh secret set OHK_KEY_PASSWORD        # pide el valor (keyPassword)
 ```
 
-### Ejecutar Tests
-```bash
-# Tests unitarios
-./gradlew test
+**Si una release salió mal:** `gh release delete <tag> --cleanup-tag` la borra y la anterior vuelve a ser la *Latest*. Los teléfonos que ya se actualizaron **no vuelven atrás**, porque la app solo instala commits más nuevos. Para corregir, publica un commit nuevo con el arreglo.
 
-# Tests de un módulo específico
-./gradlew :core:gesture:test
-
-# Tests instrumentados (requiere dispositivo/emulador)
-./gradlew connectedAndroidTest
-
-# Tests con reporte de cobertura
-./gradlew testDebugUnitTestCoverage
-```
-
-### Verificar Calidad de Código
-```bash
-# Verificar formato de código
-./gradlew ktlintCheck
-
-# Formatear código automáticamente
-./gradlew ktlintFormat
-
-# Análisis estático
-./gradlew detekt
-
-# Verificar todo junto
-./gradlew check
-```
-
-### Solución de Problemas Comunes
-
-#### Error: "No Java compiler found"
-```bash
-# Windows - Configurar JAVA_HOME
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
-
-# Linux/Mac - Configurar JAVA_HOME
-export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
-```
-
-#### Error: "Unresolved reference: kapt"
-- Asegúrate de que todos los módulos que usan Hilt tengan `kotlin("kapt")` en sus plugins
-
-#### Error de Sincronización de Gradle
-```bash
-# Limpiar y reconstruir
-./gradlew clean
-./gradlew build --refresh-dependencies
-```
-
-#### Problemas de Memoria
-```bash
-# Aumentar memoria de Gradle (gradle.properties)
-org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
-```
+**Costo:** gratis. Los runners estándar de GitHub no tienen límite en repos públicos, y las descargas desde `releases/latest/download` no consumen cupo de la API.
 
 ## 🧪 Testing
 
@@ -318,62 +337,6 @@ El proyecto incluye:
 - **Tests UI**: Componentes Compose
 - **Property-based testing**: Motor de gestos
 - **Golden tests**: Trayectorias de gestos
-
-## 📦 Generar el APK
-
-```bash
-./gradlew :app-ime:assembleDebug     # app/build/outputs/apk/debug/
-./gradlew :app-ime:assembleRelease   # app/build/outputs/apk/release/
-```
-
-## 📱 Instalación y Configuración
-
-### Paso 1: Compilar el APK
-```bash
-# Configurar JAVA_HOME si es necesario
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
-
-# Compilar APK de debug (recomendado para desarrollo)
-./gradlew assembleDebug --no-daemon -x ktlintCheck -x detekt
-
-# O compilar APK de release (para producción)
-./gradlew assembleRelease --no-daemon
-```
-
-El APK se generará en: `app/build/outputs/apk/debug/app-ime-debug.apk`
-
-### Paso 2: Instalar en Dispositivo
-```bash
-# Conectar dispositivo Android o iniciar emulador
-adb devices
-
-# Instalar el APK
-adb install app/build/outputs/apk/debug/app-ime-debug.apk
-```
-
-### Paso 3: Activar el Teclado
-1. Ve a **Configuración** → **Sistema** → **Idiomas e introducción de texto**
-2. Selecciona **Teclado en pantalla** (o **Virtual keyboard**)
-3. Activa **"OneHandKeyboard"** en la lista
-4. Confirma la activación cuando aparezca el diálogo de seguridad
-
-### Paso 4: Seleccionar como Teclado Activo
-1. Abre cualquier aplicación de texto (WhatsApp, Notas, etc.)
-2. Toca un campo de texto para que aparezca el teclado
-3. Toca el ícono de teclado en la barra de navegación
-4. Selecciona **"OneHandKeyboard"** de la lista
-
-### Paso 5: ¡Probar el Teclado!
-- **Toca una celda** para escribir su letra central y **desliza** hacia una etiqueta para escribirla
-  (un globo muestra lo que vas a escribir antes de soltar).
-- Las teclas de control de la columna derecha y la fila inferior se describen en la tabla de
-  [Arquitectura](#️-arquitectura).
-- **TalkBack**: cada tecla es un elemento navegable; los swipes están en el menú de acciones.
-
-### Configuración Adicional
-- **Temas**: Abre la app "OneHandKeyboard" desde el launcher para cambiar temas
-- **Idiomas**: Configuración → Idiomas → Agregar idioma → Español/English
-- **Colores diferenciados**: Las celdas primarias (00-02, 10-12, 20-22) y secundarias (03, 13, 23, 30-33) usan colores distintos
 
 ## 🤝 Contribuir
 
@@ -398,7 +361,7 @@ y se distribuyen bajo CC BY-SA 4.0 (ver [`assets/dict/LICENSE.txt`](app/src/main
 
 ## 🔒 Privacidad
 
-- **Sin permisos de red** en release (el build de debug solo los usa para actualizarse desde tu PC en la red local)
+- **Sin permisos de red** en release. El build de debug solo los usa para buscar actualizaciones en GitHub Releases y en tu PC de la red local; no envía datos.
 - **Memes:** solo lee la carpeta que eliges en ajustes; nada se descarga ni se sube
 - **Sin telemetría** obligatoria
 - **Datos locales** únicamente
