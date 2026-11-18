@@ -34,6 +34,9 @@ internal class SuggestionStrip(
             updateTexts()
         }
 
+    /** A status line shown across the strip instead of the suggestions (e.g. dictation). */
+    var status: String? = null
+
     val isEmpty: Boolean get() = rect.isEmpty
 
     fun heightPx(enabled: Boolean): Float = if (enabled) HEIGHT_DP * density else 0f
@@ -54,7 +57,7 @@ internal class SuggestionStrip(
         x: Float,
         y: Float,
     ): Int? {
-        if (rect.isEmpty || !rect.contains(x, y)) return null
+        if (rect.isEmpty || status != null || !rect.contains(x, y)) return null
         val index = ((x - rect.left) / (rect.width() / SLOTS)).toInt().coerceIn(0, SLOTS - 1)
         return index.takeIf { suggestions.slots.getOrNull(it) != null }
     }
@@ -75,6 +78,11 @@ internal class SuggestionStrip(
         if (rect.isEmpty) return
         fillPaint.color = palette.secondaryFill
         canvas.drawRect(rect.left, rect.top, rect.right, rect.bottom - border, fillPaint)
+        status?.let { text ->
+            boldPaint.color = palette.secondaryText
+            canvas.drawText(text, rect.centerX(), rect.centerY() - (metrics.ascent + metrics.descent) / 2, boldPaint)
+            return
+        }
         for (index in 0 until SLOTS) {
             val text = texts[index]
             val slot = suggestions.slots.getOrNull(index)

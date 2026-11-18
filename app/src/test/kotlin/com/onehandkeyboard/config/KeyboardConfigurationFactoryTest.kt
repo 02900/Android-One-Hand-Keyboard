@@ -107,10 +107,14 @@ class KeyboardConfigurationFactoryTest {
     }
 
     @Test
-    fun `layout key switches layer and only swipes down to the memes`() {
+    fun `layout key (123 and ABC) swipes left to dictate and down to the memes`() {
         allConfigurations().forEach { config ->
             val layoutKey = config.cells.first { it.cellIndex == 3 }
-            assertEquals(setOf(Direction.S), layoutKey.getDirectionsFor(GestureType.SWIPE).toSet())
+            assertEquals(setOf(Direction.W, Direction.S), layoutKey.getDirectionsFor(GestureType.SWIPE).toSet())
+            assertEquals(
+                ActionConfig.Action(KeyAction.VoiceInput),
+                layoutKey.getActionFor(GestureType.SWIPE, Direction.W),
+            )
             assertEquals(
                 ActionConfig.Action(KeyAction.ShowMemes),
                 layoutKey.getActionFor(GestureType.SWIPE, Direction.S),

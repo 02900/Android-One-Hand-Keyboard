@@ -27,6 +27,7 @@ class KeyboardActionProcessor(
     private val committer: InputCommitter = InputCommitter(),
     private val corrector: AutoCorrector? = null,
     private val onShowMemes: () -> Unit = {},
+    private val onVoiceInput: () -> Unit = {},
 ) {
     private val ic get() = service.currentInputConnection
     private val editorInfo get() = service.currentInputEditorInfo
@@ -117,6 +118,7 @@ class KeyboardActionProcessor(
                     onLayoutSwitch()
                 }
             is KeyAction.ShowMemes -> onShowMemes()
+            is KeyAction.VoiceInput -> onVoiceInput()
             else -> Log.d(TAG, "Action not implemented: ${action::class.simpleName}")
         }
     }

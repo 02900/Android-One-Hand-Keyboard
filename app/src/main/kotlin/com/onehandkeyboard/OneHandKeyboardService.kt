@@ -40,6 +40,7 @@ import com.onehandkeyboard.ui.MemePanelView
 import com.onehandkeyboard.ui.SettingsActivity
 import com.onehandkeyboard.update.KeyboardUpdates
 import com.onehandkeyboard.update.SelfUpdater
+import com.onehandkeyboard.voice.VoiceTyping
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.Executors
 import javax.inject.Inject
@@ -83,6 +84,7 @@ class OneHandKeyboardService : InputMethodService() {
     private lateinit var memeSender: MemeSender
     private lateinit var memeThumbnails: MemeThumbnails
     private lateinit var keyboardUpdates: KeyboardUpdates
+    private lateinit var voiceTyping: VoiceTyping
     private val memeExecutor = Executors.newSingleThreadExecutor()
 
     /** Bumped each time the panel opens or closes, so a late scan does not reopen it. */
@@ -106,6 +108,7 @@ class OneHandKeyboardService : InputMethodService() {
 
     override fun onWindowHidden() {
         super.onWindowHidden()
+        voiceTyping.cancel()
         keyboardUpdates.onKeyboardHidden()
     }
 
@@ -125,6 +128,7 @@ class OneHandKeyboardService : InputMethodService() {
                     prefs = preferences,
                 ).also { view ->
                     view.onSuggestionPicked = actionProcessor::pickSuggestion
+                    view.onStripStatusTapped = voiceTyping::stop
                     view.updateWaiting = keyboardUpdates.waiting
                     keyboardView = view
                 }
@@ -184,9 +188,29 @@ class OneHandKeyboardService : InputMethodService() {
                 onCaseSwitch = { keyboardView?.refreshLabels() },
                 corrector = autoCorrector,
                 onShowMemes = ::showMemes,
+                onVoiceInput = {
+                    autoCorrector.invalidate()
+                    voiceTyping.start()
+                },
             )
 
-        gestureIntegration.onOutput = actionProcessor::processKeyboardOutput
+        voiceTyping =
+            VoiceTyping(this, { currentInputConnection }, ::voiceLanguageTag).apply {
+                onStatus = { keyboardView?.stripStatus = it }
+                onMessage = ::toast
+                onNeedsPermission = {
+                    toast("Permite el micrófono para dictar")
+                    startActivity(
+                        Intent(this@OneHandKeyboardService, SettingsActivity::class.java)
+                            .putExtra(SettingsActivity.EXTRA_REQUEST_MICROPHONE, true)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                }
+            }
+        // While dictating, any key just ends the dictation (it is not typed).
+        gestureIntegration.onOutput = { output ->
+            if (voiceTyping.isListening) voiceTyping.stop() else actionProcessor.processKeyboardOutput(output)
+        }
     }
 
     override fun onStartInputView(
@@ -247,6 +271,7 @@ class OneHandKeyboardService : InputMethodService() {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        voiceTyping.cancel()
         gestureIntegration.cancelAll()
         hideMemes()
         autoCorrector.startInput(FieldPolicy.NONE)
@@ -319,6 +344,13 @@ class OneHandKeyboardService : InputMethodService() {
 
     private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
 
+    /** Dictation language: the keyboard language, in the phone's regional variant when it matches. */
+    private fun voiceLanguageTag(): String {
+        val language = layoutManager.currentLanguage.label.lowercase()
+        val device = java.util.Locale.getDefault()
+        return if (device.language == language) device.toLanguageTag() else language
+    }
+
     /**
      * Capitalizes the next letter when the field asks for it at the cursor (sentence start,
      * after ". ", etc.). Fields that do not request capitalization (email, URL, password)
@@ -385,6 +417,7 @@ class OneHandKeyboardService : InputMethodService() {
         }
         if (::memeThumbnails.isInitialized) memeThumbnails.shutdown()
         if (::keyboardUpdates.isInitialized) keyboardUpdates.shutdown()
+        if (::voiceTyping.isInitialized) voiceTyping.cancel()
         memeExecutor.shutdownNow()
         super.onDestroy()
     }

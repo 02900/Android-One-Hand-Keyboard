@@ -117,6 +117,19 @@ class KeyboardView(
     /** Called when the user taps a suggestion in the strip. */
     var onSuggestionPicked: (Suggestion) -> Unit = {}
 
+    /** Called when the user taps the strip while it shows [stripStatus]. */
+    var onStripStatusTapped: () -> Unit = {}
+
+    /** Status line shown in the suggestion strip instead of the suggestions (null = suggestions). */
+    var stripStatus: String?
+        get() = strip.status
+        set(value) {
+            if (strip.status == value) return
+            strip.status = value
+            value?.let(::announceForAccessibility)
+            invalidate()
+        }
+
     /** Contents of the suggestion strip. */
     var suggestions: Suggestions
         get() = strip.suggestions
@@ -545,6 +558,10 @@ class KeyboardView(
         val slot = if (inStrip) strip.slotAt(x, y) else null
         val key = if (inStrip) null else keyAt(x, y)
         when {
+            inStrip && strip.status != null -> {
+                tapHaptic()
+                onStripStatusTapped()
+            }
             slot != null -> {
                 stripPointers[pointerId] = slot
                 tapHaptic()

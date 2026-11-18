@@ -16,7 +16,7 @@ The control column:
 
 | Key | Tap | Swipe |
 |---|---|---|
-| Layer (3) | ABC ↔ 123 | ↓ memes |
+| Layer (3) | ABC ↔ 123 | ← voice typing · ↓ memes |
 | Shift (7) | once / double tap = caps lock | ↑ copy all · ↓ paste |
 | Backspace (11) | delete (hold = repeat) | ← word · ↑ everything · → undo |
 | Space (12–14) | space (double = ". ") | drag ↔ = cursor · ↑/↓ = language (types a space while English is disabled) |
@@ -61,6 +61,14 @@ Memes/
 - **How it's sent:** if the app accepts images in that field (WhatsApp, Telegram, Signal…), the meme is inserted directly. Otherwise it is copied to the clipboard and a message asks you to paste it.
 - **Stickers:** still images (png, jpg, webp) are made square with black bars on the short side and sent in the format the app takes: a 512 px WebP sticker in WhatsApp (and Telegram, which receives a WebP), a square JPEG in Instagram. GIFs and animated WebP are sent as they are.
 - To update the pack, just change the files in the folder: it is read again every time you open the panel.
+
+## Voice typing
+
+Swipe **← on the 123 / ABC key** and speak: the text appears as you talk and is typed when you stop. The strip shows "🎤 Escuchando…"; tap it, or any key, to finish earlier.
+
+- The first time, the app opens its settings to ask for the **microphone** permission (**Dictado por voz → Permitir**).
+- It uses Android's speech recognition service (the one Gboard uses). On-device recognition is preferred (Android 12+, with the language downloaded); otherwise that service may send the audio to its provider. The keyboard itself sends nothing.
+- A space is added before the dictated text when needed, and it starts with a capital letter at the beginning of a sentence.
 
 ## Expert mode
 

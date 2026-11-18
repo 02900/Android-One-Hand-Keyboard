@@ -4,6 +4,15 @@
 
     <!-- Permissions required for IME -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Voice typing (asked from the settings screen, never used in the background) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Lets the keyboard find the speech recognition service (Android 11+ package visibility) -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
 
     <application
         android:name=".OneHandKeyboardApplication"
