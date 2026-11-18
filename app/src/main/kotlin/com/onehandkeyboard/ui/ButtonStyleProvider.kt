@@ -5,6 +5,7 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.LayerDrawable
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.ColorUtils
 import com.onehandkeyboard.core.design.theme.ThemeManager
 import kotlin.math.roundToInt
 
@@ -61,6 +62,46 @@ class ButtonStyleProvider(
         return LayerDrawable(arrayOf(ColorDrawable(colors.backgroundRoot.toArgb()), fill)).apply {
             setLayerInset(1, 0, 0, right, bottom)
         }
+    }
+
+    /** Background of a grid cell whose fill can be animated between normal and pressed. */
+    class CellBackground(
+        val drawable: Drawable,
+        val fill: ColorDrawable,
+        val normalColor: Int,
+        val pressedColor: Int,
+    )
+
+    /**
+     * Cell background with a 1dp right/bottom border and a mutable fill used for the
+     * pressed state. [lastColumn] is the last column the cell covers (start + span - 1).
+     */
+    fun createCellBackground(
+        cellIndex: Int,
+        row: Int,
+        lastColumn: Int,
+        totalRows: Int = 4,
+        totalColumns: Int = 4,
+    ): CellBackground {
+        val colors = getCurrentTheme().colors
+        val primary = isPrimaryCellGroup(cellIndex)
+        val normal = if (primary) colors.backgroundPrimary.toArgb() else colors.backgroundSecondary.toArgb()
+        val content = if (primary) colors.contentPrimary.toArgb() else colors.contentSecondary.toArgb()
+        val pressed = ColorUtils.blendARGB(normal, content, PRESSED_BLEND)
+        val fill = ColorDrawable(normal)
+
+        val borderPx = (context.resources.displayMetrics.density * BORDER_DP).roundToInt().coerceAtLeast(1)
+        val right = if (lastColumn < totalColumns - 1) borderPx else 0
+        val bottom = if (row < totalRows - 1) borderPx else 0
+        val drawable =
+            if (right == 0 && bottom == 0) {
+                fill
+            } else {
+                LayerDrawable(arrayOf(ColorDrawable(colors.backgroundRoot.toArgb()), fill)).apply {
+                    setLayerInset(1, 0, 0, right, bottom)
+                }
+            }
+        return CellBackground(drawable, fill, normal, pressed)
     }
 
     /**
@@ -154,5 +195,6 @@ class ButtonStyleProvider(
 
     private companion object {
         const val BORDER_DP = 1f
+        const val PRESSED_BLEND = 0.18f
     }
 }

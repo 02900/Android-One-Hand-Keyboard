@@ -6,12 +6,15 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.inputmethodservice.InputMethodService
 import android.os.Build
+import android.text.InputType
 import android.util.Log
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
-import com.onehandkeyboard.config.KeyboardConfigurationFactory
 import com.onehandkeyboard.core.design.theme.ThemeManager
-import com.onehandkeyboard.core.gesture.DefaultGestureDetector
+import com.onehandkeyboard.prefs.KeyboardPreferences
+import com.onehandkeyboard.ui.KeyFeedback
+import com.onehandkeyboard.ui.KeyboardViewController
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -21,15 +24,11 @@ import javax.inject.Inject
  * Lifecycle:
  * - [onCreate] builds every component once (after Hilt injection) and registers the theme receiver.
  * - [onCreateInputView] may run several times (rotation, config changes); it only builds the view.
- * - [onDestroy] releases the receiver and coroutine scopes.
+ * - State changes (case, layer, height, theme) update the existing view in place.
+ * - [onDestroy] releases the receiver and pending callbacks.
  */
 @AndroidEntryPoint
 class OneHandKeyboardService : InputMethodService() {
-    private var keyboardView: LinearLayout? = null
-
-    @Inject
-    lateinit var gestureDetector: DefaultGestureDetector
-
     @Inject
     lateinit var layoutManager: KeyboardLayoutManager
 
@@ -37,14 +36,14 @@ class OneHandKeyboardService : InputMethodService() {
     lateinit var themeManager: ThemeManager
 
     @Inject
-    lateinit var configFactory: KeyboardConfigurationFactory
+    lateinit var preferences: KeyboardPreferences
 
     private var themeChangeReceiver: BroadcastReceiver? = null
 
     private lateinit var uiFactory: KeyboardUiFactory
-    private lateinit var unifiedGridBuilder: UnifiedGridKeyboardBuilder
     private lateinit var gestureIntegration: GestureIntegration
     private lateinit var actionProcessor: KeyboardActionProcessor
+    private lateinit var viewController: KeyboardViewController
 
     override fun onCreate() {
         super.onCreate() // Hilt injects here
@@ -55,7 +54,7 @@ class OneHandKeyboardService : InputMethodService() {
     override fun onCreateInputView(): View {
         return try {
             themeManager.refreshTheme()
-            unifiedGridBuilder.createKeyboardLayout().also { keyboardView = it }
+            viewController.createView()
         } catch (e: Exception) {
             Log.e(TAG, "Error creating input view", e)
             createFallbackView()
@@ -64,44 +63,76 @@ class OneHandKeyboardService : InputMethodService() {
 
     /**
      * Initializes all components that require the service context. Runs once per service
-     * instance, so state such as the cell height in [KeyboardUiFactory.layoutCalculator]
-     * survives input view re-creations.
+     * instance, so their state survives input view re-creations.
      */
     private fun initializeComponents() {
-        uiFactory = KeyboardUiFactory(this, layoutManager, themeManager)
+        uiFactory = KeyboardUiFactory(this, layoutManager, themeManager, preferences)
+        gestureIntegration = GestureIntegration(this, layoutManager, KeyFeedback(this, preferences))
 
-        gestureIntegration = GestureIntegration(this, layoutManager, gestureDetector)
-        gestureIntegration.initializeGestureSystem()
+        viewController =
+            KeyboardViewController(
+                context = this,
+                layoutManager = layoutManager,
+                themeManager = themeManager,
+                styleProvider = uiFactory.styleProvider,
+                hintProvider = uiFactory.hintProvider,
+                layoutCalculator = uiFactory.layoutCalculator,
+                gestureIntegration = gestureIntegration,
+            )
 
         actionProcessor =
             KeyboardActionProcessor(
                 service = this,
                 configManager = layoutManager,
                 layoutCalculator = uiFactory.layoutCalculator,
-                onLayoutSwitch = { recreateKeyboard() },
-                onCaseSwitch = { recreateKeyboard() },
-                onHeightChanged = { recreateKeyboard() },
+                onLayoutSwitch = { viewController.showCurrentLayout() },
+                onCaseSwitch = { viewController.refreshLabels() },
+                onHeightChanged = { viewController.applyCellHeight() },
             )
 
-        unifiedGridBuilder =
-            UnifiedGridKeyboardBuilder(
-                this,
-                themeManager,
-                uiFactory.styleProvider,
-                layoutManager,
-                gestureIntegration,
-                actionProcessor,
-                uiFactory,
-                configFactory,
-            )
+        gestureIntegration.onOutput = actionProcessor::processKeyboardOutput
+    }
+
+    override fun onStartInputView(
+        info: EditorInfo?,
+        restarting: Boolean,
+    ) {
+        super.onStartInputView(info, restarting)
+        if (!restarting) {
+            layoutManager.resetForNewInput()
+            viewController.showCurrentLayout()
+        }
+        updateAutoShift()
+    }
+
+    override fun onUpdateSelection(
+        oldSelStart: Int,
+        oldSelEnd: Int,
+        newSelStart: Int,
+        newSelEnd: Int,
+        candidatesStart: Int,
+        candidatesEnd: Int,
+    ) {
+        super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        if (newSelStart == newSelEnd) updateAutoShift()
+    }
+
+    override fun onFinishInputView(finishingInput: Boolean) {
+        super.onFinishInputView(finishingInput)
+        gestureIntegration.cancelAll()
     }
 
     /**
-     * Recreates the keyboard when layout or case mode changes.
+     * Capitalizes the next letter when the field asks for it at the cursor (sentence start,
+     * after ". ", etc.). Fields that do not request capitalization (email, URL, password)
+     * return 0 from `getCursorCapsMode` and are left alone.
      */
-    private fun recreateKeyboard() {
-        keyboardView = unifiedGridBuilder.createKeyboardLayout()
-        setInputView(keyboardView)
+    private fun updateAutoShift() {
+        val ic = currentInputConnection ?: return
+        val info = currentInputEditorInfo ?: return
+        if (!layoutManager.isLettersMode() || info.inputType == InputType.TYPE_NULL) return
+        val shouldCapitalize = ic.getCursorCapsMode(info.inputType) != 0
+        if (layoutManager.updateAutoShift(shouldCapitalize)) viewController.refreshLabels()
     }
 
     private fun registerThemeChangeReceiver() {
@@ -113,7 +144,7 @@ class OneHandKeyboardService : InputMethodService() {
                 ) {
                     if (intent?.action == ThemeManager.ACTION_THEME_CHANGED) {
                         themeManager.refreshTheme()
-                        if (keyboardView != null) recreateKeyboard()
+                        viewController.applyTheme()
                     }
                 }
             }
@@ -153,7 +184,6 @@ class OneHandKeyboardService : InputMethodService() {
         if (::gestureIntegration.isInitialized) {
             gestureIntegration.cleanup()
         }
-        gestureDetector.reset()
         super.onDestroy()
     }
 
