@@ -222,10 +222,10 @@ da latencia y consumo mínimos, y animaciones más fáciles (todo es un valor in
 - [x] 3.2 Comportamiento según el tipo de campo.
 
 ### Fase 4 — Arquitectura y calidad
-- [ ] 4.1 `KeyboardView` en Canvas.
-- [ ] 4.4 Eliminar el código muerto y unificar etiquetas y mapeo.
-- [ ] 4.5 DSL de configuración con validación y tests de cobertura de alfabeto.
-- [ ] 3.5, 3.8 y 3.9: idioma, cambio de IME y accesibilidad.
+- [x] 4.1 `KeyboardView` en Canvas.
+- [x] 4.4 Eliminar el código muerto y unificar etiquetas y mapeo.
+- [x] 4.5 DSL de configuración con validación y tests de cobertura de alfabeto.
+- [x] 3.5, 3.8 y 3.9: idioma, cambio de IME y accesibilidad.
 
 ---
 
