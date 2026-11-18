@@ -1,0 +1,223 @@
+package com.onehandkeyboard.ui
+
+import android.content.Context
+import android.os.SystemClock
+import android.view.MotionEvent
+import android.view.View
+import android.view.inputmethod.EditorInfo
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
+import androidx.test.core.app.ApplicationProvider
+import com.onehandkeyboard.GestureIntegration
+import com.onehandkeyboard.KeyboardLayoutManager
+import com.onehandkeyboard.R
+import com.onehandkeyboard.config.KeyboardConfigurationFactory
+import com.onehandkeyboard.core.design.theme.ThemeManager
+import com.onehandkeyboard.core.domain.model.KeyAction
+import com.onehandkeyboard.core.domain.model.KeyboardOutput
+import com.onehandkeyboard.prefs.KeyboardPreferences
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [28])
+class KeyboardViewTest {
+    private val context = ApplicationProvider.getApplicationContext<Context>()
+    private val prefs = KeyboardPreferences(context)
+    private val layoutManager = KeyboardLayoutManager(KeyboardConfigurationFactory())
+    private val gestures = GestureIntegration(context, layoutManager, KeyFeedback(context, prefs))
+    private val outputs = mutableListOf<KeyboardOutput>()
+
+    private lateinit var view: KeyboardView
+    private val downTime = SystemClock.uptimeMillis()
+
+    private fun createView(): KeyboardView {
+        gestures.onOutput = { outputs += it }
+        return KeyboardView(
+            context = context,
+            layoutManager = layoutManager,
+            themeManager = ThemeManager(context),
+            labels = GestureHintProvider(layoutManager),
+            layoutCalculator = LayoutCalculator(context, prefs),
+            gestures = gestures,
+            prefs = prefs,
+        ).apply {
+            measure(
+                View.MeasureSpec.makeMeasureSpec(WIDTH, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            )
+            layout(0, 0, measuredWidth, measuredHeight)
+        }.also { view = it }
+    }
+
+    private val columnWidth get() = view.width / 4f
+    private val rowHeight get() = view.height / 4f
+
+    /** Center of a grid cell (full-width keyboard). */
+    private fun cellCenter(cellIndex: Int) =
+        floatArrayOf(columnWidth * (cellIndex % 4 + 0.5f), rowHeight * (cellIndex / 4 + 0.5f))
+
+    private fun send(
+        action: Int,
+        pointers: List<Pair<Int, FloatArray>>,
+        actionIndex: Int = 0,
+    ) {
+        val properties =
+            pointers.map { (id, _) ->
+                MotionEvent.PointerProperties().apply {
+                    this.id = id
+                    toolType = MotionEvent.TOOL_TYPE_FINGER
+                }
+            }.toTypedArray()
+        val coords =
+            pointers.map { (_, xy) ->
+                MotionEvent.PointerCoords().apply {
+                    x = xy[0]
+                    y = xy[1]
+                    pressure = 1f
+                    size = 1f
+                }
+            }.toTypedArray()
+        val fullAction = action or (actionIndex shl MotionEvent.ACTION_POINTER_INDEX_SHIFT)
+        val event =
+            MotionEvent.obtain(
+                downTime,
+                SystemClock.uptimeMillis(),
+                fullAction,
+                pointers.size,
+                properties,
+                coords,
+                0, 0, 1f, 1f, 0, 0, 0, 0,
+            )
+        view.onTouchEvent(event)
+        event.recycle()
+    }
+
+    private fun tap(xy: FloatArray) {
+        send(MotionEvent.ACTION_DOWN, listOf(0 to xy))
+        send(MotionEvent.ACTION_UP, listOf(0 to xy))
+    }
+
+    @Test
+    fun `tap on a key types its character`() {
+        createView()
+        tap(cellCenter(0))
+        assertEquals(listOf<KeyboardOutput>(KeyboardOutput.Character("a")), outputs)
+    }
+
+    @Test
+    fun `measured height follows the configured cell height`() {
+        createView()
+        val expected = LayoutCalculator(context, prefs).calculateCellHeight() * 4
+        assertEquals(expected, view.measuredHeight)
+    }
+
+    @Test
+    fun `roll-over keeps each finger on its own key`() {
+        createView()
+        val a = cellCenter(0)
+        val n = cellCenter(1)
+        send(MotionEvent.ACTION_DOWN, listOf(0 to a))
+        send(MotionEvent.ACTION_POINTER_DOWN, listOf(0 to a, 1 to n), actionIndex = 1)
+        send(MotionEvent.ACTION_POINTER_UP, listOf(0 to a, 1 to n), actionIndex = 0) // first finger lifts first
+        send(MotionEvent.ACTION_UP, listOf(1 to n))
+
+        assertEquals(listOf(KeyboardOutput.Character("a"), KeyboardOutput.Character("n")), outputs)
+    }
+
+    @Test
+    fun `swipe up on a key types its north character`() {
+        createView()
+        val start = cellCenter(1)
+        val end = floatArrayOf(start[0], start[1] - rowHeight * 0.45f)
+        send(MotionEvent.ACTION_DOWN, listOf(0 to start))
+        send(MotionEvent.ACTION_MOVE, listOf(0 to end))
+        send(MotionEvent.ACTION_UP, listOf(0 to end))
+
+        assertEquals(listOf<KeyboardOutput>(KeyboardOutput.Character("ñ")), outputs)
+    }
+
+    @Test
+    fun `cancel drops the gesture without typing`() {
+        createView()
+        send(MotionEvent.ACTION_DOWN, listOf(0 to cellCenter(0)))
+        send(MotionEvent.ACTION_CANCEL, listOf(0 to cellCenter(0)))
+        send(MotionEvent.ACTION_UP, listOf(0 to cellCenter(0)))
+        assertTrue(outputs.isEmpty())
+    }
+
+    @Test
+    fun `one hand mode narrows the grid and its panel moves it to the other side`() {
+        prefs.oneHandEnabled = true
+        prefs.oneHandRight = true
+        createView()
+        val panelWidth = view.width * 0.2f
+        val gridColumn = view.width * 0.8f / 4
+
+        // Grid starts after the left panel: its first key is at panel + half a column.
+        tap(floatArrayOf(panelWidth + gridColumn / 2, view.height / 8f))
+        assertEquals(listOf<KeyboardOutput>(KeyboardOutput.Character("a")), outputs)
+
+        // Upper half of the panel = switch side.
+        tap(floatArrayOf(panelWidth / 2, view.height / 4f))
+        assertFalse(prefs.oneHandRight)
+        assertEquals("panel taps never type", 1, outputs.size)
+
+        // Lower half = back to full width.
+        tap(floatArrayOf(view.width - panelWidth / 2, view.height * 0.75f))
+        assertFalse(prefs.oneHandEnabled)
+    }
+
+    @Test
+    fun `accessibility exposes keys with tap and swipe actions`() {
+        createView()
+        val provider = view.accessibilityNodeProvider!!
+
+        val node = AccessibilityNodeInfoCompat.wrap(provider.createAccessibilityNodeInfo(1)!!)
+        assertTrue(node.contentDescription.toString().startsWith("n"))
+        assertTrue(node.actionList.any { it.id == R.id.a11y_swipe_n })
+
+        provider.performAction(1, AccessibilityNodeInfoCompat.ACTION_CLICK, null)
+        provider.performAction(1, R.id.a11y_swipe_n, null)
+        assertEquals(listOf(KeyboardOutput.Character("n"), KeyboardOutput.Character("ñ")), outputs)
+    }
+
+    @Test
+    fun `layout key swipe up switches the input method`() {
+        createView()
+        val start = cellCenter(3)
+        val end = floatArrayOf(start[0], start[1] - rowHeight * 0.45f)
+        send(MotionEvent.ACTION_DOWN, listOf(0 to start))
+        send(MotionEvent.ACTION_MOVE, listOf(0 to end))
+        send(MotionEvent.ACTION_UP, listOf(0 to end))
+
+        assertEquals(listOf<KeyboardOutput>(KeyboardOutput.Action(KeyAction.SwitchInputMethod)), outputs)
+    }
+
+    @Test
+    fun `enter label follows the field action`() {
+        fun info(
+            options: Int,
+            type: Int = android.text.InputType.TYPE_CLASS_TEXT,
+        ) = EditorInfo().apply {
+            imeOptions = options
+            inputType = type
+        }
+        assertEquals("🔍", GestureHintProvider.enterLabelFor(info(EditorInfo.IME_ACTION_SEARCH)))
+        assertEquals("➤", GestureHintProvider.enterLabelFor(info(EditorInfo.IME_ACTION_SEND)))
+        assertEquals(
+            "↵",
+            GestureHintProvider.enterLabelFor(info(EditorInfo.IME_ACTION_DONE or EditorInfo.IME_FLAG_NO_ENTER_ACTION)),
+        )
+        val multiline = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        assertEquals("↵", GestureHintProvider.enterLabelFor(info(EditorInfo.IME_ACTION_SEND, multiline)))
+    }
+
+    private companion object {
+        const val WIDTH = 400
+    }
+}

@@ -1,0 +1,34 @@
+# Overrides on top of detekt's default configuration (buildUponDefaultConfig = true).
+# Only Jetpack Compose conventions and pure data declarations are relaxed here; every other
+# rule keeps detekt's defaults.
+
+complexity:
+  CyclomaticComplexMethod:
+    # Exhaustive `when` mappings (action -> label, action -> output) are flat lookups.
+    ignoreSimpleWhenEntries: true
+  LongMethod:
+    # A Compose screen is a declarative UI tree.
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    # Compose components take many optional parameters by design.
+    ignoreDefaultParameters: true
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    ignorePrivate: true
+    ignoreOverridden: true
+
+naming:
+  FunctionNaming:
+    # Composable functions are PascalCase.
+    ignoreAnnotated: ['Composable']
+
+style:
+  MagicNumber:
+    # Enum entry data (direction angles) and Compose dimensions (16.dp) are not magic.
+    ignoreEnums: true
+    ignoreAnnotated: ['Composable', 'Preview']
+  ReturnCount:
+    excludeGuardClauses: true
+  UnusedPrivateMember:
+    # @Preview functions are only used by Android Studio.
+    ignoreAnnotated: ['Preview']

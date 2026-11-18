@@ -32,6 +32,11 @@ class KeyFeedback(
         if (prefs.hapticsEnabled) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
     }
 
+    /** Long-press recognised (e.g. resize mode). */
+    fun longPress(view: View) {
+        if (prefs.hapticsEnabled) view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+    }
+
     private fun playSound(sound: Sound) {
         val audio = audioManager ?: return
         if (audio.ringerMode != AudioManager.RINGER_MODE_NORMAL) return

@@ -36,34 +36,45 @@ class SwipeResolver(
         configured: Set<Direction>? = null,
         previous: Direction = Direction.CENTER,
     ): Direction {
-        if (configured != null && configured.none { it != Direction.CENTER }) return Direction.CENTER
-
-        val distance = hypot(dx, dy)
         val effectiveThreshold = if (previous == Direction.CENTER) thresholdPx else thresholdPx * returnToTapRatio
-        if (distance < effectiveThreshold) return Direction.CENTER
-
         val angle = compassAngle(dx, dy)
-
-        if (previous != Direction.CENTER &&
-            angularDistance(angle, previous.angleDegrees) <= HALF_SECTOR + hysteresisDegrees &&
-            (configured == null || previous in configured)
-        ) {
-            return previous
-        }
-
         val raw = SECTORS[((angle / SECTOR).roundToInt()) % SECTORS.size]
-        if (configured == null || raw in configured) return raw
+        return when {
+            configured != null && configured.none { it != Direction.CENTER } -> Direction.CENTER
+            hypot(dx, dy) < effectiveThreshold -> Direction.CENTER
+            keepsPrevious(angle, previous, configured) -> previous
+            configured == null || raw in configured -> raw
+            else -> snap(angle, configured)
+        }
+    }
 
-        return configured
+    /** Hysteresis: stay on the previous direction until clearly inside another sector. */
+    private fun keepsPrevious(
+        angle: Float,
+        previous: Direction,
+        configured: Set<Direction>?,
+    ): Boolean {
+        if (previous == Direction.CENTER) return false
+        val nearPrevious = angularDistance(angle, previous.angleDegrees) <= HALF_SECTOR + hysteresisDegrees
+        return nearPrevious && (configured == null || previous in configured)
+    }
+
+    /** Closest configured direction within the snap tolerance, otherwise a tap. */
+    private fun snap(
+        angle: Float,
+        configured: Set<Direction>,
+    ): Direction =
+        configured
             .filter { it != Direction.CENTER }
             .map { it to angularDistance(angle, it.angleDegrees) }
             .filter { (_, distanceDeg) -> distanceDeg <= snapToleranceDegrees }
             .minByOrNull { (_, distanceDeg) -> distanceDeg }
             ?.first
             ?: Direction.CENTER
-    }
 
     companion object {
+        private const val FULL_TURN = 360f
+        private const val HALF_TURN = 180f
         private const val SECTOR = 45f
         private const val HALF_SECTOR = SECTOR / 2
         private val SECTORS =
@@ -84,15 +95,15 @@ class SwipeResolver(
             dy: Float,
         ): Float {
             val degrees = Math.toDegrees(atan2(dx.toDouble(), (-dy).toDouble())).toFloat()
-            return (degrees + 360f) % 360f
+            return (degrees + FULL_TURN) % FULL_TURN
         }
 
         fun angularDistance(
             a: Float,
             b: Float,
         ): Float {
-            val diff = abs(a - b) % 360f
-            return if (diff > 180f) 360f - diff else diff
+            val diff = abs(a - b) % FULL_TURN
+            return if (diff > HALF_TURN) FULL_TURN - diff else diff
         }
     }
 }

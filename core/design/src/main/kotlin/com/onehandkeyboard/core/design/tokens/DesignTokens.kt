@@ -4,10 +4,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/**
- * Design tokens system for keyboard theming
- * Provides a structured approach to visual design with semantic naming
- */
+// Design tokens system for keyboard theming: a structured approach to visual design with
+// semantic naming.
 
 /**
  * Simplified color tokens for IME keyboard theming
@@ -15,11 +13,16 @@ import androidx.compose.ui.unit.dp
  */
 data class ColorTokens(
     // Core IME keyboard tokens
-    val backgroundRoot: Color,        // Background color of the entire IME keyboard (default black)
-    val backgroundPrimary: Color,     // Background for grid cells (main keys)
-    val backgroundSecondary: Color,   // Background for action buttons and space bar
-    val contentPrimary: Color,        // Text color applied over backgroundPrimary
-    val contentSecondary: Color       // Text color applied over backgroundSecondary
+    // Background color of the entire IME keyboard (default black)
+    val backgroundRoot: Color,
+    // Background for grid cells (main keys)
+    val backgroundPrimary: Color,
+    // Background for action buttons and space bar
+    val backgroundSecondary: Color,
+    // Text color applied over backgroundPrimary
+    val contentPrimary: Color,
+    // Text color applied over backgroundSecondary
+    val contentSecondary: Color,
 )
 
 /**
@@ -33,7 +36,7 @@ data class SpacingTokens(
     val lg: Dp = 12.dp,
     val xl: Dp = 16.dp,
     val xxl: Dp = 24.dp,
-    val xxxl: Dp = 32.dp
+    val xxxl: Dp = 32.dp,
 )
 
 /**
@@ -45,7 +48,7 @@ data class BorderRadiusTokens(
     val md: Dp = 8.dp,
     val lg: Dp = 12.dp,
     val xl: Dp = 16.dp,
-    val round: Dp = 50.dp
+    val round: Dp = 50.dp,
 )
 
 /**
@@ -57,7 +60,7 @@ data class ElevationTokens(
     val md: Dp = 3.dp,
     val lg: Dp = 6.dp,
     val xl: Dp = 8.dp,
-    val xxl: Dp = 12.dp
+    val xxl: Dp = 12.dp,
 )
 
 /**
@@ -67,5 +70,5 @@ data class DesignTokens(
     val colors: ColorTokens,
     val spacing: SpacingTokens = SpacingTokens(),
     val borderRadius: BorderRadiusTokens = BorderRadiusTokens(),
-    val elevation: ElevationTokens = ElevationTokens()
+    val elevation: ElevationTokens = ElevationTokens(),
 )

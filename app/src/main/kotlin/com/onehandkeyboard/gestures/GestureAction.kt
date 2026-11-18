@@ -41,7 +41,8 @@ data class GestureAction(
         fun getValidDirectionsFor(gestureType: GestureType): List<Direction> {
             return when (gestureType) {
                 GestureType.TAP -> listOf(Direction.CENTER)
-                GestureType.SWIPE, GestureType.DRAG, GestureType.FLICK -> Direction.values().filter { it != Direction.CENTER }
+                GestureType.SWIPE, GestureType.DRAG, GestureType.FLICK ->
+                    Direction.values().filter { it != Direction.CENTER }
             }
         }
 
