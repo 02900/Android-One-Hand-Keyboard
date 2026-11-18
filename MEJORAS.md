@@ -214,12 +214,12 @@ da latencia y consumo mínimos, y animaciones más fáciles (todo es un valor in
 - [x] 2.6 Backspace con repetición, shift de una sola vez y mayúscula automática.
 
 ### Fase 3 — Sensación premium (3–5 días)
-- [ ] 2.2 Vista previa del swipe en vivo y globo.
-- [ ] 2.6 Barra espaciadora como trackpad, doble espacio → punto, swipe para borrar palabra.
-- [ ] 2.7 Redimensionado continuo, persistencia y modo una mano izquierda/derecha.
-- [ ] 2.8 Micro-animaciones.
-- [ ] 3.1 Tildes y signos del español.
-- [ ] 3.2 Comportamiento según el tipo de campo.
+- [x] 2.2 Vista previa del swipe en vivo y globo.
+- [x] 2.6 Barra espaciadora como trackpad, doble espacio → punto, swipe para borrar palabra.
+- [x] 2.7 Redimensionado continuo, persistencia y modo una mano izquierda/derecha.
+- [x] 2.8 Micro-animaciones.
+- [x] 3.1 Tildes y signos del español.
+- [x] 3.2 Comportamiento según el tipo de campo.
 
 ### Fase 4 — Arquitectura y calidad
 - [ ] 4.1 `KeyboardView` en Canvas.
