@@ -32,7 +32,7 @@ class KeyboardActionProcessor(
         when (output) {
             is KeyboardOutput.Character -> {
                 committer.commitText(ic, output.char)
-                configManager.onCharacterWritten()
+                if (configManager.onCharacterWritten()) onCaseSwitch()
             }
             is KeyboardOutput.Action -> executeKeyAction(output.action)
         }
@@ -73,7 +73,7 @@ class KeyboardActionProcessor(
         val clipText = clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(service)
         if (!clipText.isNullOrEmpty()) {
             committer.commitText(ic, clipText)
-            configManager.onCharacterWritten()
+            if (configManager.onCharacterWritten()) onCaseSwitch()
         }
     }
 

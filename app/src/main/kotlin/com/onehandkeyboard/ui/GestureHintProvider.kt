@@ -201,9 +201,9 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
      */
     private fun getCaseModeLabel(): String {
         return when (layoutManager.currentCaseMode) {
-            CaseMode.LOWERCASE -> "ABC"  // Show uppercase indicator when in lowercase
-            CaseMode.UPPERCASE -> "abc"  // Show lowercase indicator when in uppercase
-            CaseMode.CAPITALIZE -> "abc" // Fallback to lowercase
+            CaseMode.LOWERCASE -> "⇧" // shift off
+            CaseMode.CAPITALIZE -> "⬆" // one-shot capital
+            CaseMode.UPPERCASE -> "⇪" // caps lock
         }
     }
 

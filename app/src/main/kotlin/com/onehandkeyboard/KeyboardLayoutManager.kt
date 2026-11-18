@@ -66,23 +66,72 @@ class KeyboardLayoutManager
             return previousMode != currentMode
         }
 
+        /** True when the one-shot capital was set automatically (sentence start), not by the user. */
+        var isAutoShifted = false
+            private set
+
+        /** Time source for double-tap detection; replaceable in tests. */
+        var clock: () -> Long = { System.nanoTime() / 1_000_000 }
+
+        private var lastShiftTapTime = Long.MIN_VALUE / 2
+
         /**
-         * Toggles between case modes: lowercase ↔ UPPERCASE
+         * Shift key tap:
+         * - off → one-shot capital (next letter only)
+         * - one-shot → off, or caps lock when tapped twice within [DOUBLE_TAP_MS]
+         * - caps lock → off
          */
         fun switchCaseMode(): Boolean {
+            val now = clock()
+            val isDoubleTap = now - lastShiftTapTime <= DOUBLE_TAP_MS
+            lastShiftTapTime = now
             val previousCaseMode = currentCaseMode
             currentCaseMode =
-                when (currentCaseMode) {
-                    CaseMode.LOWERCASE -> CaseMode.UPPERCASE
-                    CaseMode.UPPERCASE -> CaseMode.LOWERCASE
-                    CaseMode.CAPITALIZE -> CaseMode.LOWERCASE // Fallback for existing state
+                when {
+                    currentCaseMode == CaseMode.UPPERCASE -> CaseMode.LOWERCASE
+                    currentCaseMode == CaseMode.CAPITALIZE && isDoubleTap && !isAutoShifted -> CaseMode.UPPERCASE
+                    currentCaseMode == CaseMode.CAPITALIZE -> CaseMode.LOWERCASE
+                    else -> CaseMode.CAPITALIZE
                 }
-
-            // Reset capitalize flag
-            isCapitalizeNext = false
+            isCapitalizeNext = currentCaseMode == CaseMode.CAPITALIZE
+            isAutoShifted = false
+            if (currentCaseMode == CaseMode.UPPERCASE) lastShiftTapTime = Long.MIN_VALUE / 2
 
             Log.d("KeyboardLayoutManager", "Case mode switched from $previousCaseMode to $currentCaseMode")
             return previousCaseMode != currentCaseMode
+        }
+
+        /**
+         * Applies the field's auto-capitalization hint (from `InputConnection.getCursorCapsMode`).
+         * Never overrides caps lock or a shift the user set manually.
+         *
+         * @return true if the case mode changed (labels must be refreshed)
+         */
+        fun updateAutoShift(shouldCapitalize: Boolean): Boolean {
+            return when {
+                currentCaseMode == CaseMode.UPPERCASE -> false
+                shouldCapitalize && currentCaseMode == CaseMode.LOWERCASE -> {
+                    currentCaseMode = CaseMode.CAPITALIZE
+                    isCapitalizeNext = true
+                    isAutoShifted = true
+                    true
+                }
+                !shouldCapitalize && currentCaseMode == CaseMode.CAPITALIZE && isAutoShifted -> {
+                    currentCaseMode = CaseMode.LOWERCASE
+                    isCapitalizeNext = false
+                    isAutoShifted = false
+                    true
+                }
+                else -> false
+            }
+        }
+
+        /** Called when a new field gets focus: back to letters, lowercase. */
+        fun resetForNewInput() {
+            if (currentMode != LayoutMode.LETTERS) switchToLetters()
+            currentCaseMode = CaseMode.LOWERCASE
+            isCapitalizeNext = false
+            isAutoShifted = false
         }
 
         /**
@@ -139,12 +188,18 @@ class KeyboardLayoutManager
         }
 
         /**
-         * Maneja el evento de escritura de un carácter para el modo capitalize
+         * Consume the one-shot capital after a character is written.
+         *
+         * @return true if the case mode changed (labels must be refreshed)
          */
-        fun onCharacterWritten() {
+        fun onCharacterWritten(): Boolean {
             if (currentCaseMode == CaseMode.CAPITALIZE && isCapitalizeNext) {
+                currentCaseMode = CaseMode.LOWERCASE
                 isCapitalizeNext = false
+                isAutoShifted = false
+                return true
             }
+            return false
         }
 
         /**
@@ -319,5 +374,9 @@ class KeyboardLayoutManager
                     KeyData("\"';", "\"", ""),
                 ),
             )
+        }
+    
+        companion object {
+            const val DOUBLE_TAP_MS = 300L
         }
     }

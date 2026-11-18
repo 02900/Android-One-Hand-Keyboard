@@ -189,7 +189,7 @@ class KeyboardConfigurationFactory
                     swipe(NW, '|')
                     swipe(SW, '@')
                 }
-                caseCell()
+                caseCell(withShift = false)
 
                 cell(8) {
                     tap('7')
@@ -284,9 +284,10 @@ class KeyboardConfigurationFactory
                 swipe(W, ActionConfig.ResetCellHeight)
             }
 
-        private fun GridBuilder.caseCell() =
+        /** Shift has no meaning on the symbols layer, so there it only keeps the clipboard swipes. */
+        private fun GridBuilder.caseCell(withShift: Boolean = true) =
             cell(7) {
-                tap(ActionConfig.SwitchCase)
+                if (withShift) tap(ActionConfig.SwitchCase)
                 swipe(S, ActionConfig.Paste)
                 swipe(N, ActionConfig.CopyAll)
             }
