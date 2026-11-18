@@ -51,10 +51,11 @@ class MemeSenderTest {
 
     @Test
     fun `prepare copies the meme to the shareable cache`() {
-        val file = sender.prepare(memeFile())
-        assertNotNull(file)
-        assertEquals("risa.gif", file!!.name)
-        assertEquals(listOf<Byte>(1, 2, 3), file.readBytes().toList())
+        val prepared = sender.prepare(memeFile())
+        assertNotNull(prepared)
+        assertEquals("risa.gif", prepared!!.file.name)
+        assertEquals("image/gif", prepared.mimeType)
+        assertEquals(listOf<Byte>(1, 2, 3), prepared.file.readBytes().toList())
     }
 
     @Test

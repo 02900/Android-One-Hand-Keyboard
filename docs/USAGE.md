@@ -59,6 +59,7 @@ Memes/
 - Subfolders inside a category count for that category.
 - The **🕘 Recientes** (recent) tab shows the last 24 sent.
 - **How it's sent:** if the app accepts images in that field (WhatsApp, Telegram, Signal…), the meme is inserted directly. Otherwise it is copied to the clipboard and a message asks you to paste it.
+- **Stickers:** still images (png, jpg, webp) are made square with black bars on the short side and sent in the format the app takes: a 512 px WebP sticker in WhatsApp (and Telegram, which receives a WebP), a square JPEG in Instagram. GIFs and animated WebP are sent as they are.
 - To update the pack, just change the files in the folder: it is read again every time you open the panel.
 
 ## Expert mode

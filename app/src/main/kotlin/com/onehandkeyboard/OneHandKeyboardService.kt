@@ -17,6 +17,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.view.inputmethod.EditorInfoCompat
 import com.onehandkeyboard.core.design.theme.ThemeManager
 import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
@@ -289,14 +290,15 @@ class OneHandKeyboardService : InputMethodService() {
     }
 
     private fun sendMeme(meme: Meme) {
+        val fieldTypes = currentInputEditorInfo?.let(EditorInfoCompat::getContentMimeTypes) ?: emptyArray()
         memeExecutor.execute {
-            val file = memeSender.prepare(meme)
+            val prepared = memeSender.prepare(meme, fieldTypes)
             ContextCompat.getMainExecutor(this).execute {
                 val outcome =
-                    if (file == null) {
+                    if (prepared == null) {
                         MemeSender.Outcome.FAILED
                     } else {
-                        memeSender.commit(meme, file, currentInputConnection, currentInputEditorInfo)
+                        memeSender.commit(meme, prepared, currentInputConnection, currentInputEditorInfo)
                     }
                 when (outcome) {
                     MemeSender.Outcome.SENT -> Unit
