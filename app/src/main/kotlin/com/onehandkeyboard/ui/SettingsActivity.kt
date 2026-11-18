@@ -182,11 +182,11 @@ private fun WritingSettings(
             preferences.suggestionsEnabled = it
         })
     }
-    var hideLetters by remember { mutableStateOf(preferences.hideLetters) }
-    SettingRow("Ocultar letras") {
-        Switch(checked = hideLetters, onCheckedChange = {
-            hideLetters = it
-            preferences.hideLetters = it
+    var expertMode by remember { mutableStateOf(preferences.expertMode) }
+    SettingRow("Modo experto") {
+        Switch(checked = expertMode, onCheckedChange = {
+            expertMode = it
+            preferences.expertMode = it
         })
     }
     SettingRow("Palabras aprendidas") {

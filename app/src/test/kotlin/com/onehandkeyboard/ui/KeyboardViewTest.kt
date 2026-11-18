@@ -109,14 +109,14 @@ class KeyboardViewTest {
     }
 
     @Test
-    fun `hidden letters still type but show no preview`() {
+    fun `expert mode still types but shows no preview`() {
         createView()
         val a = cellCenter(0)
         send(MotionEvent.ACTION_DOWN, listOf(0 to a))
         assertTrue(view.previewShowing)
         send(MotionEvent.ACTION_UP, listOf(0 to a))
 
-        view.lettersHidden = true
+        view.expertMode = true
         send(MotionEvent.ACTION_DOWN, listOf(0 to a))
         assertFalse(view.previewShowing)
         send(MotionEvent.ACTION_UP, listOf(0 to a))

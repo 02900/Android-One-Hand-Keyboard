@@ -15,7 +15,7 @@ Teclado Android de una mano: una cuadrícula 4×4 (bloque de letras 3×3 + colum
 - **Sistema de Temas**: 5 tokens esenciales con colores diferenciados para grupos de celdas
 - **Autocorrector sin imponerse**: corrige palabras y tildes al cerrar la palabra, con barra de sugerencias; borrar justo después deshace la corrección y el teclado aprende la palabra
 - **Biblioteca de memes**: GIFs y stickers desde una carpeta del teléfono que tú eliges, por categorías, sin Internet
-- **Ocultar letras** (ajustes): el bloque de letras se dibuja vacío y sin vista previa, para escribir de memoria
+- **Modo experto** (ajustes): teclas sin etiquetas ni vista previa, para quien se sabe el teclado de memoria
 
 ## 🏗️ Arquitectura
 

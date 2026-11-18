@@ -31,7 +31,6 @@ import com.onehandkeyboard.core.design.theme.ThemeManager
 import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
-import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.prefs.KeyboardPreferences
 import com.onehandkeyboard.spell.Suggestion
 import com.onehandkeyboard.spell.Suggestions
@@ -93,10 +92,10 @@ class KeyboardView(
     var previewEnabled = true
 
     /**
-     * Blind typing: the letter block is drawn empty and shows no preview of the letter that will
-     * be typed. Control keys and the symbols layer keep their labels.
+     * Expert mode: no labels on any key and no preview bubble. Fills, borders, press feedback,
+     * the version and the suggestion strip stay. Touches work exactly the same.
      */
-    var lettersHidden = false
+    var expertMode = false
         set(value) {
             if (field == value) return
             field = value
@@ -106,8 +105,6 @@ class KeyboardView(
 
     /** The preview bubble is showing (tests). */
     internal val previewShowing get() = bubbleKey != null
-
-    private fun Key.blank() = lettersHidden && primary && layoutManager.currentMode == LayoutMode.LETTERS
 
     /** A newer build is waiting in settings: marked next to the version label. */
     var updateWaiting = false
@@ -304,7 +301,7 @@ class KeyboardView(
         fillPaint.color = ColorUtils.blendARGB(palette.fill(key.primary), palette.pressed(key.primary), key.press)
         canvas.drawRect(r, fillPaint)
 
-        if (key.blank()) {
+        if (expertMode) {
             canvas.restore()
             return
         }
@@ -505,7 +502,7 @@ class KeyboardView(
         val gestureType = if (direction == Direction.CENTER) GestureType.TAP else GestureType.SWIPE
         val action = key.config.getActionFor(gestureType, direction)
         val text = key.label(direction)
-        val shown = previewEnabled && !key.blank() && isPreviewable(action)
+        val shown = previewEnabled && !expertMode && isPreviewable(action)
         if (!shown || text.isNullOrEmpty()) {
             if (bubbleKey === key || bubbleKey == null) hideBubble()
             return

@@ -247,7 +247,7 @@ da latencia y consumo mínimos, y animaciones más fáciles (todo es un valor in
 - [x] Compartir el APK instalado por Telegram/WhatsApp.
 - [x] Ícono propio: cuadrícula 4×4 con la tecla del pulgar resaltada (adaptativo + monocromo).
 - [x] Ajustes en lista plana: solo etiqueta y control.
-- [x] "Ocultar letras": el bloque de letras sin etiquetas ni vista previa (las teclas de control y la capa 123 se siguen viendo).
+- [x] "Modo experto": ninguna tecla muestra etiquetas ni burbuja de vista previa; quedan fondos, bordes, pulsación, versión y sugerencias.
 
 ---
 
