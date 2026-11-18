@@ -94,6 +94,7 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             is KeyAction.SwitchToNumbers -> "123"
             is KeyAction.SwitchToLetters -> "ABC"
             is KeyAction.InsertText -> action.text.take(2)
+            is KeyAction.UndoDelete -> "↶"
             else -> "?"
         }
     }

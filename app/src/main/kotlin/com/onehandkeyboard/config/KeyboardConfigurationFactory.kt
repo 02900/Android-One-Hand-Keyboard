@@ -1,365 +1,307 @@
 package com.onehandkeyboard.config
 
 import com.onehandkeyboard.actions.ActionConfig
-import com.onehandkeyboard.core.domain.model.Direction
-import com.onehandkeyboard.core.domain.model.GestureType
+import com.onehandkeyboard.core.domain.model.Direction.E
+import com.onehandkeyboard.core.domain.model.Direction.N
+import com.onehandkeyboard.core.domain.model.Direction.NE
+import com.onehandkeyboard.core.domain.model.Direction.NW
+import com.onehandkeyboard.core.domain.model.Direction.S
+import com.onehandkeyboard.core.domain.model.Direction.SE
+import com.onehandkeyboard.core.domain.model.Direction.SW
+import com.onehandkeyboard.core.domain.model.Direction.W
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
-import com.onehandkeyboard.gestures.GestureAction
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Factory para crear configuraciones de teclado específicas por idioma y modo
+ * Keyboard configurations per language and mode.
+ *
+ * Grid (cell indexes):
+ * ```
+ *  0  1  2 | 3   layout / height
+ *  4  5  6 | 7   case / clipboard
+ *  8  9 10 | 11  backspace / delete all / undo
+ * 12 ---- 14 | 15  space (spans) / enter / submit
+ * ```
  */
 @Singleton
-class KeyboardConfigurationFactory @Inject constructor() {
-    /**
-     * Obtiene la configuración para un idioma y modo específicos
-     */
-    fun getConfiguration(
-        language: Language,
-        mode: LayoutMode,
-    ): KeyboardConfiguration {
-        return when (language) {
-            Language.SPANISH ->
-                when (mode) {
-                    LayoutMode.LETTERS -> createSpanishLetters()
-                    LayoutMode.SYMBOLS -> createSpanishSymbols()
+class KeyboardConfigurationFactory
+    @Inject
+    constructor() {
+        fun getConfiguration(
+            language: Language,
+            mode: LayoutMode,
+        ): KeyboardConfiguration =
+            when (language) {
+                Language.SPANISH ->
+                    when (mode) {
+                        LayoutMode.LETTERS -> createSpanishLetters()
+                        LayoutMode.SYMBOLS -> createSpanishSymbols()
+                    }
+                Language.ENGLISH ->
+                    when (mode) {
+                        LayoutMode.LETTERS -> createEnglishLetters()
+                        LayoutMode.SYMBOLS -> createEnglishSymbols()
+                    }
+            }
+
+        fun createSpanishDefault(): KeyboardConfiguration = createSpanishLetters()
+
+        private fun createSpanishLetters() =
+            KeyboardConfiguration(
+                name = "Español - Letras",
+                description = "Layout español con letras - Grid 4x4",
+                language = Language.SPANISH,
+                mode = LayoutMode.LETTERS,
+                cells = spanishLettersGrid(),
+            )
+
+        private fun createSpanishSymbols() =
+            KeyboardConfiguration(
+                name = "Español - Símbolos",
+                description = "Layout español con números y símbolos - Grid 4x4",
+                language = Language.SPANISH,
+                mode = LayoutMode.SYMBOLS,
+                cells = symbolsGrid(),
+            )
+
+        private fun createEnglishLetters() =
+            KeyboardConfiguration(
+                name = "English - Letters",
+                description = "English layout with letters - Grid 4x4",
+                language = Language.ENGLISH,
+                mode = LayoutMode.LETTERS,
+                cells = englishLettersGrid(),
+            )
+
+        private fun createEnglishSymbols() =
+            createSpanishSymbols().copy(
+                name = "English - Symbols",
+                description = "English layout with numbers and symbols",
+                language = Language.ENGLISH,
+            )
+
+        private fun spanishLettersGrid() =
+            keyboardGrid {
+                cell(0) {
+                    tap('a')
+                    swipe(SE, 'v')
                 }
-            Language.ENGLISH ->
-                when (mode) {
-                    LayoutMode.LETTERS -> createEnglishLetters()
-                    LayoutMode.SYMBOLS -> createEnglishSymbols()
+                cell(1) {
+                    tap('n')
+                    swipe(N, 'ñ')
+                    swipe(S, 'l')
                 }
-        }
-    }
+                cell(2) {
+                    tap('i')
+                    swipe(W, '?')
+                    swipe(SW, 'x')
+                }
+                layoutCell(ActionConfig.SwitchLayout)
 
-    /**
-     * Configuración por defecto para layout español (mantener compatibilidad)
-     */
-    fun createSpanishDefault(): KeyboardConfiguration {
-        return createSpanishLetters()
-    }
+                cell(4) {
+                    tap('d')
+                    swipe(E, 'k')
+                }
+                cell(5) {
+                    tap('o')
+                    swipe(N, 'u')
+                    swipe(NE, 'p')
+                    swipe(E, 'b')
+                    swipe(SE, 'j')
+                    swipe(S, 'h')
+                    swipe(SW, 'g')
+                    swipe(W, 'c')
+                    swipe(NW, 'q')
+                }
+                cell(6) {
+                    tap('r')
+                    swipe(W, 'm')
+                }
+                caseCell()
 
-    /**
-     * Configuración española - modo letras (4x4 grid)
-     */
-    private fun createSpanishLetters(): KeyboardConfiguration {
-        return KeyboardConfiguration(
-            name = "Español - Letras",
-            description = "Layout español con letras y acentos - Grid 4x4",
-            language = Language.SPANISH,
-            mode = LayoutMode.LETTERS,
-            cells = createLettersGrid4x4()
-        )
-    }
+                cell(8) {
+                    tap('t')
+                    swipe(NE, 'y')
+                }
+                cell(9) {
+                    tap('e')
+                    swipe(N, 'w')
+                    swipe(E, 'z')
+                    swipe(SW, ',')
+                    swipe(S, '.')
+                    swipe(SE, ':')
+                    swipe(NE, '\'')
+                }
+                cell(10) {
+                    tap('s')
+                    swipe(NW, 'f')
+                }
+                backspaceCell()
 
-    /**
-     * Configuración española - modo símbolos (4x4 grid)
-     */
-    private fun createSpanishSymbols(): KeyboardConfiguration {
-        return KeyboardConfiguration(
-            name = "Español - Símbolos",
-            description = "Layout español con números y símbolos - Grid 4x4",
-            language = Language.SPANISH,
-            mode = LayoutMode.SYMBOLS,
-            cells = createSymbolsGrid4x4()
-        )
-    }
+                cell(12, colSpan = 3) { tap(ActionConfig.Space) }
+                enterCell()
+            }
 
-    /**
-     * Configuración inglesa - modo letras (4x4 grid)
-     */
-    private fun createEnglishLetters(): KeyboardConfiguration {
-        return KeyboardConfiguration(
-            name = "English - Letters",
-            description = "English layout with letters - Grid 4x4",
-            language = Language.ENGLISH,
-            mode = LayoutMode.LETTERS,
-            cells = createEnglishGrid4x4()
-        )
-    }
+        private fun symbolsGrid() =
+            keyboardGrid {
+                cell(0) {
+                    tap('1')
+                    swipe(E, '-')
+                    swipe(SW, '$')
+                }
+                cell(1) {
+                    tap('2')
+                    swipe(N, '^')
+                    swipe(E, '!')
+                    swipe(S, '+')
+                }
+                cell(2) {
+                    tap('3')
+                    swipe(SE, '€')
+                    swipe(S, '=')
+                    swipe(W, '?')
+                }
+                layoutCell(ActionConfig.ShowLetters)
 
-    /**
-     * Configuración inglesa - modo símbolos (reutiliza la española)
-     */
-    private fun createEnglishSymbols(): KeyboardConfiguration {
-        return createSpanishSymbols().copy(
-            name = "English - Symbols",
-            description = "English layout with numbers and symbols",
-            language = Language.ENGLISH,
-        )
-    }
+                cell(4) {
+                    tap('4')
+                    swipe(NE, '%')
+                    swipe(SE, '_')
+                    swipe(SW, '[')
+                    swipe(W, '(')
+                    swipe(NW, '{')
+                }
+                cell(5) {
+                    tap('5')
+                    swipe(E, '/')
+                    swipe(W, '\\')
+                    swipe(N, '~')
+                    swipe(S, '`')
+                }
+                cell(6) {
+                    tap('6')
+                    swipe(NE, '}')
+                    swipe(E, ')')
+                    swipe(SE, ']')
+                    swipe(NW, '|')
+                    swipe(SW, '@')
+                }
+                caseCell()
 
-    /**
-     * Crea el grid 4x4 completo para modo letras
-     * Grid layout:
-     * 00(0)  01(1)  02(2)  03(3)
-     * 04(4)  05(5)  06(6)  07(7)  
-     * 08(8)  09(9)  10(10) 11(11)
-     * 12(12) ----spacebar---- 15(15)
-     */
-    private fun createLettersGrid4x4(): List<CellConfiguration> {
-        return listOf(
-            // Row 0: Main grid cells 0-2, Action cell 3
-            CellConfiguration(0, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('a'),
-                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character('v'),
-            )),
-            CellConfiguration(1, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('n'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('ñ'),
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('l'),
-            )),
-            CellConfiguration(2, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('i'),
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('?'),
-                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character('x'),
-            )),
-            CellConfiguration(3, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.SwitchLayout,
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.IncreaseCellHeight,
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.DecreaseCellHeight,
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.ResetCellHeight,
-            )),
-            
-            // Row 1: Main grid cells 4-6, Action cell 7
-            CellConfiguration(4, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('d'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('k'),
-            )),
-            CellConfiguration(5, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('o'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('u'),
-                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('p'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('b'),
-                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character('j'),
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('h'),
-                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character('g'),
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('c'),
-                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.Character('q'),
-            )),
-            CellConfiguration(6, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('r'),
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('m'),
-            )),
-            CellConfiguration(7, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.SwitchCase,
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Paste,
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.CopyAll,
-                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.DeleteAll,
-            )),
-            
-            // Row 2: Main grid cells 8-10, Action cell 11
-            CellConfiguration(8, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('t'),
-                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('y'),
-            )),
-            CellConfiguration(9, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('e'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('w'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('z'),
-                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character(','),
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('.'),
-                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character(':'),
-                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('\''),
-            )),
-            CellConfiguration(10, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('s'),
-                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.Character('f'),
-            )),
-            CellConfiguration(11, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Backspace,
-            )),
-            
-            // Row 3: Spacebar (spans 3 columns) and Enter
-            CellConfiguration(12, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Space,
-            ), colSpan = 3),
-            CellConfiguration(15, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Enter,
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Submit,
-            )),
-        )
-    }
+                cell(8) {
+                    tap('7')
+                    swipe(W, '*')
+                    swipe(SW, '<')
+                }
+                cell(9) {
+                    tap('8')
+                    swipe(NW, '"')
+                    swipe(S, '.')
+                    swipe(SE, ':')
+                    swipe(SW, ',')
+                    swipe(NE, '\'')
+                }
+                cell(10) {
+                    tap('9')
+                    swipe(N, '&')
+                    swipe(E, '>')
+                    swipe(W, '#')
+                    swipe(NW, ';')
+                }
+                backspaceCell()
 
-    /**
-     * Crea el grid 4x4 completo para modo símbolos
-     * Grid layout:
-     * 00(0)  01(1)  02(2)  03(3)
-     * 04(4)  05(5)  06(6)  07(7)  
-     * 08(8)  09(9)  10(10) 11(11)
-     * 12(12) 13(13) --space-- 15(15)
-     */
-    private fun createSymbolsGrid4x4(): List<CellConfiguration> {
-        return listOf(
-            // Row 0: Numbers 1-3, Action cell
-            CellConfiguration(0, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('1'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('-'),
-                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character('$'),
-            )),
-            CellConfiguration(1, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('2'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('^'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('!'),
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('+'),
-            )),
-            CellConfiguration(2, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('3'),
-                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character('€'),
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('='),
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('?'),
-            )),
-            CellConfiguration(3, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.ShowLetters,
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.IncreaseCellHeight,
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.DecreaseCellHeight,
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.ResetCellHeight,
-            )),
-            
-            // Row 1: Numbers 4-6, Action cell
-            CellConfiguration(4, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('4'),
-                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('%'),
-                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character('_'),
-                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character('['),
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('('),
-                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.Character('{'),
-            )),
-            CellConfiguration(5, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('5'),
-            )),
-            CellConfiguration(6, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('6'),
-                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('}'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character(')'),
-                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character(']'),
-                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.Character('|'),
-                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character('@'),
-            )),
-            CellConfiguration(7, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.SwitchCase,
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Paste,
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.CopyAll,
-                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.DeleteAll,
-            )),
-            
-            // Row 2: Numbers 7-9, Action cell
-            CellConfiguration(8, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('7'),
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('*'),
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('<'),
-            )),
-            CellConfiguration(9, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('8'),
-                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.Character('"'),
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('.'),
-                GestureAction(GestureType.SWIPE, Direction.SE) to ActionConfig.Character(':'),
-                GestureAction(GestureType.SWIPE, Direction.SW) to ActionConfig.Character(','),
-                GestureAction(GestureType.SWIPE, Direction.NE) to ActionConfig.Character('\''),
-            )),
-            CellConfiguration(10, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('9'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('&'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('>'),
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('#'),
-                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.Character(';'),
-            )),
-            CellConfiguration(11, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Backspace,
-            )),
-            
-            // Row 3: 0, Spacebar (spans 2 cols), Enter
-            CellConfiguration(12, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('0'),
-            ), colSpan = 2),
-            CellConfiguration(14, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Space,
-            )),
-            CellConfiguration(15, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Enter,
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Submit,
-            )),
-        )
-    }
+                cell(12, colSpan = 2) { tap('0') }
+                cell(14) { tap(ActionConfig.Space) }
+                enterCell()
+            }
 
-    /**
-     * Crea el grid 4x4 para inglés
-     */
-    private fun createEnglishGrid4x4(): List<CellConfiguration> {
-        return listOf(
-            // Similar structure but with English letters
-            CellConfiguration(0, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('q'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('w'),
-            )),
-            CellConfiguration(1, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('e'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('r'),
-            )),
-            CellConfiguration(2, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('t'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('y'),
-            )),
-            CellConfiguration(3, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.ShowNumbers,
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.IncreaseCellHeight,
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.DecreaseCellHeight,
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.ResetCellHeight,
-            )),
-            
-            CellConfiguration(4, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('a'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('s'),
-            )),
-            CellConfiguration(5, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('d'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('f'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('g'),
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('h'),
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('j'),
-            )),
-            CellConfiguration(6, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('k'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('l'),
-            )),
-            CellConfiguration(7, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.SwitchCase,
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Paste,
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.CopyAll,
-                GestureAction(GestureType.SWIPE, Direction.NW) to ActionConfig.DeleteAll,
-            )),
-            
-            CellConfiguration(8, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('z'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('x'),
-            )),
-            CellConfiguration(9, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character('c'),
-                GestureAction(GestureType.SWIPE, Direction.N) to ActionConfig.Character('v'),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('b'),
-                GestureAction(GestureType.SWIPE, Direction.S) to ActionConfig.Character('n'),
-                GestureAction(GestureType.SWIPE, Direction.W) to ActionConfig.Character('m'),
-            )),
-            CellConfiguration(10, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Character(','),
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Character('.'),
-            )),
-            CellConfiguration(11, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Backspace,
-            )),
-            
-            // Row 3: Spacebar and Enter
-            CellConfiguration(12, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Space,
-            ), colSpan = 3),
-            CellConfiguration(15, mapOf(
-                GestureAction(GestureType.TAP, Direction.CENTER) to ActionConfig.Enter,
-                GestureAction(GestureType.SWIPE, Direction.E) to ActionConfig.Submit,
-            )),
-        )
+        private fun englishLettersGrid() =
+            keyboardGrid {
+                cell(0) {
+                    tap('q')
+                    swipe(E, 'w')
+                }
+                cell(1) {
+                    tap('e')
+                    swipe(E, 'r')
+                }
+                cell(2) {
+                    tap('t')
+                    swipe(E, 'y')
+                }
+                layoutCell(ActionConfig.ShowNumbers)
+
+                cell(4) {
+                    tap('a')
+                    swipe(E, 's')
+                }
+                cell(5) {
+                    tap('d')
+                    swipe(N, 'f')
+                    swipe(E, 'g')
+                    swipe(S, 'h')
+                    swipe(W, 'j')
+                }
+                cell(6) {
+                    tap('k')
+                    swipe(E, 'l')
+                }
+                caseCell()
+
+                cell(8) {
+                    tap('z')
+                    swipe(E, 'x')
+                }
+                cell(9) {
+                    tap('c')
+                    swipe(N, 'v')
+                    swipe(E, 'b')
+                    swipe(S, 'n')
+                    swipe(W, 'm')
+                }
+                cell(10) {
+                    tap(',')
+                    swipe(E, '.')
+                }
+                backspaceCell()
+
+                cell(12, colSpan = 3) { tap(ActionConfig.Space) }
+                enterCell()
+            }
+
+        // ------------------------------------------------------------------
+        // Control column, shared by every layout
+        // ------------------------------------------------------------------
+
+        private fun GridBuilder.layoutCell(switchAction: ActionConfig) =
+            cell(3) {
+                tap(switchAction)
+                swipe(N, ActionConfig.IncreaseCellHeight)
+                swipe(S, ActionConfig.DecreaseCellHeight)
+                swipe(W, ActionConfig.ResetCellHeight)
+            }
+
+        private fun GridBuilder.caseCell() =
+            cell(7) {
+                tap(ActionConfig.SwitchCase)
+                swipe(S, ActionConfig.Paste)
+                swipe(N, ActionConfig.CopyAll)
+            }
+
+        /** "Delete all" lives on the delete key (deliberate swipe up) and can be undone. */
+        private fun GridBuilder.backspaceCell() =
+            cell(11) {
+                tap(ActionConfig.Backspace)
+                swipe(N, ActionConfig.DeleteAll)
+                swipe(E, ActionConfig.Action(KeyAction.UndoDelete))
+            }
+
+        private fun GridBuilder.enterCell() =
+            cell(15) {
+                tap(ActionConfig.Enter)
+                swipe(E, ActionConfig.Submit)
+            }
     }
-}
