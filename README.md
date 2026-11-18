@@ -85,9 +85,12 @@ Memes/
 - **Cómo se envía:** si la app acepta imágenes en ese campo (WhatsApp, Telegram, Signal…), el meme se inserta directo. Si no, queda copiado en el portapapeles y aparece un aviso para pegarlo.
 - Para actualizar el pack basta con cambiar los archivos de la carpeta: se vuelve a leer cada vez que abres el panel.
 
-## 🔄 Actualizaciones por la red local (build de debug)
+## 🔄 Actualizaciones (build de debug)
 
-En la PC, con el teléfono en la misma Wi-Fi:
+La app busca el build más nuevo en dos lugares y se queda con el más reciente:
+
+1. **GitHub Releases** (desde cualquier red). Cada push a `main`, o cada tag `v*`, ejecuta `.github/workflows/release.yml`: compila, firma con la clave fija y publica una release con el APK y `update.json`. La app lee `releases/latest/download/update.json`, que no pasa por la API de GitHub, así que no hay límite de cupo. También se puede lanzar a mano desde la pestaña Actions.
+2. **Tu PC en la red local**, para probar un build antes de publicarlo:
 
 ```bash
 python tools/serve_updates.py   # compila, publica y sirve; Ctrl+C para parar
@@ -99,6 +102,14 @@ python tools/serve_updates.py   # compila, publica y sirve; Ctrl+C para parar
 - El APK se verifica con el SHA-256 de `update.json`, y Android solo lo instala si tiene la misma firma que la app instalada.
 - Solo el build de debug tiene permiso de red (`src/debug/AndroidManifest.xml`); el de release sigue sin red.
 - La primera vez que corre el script, Windows puede preguntar si Python puede usar redes privadas: hay que permitirlo.
+
+### Clave de firma
+
+Todas las builds publicadas se firman con la misma clave, para que cada actualización se instale sobre la anterior:
+
+- **Local:** `keystore.properties` en la raíz del repo (no está en git) con `storeFile`, `storePassword`, `keyAlias` y `keyPassword`. Sin ese archivo, Gradle usa la clave de debug de la máquina.
+- **GitHub Actions:** los secretos `OHK_KEYSTORE_BASE64`, `OHK_KEYSTORE_PASSWORD`, `OHK_KEY_ALIAS` y `OHK_KEY_PASSWORD`.
+- ⚠️ **Haz una copia de seguridad del `.jks` y de `keystore.properties`.** Si se pierde la clave, las apps instaladas ya no aceptan actualizaciones: hay que desinstalar y volver a instalar.
 
 **Compartir app:** Ajustes → Compartir envía el APK instalado como archivo (Telegram, WhatsApp…).
 

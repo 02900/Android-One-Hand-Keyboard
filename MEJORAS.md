@@ -245,6 +245,7 @@ da latencia y consumo mínimos, y animaciones más fáciles (todo es un valor in
 - [x] Autoactualización desde la PC (`tools/serve_updates.py`), descubierta por broadcast UDP, sin IP fija; solo en debug.
 - [x] Instalación silenciosa al ocultar el teclado (Android 12+, después de la primera actualización confirmada).
 - [x] Compartir el APK instalado por Telegram/WhatsApp.
+- [x] Releases automáticas en GitHub Actions, firmadas con una clave fija; la app busca en GitHub y en la red local, y elige el build más nuevo.
 - [x] Ícono propio: cuadrícula 4×4 con la tecla del pulgar resaltada (adaptativo + monocromo).
 - [x] Ajustes en lista plana: solo etiqueta y control.
 - [x] "Modo experto": ninguna tecla muestra etiquetas ni burbuja de vista previa; quedan fondos, bordes, pulsación, versión y sugerencias.
