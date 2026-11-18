@@ -144,6 +144,7 @@ class KeyboardView(
     private val centerMetrics = centerPaint.fontMetrics
     private val labelMetrics = labelPaint.fontMetrics
     private val bubbleMetrics = bubblePaint.fontMetrics
+    private val icons = KeyIcons(context)
     private val drawRect = RectF()
     private val boundsRect = Rect()
 
@@ -312,7 +313,7 @@ class KeyboardView(
         )
         for ((direction, text) in key.directional) {
             if (text.isEmpty()) continue
-            val halfWidth = labelPaint.measureText(text) / 2
+            val halfWidth = if (icons.has(text)) iconSize(labelPaint) / 2 else labelPaint.measureText(text) / 2
             val x =
                 when (direction) {
                     Direction.W, Direction.NW, Direction.SW -> r.left + margin + halfWidth
@@ -349,12 +350,15 @@ class KeyboardView(
         paint.color = color
         paint.alpha = (Color.alpha(color) * alpha * baseAlpha).toInt()
         val scale = if (isTarget && direction != Direction.CENTER) 1f + (TARGET_SCALE - 1f) * key.grow else 1f
+        val metrics = if (paint === centerPaint) centerMetrics else labelMetrics
+        val centerY = baseline + (metrics.ascent + metrics.descent) / 2
         if (scale != 1f) {
             canvas.save()
-            val metrics = if (paint === centerPaint) centerMetrics else labelMetrics
-            canvas.scale(scale, scale, x, baseline + (metrics.ascent + metrics.descent) / 2)
+            canvas.scale(scale, scale, x, centerY)
         }
-        canvas.drawText(text, x, baseline, paint)
+        if (!icons.draw(canvas, text, x, centerY, iconSize(paint), paint.color)) {
+            canvas.drawText(text, x, baseline, paint)
+        }
         if (scale != 1f) canvas.restore()
     }
 
@@ -384,8 +388,21 @@ class KeyboardView(
         fillPaint.color = palette.bubbleFill
         canvas.drawRoundRect(drawRect, radius, radius, fillPaint)
         bubblePaint.color = palette.bubbleText
-        canvas.drawText(text, drawRect.centerX(), centeredBaseline(drawRect, bubbleMetrics), bubblePaint)
+        if (!icons.draw(
+                canvas,
+                text,
+                drawRect.centerX(),
+                drawRect.centerY(),
+                iconSize(bubblePaint),
+                palette.bubbleText,
+            )
+        ) {
+            canvas.drawText(text, drawRect.centerX(), centeredBaseline(drawRect, bubbleMetrics), bubblePaint)
+        }
     }
+
+    /** Icons are drawn a bit larger than the text they replace, so they read at the same weight. */
+    private fun iconSize(paint: Paint) = paint.textSize * ICON_SCALE
 
     private fun centeredBaseline(
         rect: RectF,
@@ -742,6 +759,7 @@ class KeyboardView(
         const val PRESS_SCALE = 0.96f
         const val PRESS_INSTANT = 0.6f
         const val TARGET_SCALE = 1.4f
+        const val ICON_SCALE = 1.25f
         const val DIMMED_ALPHA = 0.35f
         const val PRESS_ANIM_MS = 60f
         const val RELEASE_ANIM_MS = 80f
