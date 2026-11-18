@@ -207,11 +207,11 @@ da latencia y consumo mínimos, y animaciones más fáciles (todo es un valor in
 - [x] 1.14 Sacar "Borrar todo" del swipe accidental o agregar deshacer.
 
 ### Fase 2 — Fluidez básica (2–4 días): el mayor impacto en la sensación
-- [ ] 2.1 Estado presionado, háptica y sonido opcional.
-- [ ] 2.3 Umbral en dp, sectores de 45° con `atan2`, ajuste a la dirección configurada más cercana o fallback a tap, histéresis.
-- [ ] 2.4 Estado de gesto por puntero/celda y `ACTION_CANCEL`.
-- [ ] 2.5 Actualizar en el lugar en vez de llamar a `setInputView`.
-- [ ] 2.6 Backspace con repetición, shift de una sola vez y mayúscula automática.
+- [x] 2.1 Estado presionado, háptica y sonido opcional.
+- [x] 2.3 Umbral en dp, sectores de 45° con `atan2`, ajuste a la dirección configurada más cercana o fallback a tap, histéresis.
+- [x] 2.4 Estado de gesto por puntero/celda y `ACTION_CANCEL`.
+- [x] 2.5 Actualizar en el lugar en vez de llamar a `setInputView`.
+- [x] 2.6 Backspace con repetición, shift de una sola vez y mayúscula automática.
 
 ### Fase 3 — Sensación premium (3–5 días)
 - [ ] 2.2 Vista previa del swipe en vivo y globo.
