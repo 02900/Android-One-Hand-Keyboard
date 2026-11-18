@@ -12,6 +12,7 @@ import com.onehandkeyboard.core.domain.model.Direction.W
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
+import com.onehandkeyboard.input.DeadKeys
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,17 +21,29 @@ import javax.inject.Singleton
  *
  * Grid (cell indexes):
  * ```
- *  0  1  2 | 3   layout / height
+ *  0  1  2 | 3   layout / next IME / height (long-press) / one-hand
  *  4  5  6 | 7   case / clipboard
- *  8  9 10 | 11  backspace / delete all / undo
- * 12 ---- 14 | 15  space (spans) / enter / submit
+ *  8  9 10 | 11  backspace / delete word / delete all / undo
+ * 12 ---- 14 | 15  space (trackpad, swipe up/down = language) / enter / submit
  * ```
  */
+@Suppress("MagicNumber") // cell indexes are the layout itself (see the grid above)
 @Singleton
 class KeyboardConfigurationFactory
     @Inject
     constructor() {
+        private val cache = HashMap<Pair<Language, LayoutMode>, KeyboardConfiguration>()
+
+        /**
+         * Configurations are immutable, so each (language, mode) is built once and reused:
+         * switching layers never rebuilds the grid and the view can compare by identity.
+         */
         fun getConfiguration(
+            language: Language,
+            mode: LayoutMode,
+        ): KeyboardConfiguration = cache.getOrPut(language to mode) { build(language, mode) }
+
+        private fun build(
             language: Language,
             mode: LayoutMode,
         ): KeyboardConfiguration =
@@ -83,6 +96,7 @@ class KeyboardConfigurationFactory
                 language = Language.ENGLISH,
             )
 
+        @Suppress("LongMethod") // layout data: one block per cell
         private fun spanishLettersGrid() =
             keyboardGrid {
                 cell(0) {
@@ -97,7 +111,10 @@ class KeyboardConfigurationFactory
                 cell(2) {
                     tap('i')
                     swipe(W, '?')
+                    swipe(NW, '¿')
                     swipe(SW, 'x')
+                    swipe(S, '!')
+                    swipe(SE, '¡')
                 }
                 layoutCell(ActionConfig.SwitchLayout)
 
@@ -134,10 +151,15 @@ class KeyboardConfigurationFactory
                     swipe(S, '.')
                     swipe(SE, ':')
                     swipe(NE, '\'')
+                    swipe(W, ActionConfig.Action(KeyAction.DeadKey(DeadKeys.ACUTE)))
+                    swipe(NW, ActionConfig.Action(KeyAction.DeadKey(DeadKeys.DIAERESIS)))
                 }
                 cell(10) {
                     tap('s')
                     swipe(NW, 'f')
+                    swipe(S, '@')
+                    swipe(E, '/')
+                    swipe(SW, '-')
                 }
                 backspaceCell()
 
@@ -145,6 +167,7 @@ class KeyboardConfigurationFactory
                 enterCell()
             }
 
+        @Suppress("LongMethod") // layout data: one block per cell
         private fun symbolsGrid() =
             keyboardGrid {
                 cell(0) {
@@ -189,7 +212,7 @@ class KeyboardConfigurationFactory
                     swipe(NW, '|')
                     swipe(SW, '@')
                 }
-                caseCell()
+                caseCell(withShift = false)
 
                 cell(8) {
                     tap('7')
@@ -231,6 +254,10 @@ class KeyboardConfigurationFactory
                 cell(2) {
                     tap('t')
                     swipe(E, 'y')
+                    swipe(S, 'u')
+                    swipe(W, 'i')
+                    swipe(SW, 'o')
+                    swipe(SE, 'p')
                 }
                 layoutCell(ActionConfig.ShowNumbers)
 
@@ -265,6 +292,11 @@ class KeyboardConfigurationFactory
                 cell(10) {
                     tap(',')
                     swipe(E, '.')
+                    swipe(N, '?')
+                    swipe(S, '!')
+                    swipe(W, '\'')
+                    swipe(SW, '@')
+                    swipe(SE, '/')
                 }
                 backspaceCell()
 
@@ -276,25 +308,31 @@ class KeyboardConfigurationFactory
         // Control column, shared by every layout
         // ------------------------------------------------------------------
 
+        /**
+         * Layer key: tap = switch layer, up = next keyboard (IME), left = default height,
+         * down = one-hand mode. Long-press starts the live height resize (touch layer).
+         */
         private fun GridBuilder.layoutCell(switchAction: ActionConfig) =
             cell(3) {
                 tap(switchAction)
-                swipe(N, ActionConfig.IncreaseCellHeight)
-                swipe(S, ActionConfig.DecreaseCellHeight)
+                swipe(N, ActionConfig.Action(KeyAction.SwitchInputMethod))
                 swipe(W, ActionConfig.ResetCellHeight)
+                swipe(S, ActionConfig.Action(KeyAction.ToggleOneHand))
             }
 
-        private fun GridBuilder.caseCell() =
+        /** Shift has no meaning on the symbols layer, so there it only keeps the clipboard swipes. */
+        private fun GridBuilder.caseCell(withShift: Boolean = true) =
             cell(7) {
-                tap(ActionConfig.SwitchCase)
+                if (withShift) tap(ActionConfig.SwitchCase)
                 swipe(S, ActionConfig.Paste)
                 swipe(N, ActionConfig.CopyAll)
             }
 
-        /** "Delete all" lives on the delete key (deliberate swipe up) and can be undone. */
+        /** Delete key: tap/hold = backspace, ← word, ↑ everything, → undo the last word/all delete. */
         private fun GridBuilder.backspaceCell() =
             cell(11) {
                 tap(ActionConfig.Backspace)
+                swipe(W, ActionConfig.Action(KeyAction.DeleteWord))
                 swipe(N, ActionConfig.DeleteAll)
                 swipe(E, ActionConfig.Action(KeyAction.UndoDelete))
             }

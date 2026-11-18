@@ -63,7 +63,6 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.androidx.compose.ui.test.junit4)
-    testImplementation(project(":core:testkit"))
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -207,25 +207,25 @@ da latencia y consumo mínimos, y animaciones más fáciles (todo es un valor in
 - [x] 1.14 Sacar "Borrar todo" del swipe accidental o agregar deshacer.
 
 ### Fase 2 — Fluidez básica (2–4 días): el mayor impacto en la sensación
-- [ ] 2.1 Estado presionado, háptica y sonido opcional.
-- [ ] 2.3 Umbral en dp, sectores de 45° con `atan2`, ajuste a la dirección configurada más cercana o fallback a tap, histéresis.
-- [ ] 2.4 Estado de gesto por puntero/celda y `ACTION_CANCEL`.
-- [ ] 2.5 Actualizar en el lugar en vez de llamar a `setInputView`.
-- [ ] 2.6 Backspace con repetición, shift de una sola vez y mayúscula automática.
+- [x] 2.1 Estado presionado, háptica y sonido opcional.
+- [x] 2.3 Umbral en dp, sectores de 45° con `atan2`, ajuste a la dirección configurada más cercana o fallback a tap, histéresis.
+- [x] 2.4 Estado de gesto por puntero/celda y `ACTION_CANCEL`.
+- [x] 2.5 Actualizar en el lugar en vez de llamar a `setInputView`.
+- [x] 2.6 Backspace con repetición, shift de una sola vez y mayúscula automática.
 
 ### Fase 3 — Sensación premium (3–5 días)
-- [ ] 2.2 Vista previa del swipe en vivo y globo.
-- [ ] 2.6 Barra espaciadora como trackpad, doble espacio → punto, swipe para borrar palabra.
-- [ ] 2.7 Redimensionado continuo, persistencia y modo una mano izquierda/derecha.
-- [ ] 2.8 Micro-animaciones.
-- [ ] 3.1 Tildes y signos del español.
-- [ ] 3.2 Comportamiento según el tipo de campo.
+- [x] 2.2 Vista previa del swipe en vivo y globo.
+- [x] 2.6 Barra espaciadora como trackpad, doble espacio → punto, swipe para borrar palabra.
+- [x] 2.7 Redimensionado continuo, persistencia y modo una mano izquierda/derecha.
+- [x] 2.8 Micro-animaciones.
+- [x] 3.1 Tildes y signos del español.
+- [x] 3.2 Comportamiento según el tipo de campo.
 
 ### Fase 4 — Arquitectura y calidad
-- [ ] 4.1 `KeyboardView` en Canvas.
-- [ ] 4.4 Eliminar el código muerto y unificar etiquetas y mapeo.
-- [ ] 4.5 DSL de configuración con validación y tests de cobertura de alfabeto.
-- [ ] 3.5, 3.8 y 3.9: idioma, cambio de IME y accesibilidad.
+- [x] 4.1 `KeyboardView` en Canvas.
+- [x] 4.4 Eliminar el código muerto y unificar etiquetas y mapeo.
+- [x] 4.5 DSL de configuración con validación y tests de cobertura de alfabeto.
+- [x] 3.5, 3.8 y 3.9: idioma, cambio de IME y accesibilidad.
 
 ---
 

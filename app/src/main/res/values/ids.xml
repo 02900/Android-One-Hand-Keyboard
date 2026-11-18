@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Accessibility custom actions: one per swipe direction of a key -->
+    <item name="a11y_swipe_n" type="id" />
+    <item name="a11y_swipe_ne" type="id" />
+    <item name="a11y_swipe_e" type="id" />
+    <item name="a11y_swipe_se" type="id" />
+    <item name="a11y_swipe_s" type="id" />
+    <item name="a11y_swipe_sw" type="id" />
+    <item name="a11y_swipe_w" type="id" />
+    <item name="a11y_swipe_nw" type="id" />
+</resources>
