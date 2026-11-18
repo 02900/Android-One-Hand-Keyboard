@@ -1,6 +1,7 @@
 package com.onehandkeyboard.spell
 
 import kotlin.math.ln
+import kotlin.math.min
 
 /** One entry of the suggestion strip. */
 data class Suggestion(
@@ -47,8 +48,9 @@ data class Suggestions(
  * Only unknown words are ever autocorrected (neither in the dictionary nor learned): a valid
  * word such as "esta" is never replaced by "está", it is only offered in the strip.
  *
- * Besides accents and typos, it detects a missed space bar: a tap just above it types the
- * letter of that cell, so "enemexico" is "en méxico" and "lesscaen" is "les caen".
+ * Besides accents and typos, it detects a missed space: either it was not typed at all
+ * ("nopuede" is "no puede") or a tap just above the space bar typed the letter of that cell
+ * ("enemexico" is "en méxico", "lesscaen" is "les caen").
  */
 class Suggester(
     private val dictionary: WordDictionary,
@@ -108,20 +110,38 @@ class Suggester(
     }
 
     /**
-     * Two words joined by the letter that a missed space bar typed ("en" + e + "méxico").
-     * Scored as two independent words, P(a)·P(b), so it only beats a single-word typo fix
-     * when both words are common; 0.2 % of simulated one-word typos come out as a split.
+     * Two words with the space missing ("no" + "puede") or replaced by the letter typed by a
+     * tap just above the space bar ("en" + e + "méxico"). Each part needs 2+ letters.
+     *
+     * Scored from both word frequencies (halfway between the rarer one and their geometric
+     * mean, so a common word cannot carry a junk one like "con" + "go") minus [SPLIT_PENALTY].
+     * On simulated input it splits ~85 % of two frequent words typed together, while ~2 % of
+     * one-word typos come out split (mostly into plausible readings); close calls between a
+     * split and a one-word fix are not autocorrected.
      */
     private fun missedSpaces(typed: String): List<Scored> {
         if (typed.length < MIN_SPLIT_LENGTH) return emptyList()
-        val logTotal = ln(dictionary.totalFrequency.toDouble() + 1)
-        return (1 until typed.length - 1).mapNotNull { i ->
-            val cost = model.missedSpace(typed[i]) ?: return@mapNotNull null
-            val left = knownForm(typed.substring(0, i)) ?: return@mapNotNull null
-            val right = knownForm(typed.substring(i + 1)) ?: return@mapNotNull null
-            val score = ln(left.frequency + 1.0) + ln(right.frequency + 1.0) - logTotal - COST_WEIGHT * cost
-            Scored(WordDictionary.Entry("${left.word} ${right.word}", 0, cost), score)
+        val splits = ArrayList<Scored>()
+        for (i in MIN_PART_LENGTH..typed.length - MIN_PART_LENGTH) {
+            split(typed.substring(0, i), typed.substring(i), ErrorModel.OMITTED_SPACE_COST)?.let(splits::add)
+            val replaced = model.missedSpace(typed[i]) ?: continue
+            split(typed.substring(0, i), typed.substring(i + 1), replaced)?.let(splits::add)
         }
+        return splits
+    }
+
+    private fun split(
+        left: String,
+        right: String,
+        cost: Float,
+    ): Scored? {
+        if (left.length < MIN_PART_LENGTH || right.length < MIN_PART_LENGTH) return null
+        val first = knownForm(left) ?: return null
+        val second = knownForm(right) ?: return null
+        val a = ln(first.frequency + 1.0)
+        val b = ln(second.frequency + 1.0)
+        val score = (min(a, b) + (a + b) / 2) / 2 - SPLIT_PENALTY - COST_WEIGHT * cost
+        return Scored(WordDictionary.Entry("${first.word} ${second.word}", 0, cost), score)
     }
 
     /** The word as typed if it exists, else its most frequent accented form, else a learned word. */
@@ -179,8 +199,12 @@ class Suggester(
         /** Shorter words are too ambiguous (and often chat abbreviations) to fix typos in. */
         private const val MIN_TYPO_LENGTH = 3
 
-        /** "ate" is not "a e": only words of 5+ letters are split at a missed space. */
-        private const val MIN_SPLIT_LENGTH = 5
+        /** Both words of a split need 2+ letters ("vio" is not "vi o"). */
+        private const val MIN_PART_LENGTH = 2
+        private const val MIN_SPLIT_LENGTH = 2 * MIN_PART_LENGTH
+
+        /** Two words typed together are less likely than either word alone. */
+        private const val SPLIT_PENALTY = 1.5
 
         /** One full edit is worth about e^4.5 ≈ 90× the frequency. */
         private const val COST_WEIGHT = 4.5

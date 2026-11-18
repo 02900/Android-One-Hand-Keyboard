@@ -36,6 +36,9 @@ class ErrorModel(
         const val SAME_CELL_COST = 0.5f
         const val MISSED_SPACE_COST = 0.5f
 
+        /** A space that was not typed at all (e.g. a tap that did not register). */
+        const val OMITTED_SPACE_COST = 0.5f
+
         /** Every substitution costs 1 (no keyboard knowledge). */
         val UNIFORM = ErrorModel(emptyMap())
 

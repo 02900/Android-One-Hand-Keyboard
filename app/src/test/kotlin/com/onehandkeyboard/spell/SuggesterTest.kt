@@ -72,6 +72,22 @@ class SuggesterTest {
     }
 
     @Test
+    fun `a space that was not typed at all is restored`() {
+        assertEquals("no puede", spanish.suggest("nopuede").autoCorrect)
+        assertEquals("méxico como", spanish.suggest("mexicocomo").autoCorrect)
+        assertEquals("bien bueno", spanish.suggest("bienbueno").autoCorrect)
+        assertEquals("don't know", english.suggest("dontknow").autoCorrect)
+    }
+
+    @Test
+    fun `a close call between a split and a one-word fix is only offered`() {
+        val suggestions = spanish.suggest("aydios")
+        assertNull("not forced to adiós", suggestions.autoCorrect)
+        val offered = suggestions.slots.mapNotNull { it?.text }
+        assertTrue(offered.toString(), "ay dios" in offered)
+    }
+
+    @Test
     fun `a missed space never beats a likely one-word typo`() {
         // Each of these has a split with an s/t/c in it ("est do", "con go", "than ks").
         assertEquals("estado", spanish.suggest("estsdo").autoCorrect)

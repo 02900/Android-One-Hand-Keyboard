@@ -24,9 +24,6 @@ class WordDictionary private constructor(
 
     val size: Int get() = keys.size
 
-    /** Sum of every frequency: turns a frequency into a probability. */
-    val totalFrequency: Long by lazy { frequencies.sumOf { it.sum() } }
-
     private val maxKeyLength = keys.maxOfOrNull { it.length } ?: 0
 
     /** True if [word] is in the list with exactly these letters and accents (case-insensitive). */
