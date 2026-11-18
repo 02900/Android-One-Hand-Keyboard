@@ -20,8 +20,8 @@ Teclado Android de una mano: una cuadrícula 4×4 (bloque de letras 3×3 + colum
 ```
 OneHandKeyboardService (InputMethodService)
  ├─ KeyboardView ............ Canvas: dibuja la cuadrícula, hit-testing por puntero,
- │                            animaciones, globo de vista previa, modo una mano,
- │                            accesibilidad (ExploreByTouchHelper)
+ │                            animaciones, globo de vista previa, barra de
+ │                            sugerencias, accesibilidad (ExploreByTouchHelper)
  ├─ GestureIntegration ...... lógica de gestos por puntero (tap/swipe, repetición de
  │                            borrar, trackpad en espacio, resize con long-press)
  │    └─ core:gesture ....... GestureTracker + SwipeResolver (puros, testeados)
@@ -40,7 +40,7 @@ OneHandKeyboardService (InputMethodService)
 ### Gestos de la columna de control
 | Tecla | Tap | Swipe / long-press |
 |---|---|---|
-| Capa (3) | ABC ↔ 123 | ↑ siguiente teclado · ← altura por defecto · ↓ modo una mano · long-press + arrastrar = altura |
+| Capa (3) | ABC ↔ 123 | ← altura por defecto · long-press + arrastrar = altura |
 | Mayúsculas (7) | una vez / doble tap = bloqueo | ↑ copiar todo · ↓ pegar |
 | Borrar (11) | borrar (mantener = repetir) | ← palabra · ↑ todo · → deshacer |
 | Espacio (12–14) | espacio (doble = ". ") | arrastrar ↔ = cursor · ↑/↓ = idioma |
@@ -52,6 +52,7 @@ OneHandKeyboardService (InputMethodService)
 - **Cómo corrige:** primero tildes faltantes (`cancion` → `canción`, `tenes` → `tenés`), después errores de tipeo (letras cambiadas, de más o de menos). Un swipe en la dirección equivocada dentro de la misma celda cuesta la mitad, porque es el error típico de este teclado.
 - **No se impone:** `⌫` justo después de una corrección devuelve lo que escribiste y aprende esa palabra; tocar la palabra entre comillas en la barra hace lo mismo. Una palabra desconocida que escribes dos veces sin corregir también queda aprendida.
 - **Dónde no actúa:** contraseñas, URL, email, números y campos que piden no sugerir. Los nombres (mayúscula en medio de la frase) y las palabras pegadas a números o símbolos no se corrigen. En campos de incógnito no aprende.
+- **Espacio fallado:** si el toque cae en la celda de arriba de la barra espaciadora (t, e, s en español; z, c en inglés), esa letra se toma como el espacio perdido cuando las dos mitades son palabras comunes: `enemexico` → `en méxico`, `lesscaen` → `les caen`. Un error de una sola palabra sigue teniendo prioridad, y `⌫` deshace la separación igual que cualquier corrección.
 - **Barra de sugerencias:** izquierda / centro / derecha; el centro es lo que se escribirá al poner espacio (en negrita si es una corrección).
 - **Privacidad:** todo es local, el teclado no tiene permiso de Internet. Las palabras aprendidas están en el almacenamiento privado de la app y se borran desde Ajustes → Escritura.
 - **Diccionarios:** `app/src/main/assets/dict/` (~48k palabras por idioma), generados con `tools/build_dictionary.py` a partir de [FrequencyWords](https://github.com/hermitdave/FrequencyWords) (CC BY-SA 4.0, ver `assets/dict/LICENSE.txt`).

@@ -2,7 +2,6 @@ package com.onehandkeyboard.spell
 
 import android.content.Context
 import android.util.Log
-import com.onehandkeyboard.actions.ActionConfig
 import com.onehandkeyboard.config.KeyboardConfigurationFactory
 import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
@@ -79,14 +78,8 @@ class SpellEngines
             Language.values().forEach { userDictionary(it).clear() }
         }
 
-        private fun errorModelFor(language: Language): ErrorModel {
-            val config = configurationFactory.getConfiguration(language, LayoutMode.LETTERS)
-            val cells =
-                config.cells.associate { cell ->
-                    cell.cellIndex to cell.actions.values.filterIsInstance<ActionConfig.Character>().map { it.char }
-                }
-            return ErrorModel.fromCells(cells)
-        }
+        private fun errorModelFor(language: Language): ErrorModel =
+            ErrorModel.fromLayout(configurationFactory.getConfiguration(language, LayoutMode.LETTERS))
 
         private fun assetName(language: Language) =
             when (language) {

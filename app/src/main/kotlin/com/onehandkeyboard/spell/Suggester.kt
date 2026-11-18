@@ -46,6 +46,9 @@ data class Suggestions(
  *
  * Only unknown words are ever autocorrected (neither in the dictionary nor learned): a valid
  * word such as "esta" is never replaced by "está", it is only offered in the strip.
+ *
+ * Besides accents and typos, it detects a missed space bar: a tap just above it types the
+ * letter of that cell, so "enemexico" is "en méxico" and "lesscaen" is "les caen".
  */
 class Suggester(
     private val dictionary: WordDictionary,
@@ -93,14 +96,40 @@ class Suggester(
         val score: Double,
     )
 
-    /** Accent variants (cost 0) and typo corrections, best first. */
+    /** Accent variants (cost 0), typo corrections and missed spaces, best first. */
     private fun rankedCorrections(typed: String): List<Scored> {
         val maxCost = if (typed.length <= SHORT_WORD) 1f else 2f
         val candidates = dictionary.variants(typed) + dictionary.search(typed, maxCost, model)
-        return candidates
-            .filter { !it.word.equals(typed, ignoreCase = true) }
-            .map { Scored(it, score(it.frequency, it.cost)) }
-            .sortedByDescending { it.score }
+        val words =
+            candidates
+                .filter { !it.word.equals(typed, ignoreCase = true) }
+                .map { Scored(it, score(it.frequency, it.cost)) }
+        return (words + missedSpaces(typed)).sortedByDescending { it.score }
+    }
+
+    /**
+     * Two words joined by the letter that a missed space bar typed ("en" + e + "méxico").
+     * Scored as two independent words, P(a)·P(b), so it only beats a single-word typo fix
+     * when both words are common; 0.2 % of simulated one-word typos come out as a split.
+     */
+    private fun missedSpaces(typed: String): List<Scored> {
+        if (typed.length < MIN_SPLIT_LENGTH) return emptyList()
+        val logTotal = ln(dictionary.totalFrequency.toDouble() + 1)
+        return (1 until typed.length - 1).mapNotNull { i ->
+            val cost = model.missedSpace(typed[i]) ?: return@mapNotNull null
+            val left = knownForm(typed.substring(0, i)) ?: return@mapNotNull null
+            val right = knownForm(typed.substring(i + 1)) ?: return@mapNotNull null
+            val score = ln(left.frequency + 1.0) + ln(right.frequency + 1.0) - logTotal - COST_WEIGHT * cost
+            Scored(WordDictionary.Entry("${left.word} ${right.word}", 0, cost), score)
+        }
+    }
+
+    /** The word as typed if it exists, else its most frequent accented form, else a learned word. */
+    private fun knownForm(part: String): WordDictionary.Entry? {
+        val forms = dictionary.variants(part)
+        return forms.firstOrNull { it.word.equals(part, ignoreCase = true) }
+            ?: forms.maxByOrNull { it.frequency }
+            ?: WordDictionary.Entry(part, LEARNED_FREQUENCY).takeIf { userDictionary?.isLearned(part) == true }
     }
 
     private fun completions(typed: String): List<Scored> {
@@ -149,6 +178,9 @@ class Suggester(
 
         /** Shorter words are too ambiguous (and often chat abbreviations) to fix typos in. */
         private const val MIN_TYPO_LENGTH = 3
+
+        /** "ate" is not "a e": only words of 5+ letters are split at a missed space. */
+        private const val MIN_SPLIT_LENGTH = 5
 
         /** One full edit is worth about e^4.5 ≈ 90× the frequency. */
         private const val COST_WEIGHT = 4.5

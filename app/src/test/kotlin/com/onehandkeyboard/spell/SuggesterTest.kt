@@ -1,6 +1,5 @@
 package com.onehandkeyboard.spell
 
-import com.onehandkeyboard.actions.ActionConfig
 import com.onehandkeyboard.config.KeyboardConfigurationFactory
 import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
@@ -17,12 +16,7 @@ class SuggesterTest {
         val asset = if (language == Language.SPANISH) "es" else "en"
         val dictionary = File("src/main/assets/dict/$asset.tsv").useLines { WordDictionary.parse(it) }
         val config = KeyboardConfigurationFactory().getConfiguration(language, LayoutMode.LETTERS)
-        val cells =
-            config.cells.associate {
-                    cell ->
-                cell.cellIndex to cell.actions.values.filterIsInstance<ActionConfig.Character>().map { it.char }
-            }
-        return Suggester(dictionary, UserDictionary(null), ErrorModel.fromCells(cells))
+        return Suggester(dictionary, UserDictionary(null), ErrorModel.fromLayout(config))
     }
 
     private val spanish by lazy { suggester(Language.SPANISH) }
@@ -65,6 +59,25 @@ class SuggesterTest {
         // p and b share a cell: "pueno" is one wrong-direction swipe away from "bueno".
         assertEquals("bueno", spanish.suggest("pueno").autoCorrect)
         assertEquals("the", english.suggest("teh").autoCorrect)
+    }
+
+    @Test
+    fun `a missed space bar that typed the letter above it is split into two words`() {
+        // The cells above the space bar are t, e, s (Spanish) and z, c (English).
+        assertEquals("en méxico", spanish.suggest("enemexico").autoCorrect)
+        assertEquals("les caen", spanish.suggest("lesscaen").autoCorrect)
+        assertEquals("hola como", spanish.suggest("holaecomo").autoCorrect)
+        assertEquals("En méxico", spanish.suggest("Enemexico").autoCorrect)
+        assertEquals("the best", english.suggest("thecbest").autoCorrect)
+    }
+
+    @Test
+    fun `a missed space never beats a likely one-word typo`() {
+        // Each of these has a split with an s/t/c in it ("est do", "con go", "than ks").
+        assertEquals("estado", spanish.suggest("estsdo").autoCorrect)
+        assertEquals("contigo", spanish.suggest("contgo").autoCorrect)
+        assertEquals("thanks", english.suggest("thanzks").autoCorrect)
+        assertNull("short words are not split", spanish.suggest("ate").autoCorrect)
     }
 
     @Test

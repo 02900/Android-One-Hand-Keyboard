@@ -232,6 +232,8 @@ da latencia y consumo mínimos, y animaciones más fáciles (todo es un valor in
 - [x] `⌫` justo después deshace la corrección y aprende la palabra (no se vuelve a corregir).
 - [x] Barra de sugerencias (alternativas, tildes ambiguas, palabra original).
 - [x] Aprendizaje de palabras repetidas; borrar lo aprendido desde ajustes.
+- [x] Espacio fallado: la letra de la celda sobre la barra espaciadora se convierte en el espacio (`enemexico` → `en méxico`).
+- [x] Se quitan el cambio de teclado (🌐) y el modo una mano de la tecla de capa: devolvían el teclado de Google por accidente y el panel lateral no se usaba.
 
 ---
 

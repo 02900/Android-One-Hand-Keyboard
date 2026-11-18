@@ -66,6 +66,25 @@ class AutoCorrectorTest {
     }
 
     @Test
+    fun `a missed space is split and backspace joins it back`() {
+        val words = WordDictionary.of(listOf("hola" to 300_000L, "cómo" to 200_000L, "como" to 900_000L))
+        val corrector =
+            AutoCorrector(
+                { Suggester(words, user, ErrorModel(emptyMap(), setOf('e'))) },
+                { user },
+                direct,
+                direct,
+            ).apply { startInput(FieldPolicy(suggestions = true, autoCorrect = true, learn = true)) }
+        text.append("holaecomo")
+        corrector.beforeSeparator(ic, " ")
+        text.append(" ")
+        assertEquals("hola como ", text.toString())
+
+        assertTrue(corrector.onBackspace(ic))
+        assertEquals("holaecomo ", text.toString())
+    }
+
+    @Test
     fun `backspace right after a correction restores the original once and learns it`() {
         typeWordAndSpace("cancion")
 
