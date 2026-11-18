@@ -14,7 +14,15 @@ An Android keyboard for typing with one hand: a 4×4 grid (3×3 letter block + c
 
 ## Install
 
-1. On the phone, download the APK from the [latest release](https://github.com/02900/Android-One-Hand-Keyboard/releases/latest) and install it.
+1. On the phone, download one of the two APKs from the [latest release](https://github.com/02900/Android-One-Hand-Keyboard/releases/latest) and install it:
+
+   | APK | Updates | Internet permission |
+   |---|---|---|
+   | `OneHandKeyboard-debug-<commit>.apk` (recommended) | **Automatic**: checks GitHub (and your PC on the local network) and installs new versions by itself | **Required**, only to look for and download updates |
+   | `OneHandKeyboard-release-<commit>.apk` | Manual: download and install a newer release by hand | Not used: the app has no network access at all |
+
+   They are separate apps and can be installed side by side.
+
 2. Open the app → **Teclado → Activar** (Keyboard → Enable), and enable it in the list of keyboards.
 3. In any text field, tap the keyboard icon and choose **OneHandKeyboard**.
 
@@ -31,7 +39,7 @@ An Android keyboard for typing with one hand: a 4×4 grid (3×3 letter block + c
 ## Privacy
 
 - Everything is processed on the phone: no telemetry, and what you type is never sent anywhere.
-- The release build has no network permission. The debug build (the published one) only uses it to look for updates on GitHub and on your PC on the local network.
+- The release APK has no network permission. The debug APK only uses it to look for updates on GitHub and on your PC on the local network.
 - Memes are only read from the folder you choose in the settings.
 
 ## License

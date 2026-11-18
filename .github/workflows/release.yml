@@ -1,7 +1,8 @@
 name: Release
 
-# Builds the APK signed with the fixed key and publishes it as the latest GitHub release, with the
-# update.json the app reads from releases/latest/download (see README → Actualizaciones).
+# Builds both APKs signed with the fixed key and publishes them as the latest GitHub release:
+# - debug: updates itself (needs internet); update.json describes it (see docs/UPDATES.md).
+# - release: no network permission, updated by installing a newer release by hand.
 on:
   push:
     branches: [ main ]
@@ -50,17 +51,20 @@ jobs:
         echo "$OHK_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
         echo "OHK_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
-    - name: Build the signed APK
+    - name: Build the signed APKs
       env:
         OHK_KEYSTORE_PASSWORD: ${{ secrets.OHK_KEYSTORE_PASSWORD }}
         OHK_KEY_ALIAS: ${{ secrets.OHK_KEY_ALIAS }}
         OHK_KEY_PASSWORD: ${{ secrets.OHK_KEY_PASSWORD }}
       run: |
         chmod +x gradlew
-        ./gradlew --console=plain assembleDebug
+        ./gradlew --console=plain assembleDebug assembleRelease
 
-    - name: Write update.json
-      run: python3 tools/serve_updates.py --no-build --no-serve --dir dist
+    - name: Collect the APKs and write update.json
+      run: |
+        python3 tools/serve_updates.py --no-build --no-serve --dir dist
+        cp app/build/outputs/apk/release/app-ime-release.apk "dist/OneHandKeyboard-release-$(git rev-parse --short HEAD).apk"
+        ls -l dist
 
     - name: Publish the release
       env:
@@ -68,12 +72,22 @@ jobs:
       run: |
         commit=$(git rev-parse --short HEAD)
         if [ "$GITHUB_REF_TYPE" = "tag" ]; then tag="$GITHUB_REF_NAME"; else tag="build-$commit"; fi
-        notes="Build $commit: $(git log -1 --format=%s)"
+        {
+          echo "Build \`$commit\`: $(git log -1 --format=%s)"
+          echo
+          echo "| APK | Updates | Internet permission |"
+          echo "|---|---|---|"
+          echo "| \`OneHandKeyboard-debug-$commit.apk\` | Automatic, from GitHub or a PC on the local network | Required |"
+          echo "| \`OneHandKeyboard-release-$commit.apk\` | Manual: install a newer release by hand | Not used |"
+          echo
+          echo "They are separate apps (\`com.onehandkeyboard.debug\` and \`com.onehandkeyboard\`) and can be installed side by side."
+        } > "$RUNNER_TEMP/notes.md"
         if gh release view "$tag" > /dev/null 2>&1; then
           gh release upload "$tag" dist/* --clobber
+          gh release edit "$tag" --notes-file "$RUNNER_TEMP/notes.md"
         else
           gh release create "$tag" dist/* --target "$GITHUB_SHA" --title "One Hand Keyboard $tag" \
-            --notes "$notes" --latest
+            --notes-file "$RUNNER_TEMP/notes.md" --latest
         fi
 
     - name: Remove the signing key

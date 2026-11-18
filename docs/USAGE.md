@@ -4,7 +4,7 @@ The app's screens are in Spanish, so on-screen labels are quoted in Spanish belo
 
 ## Install and enable
 
-1. On the phone, open the [latest release](https://github.com/02900/Android-One-Hand-Keyboard/releases/latest) and install the APK. If you had a build signed with a different key, uninstall it first.
+1. On the phone, open the [latest release](https://github.com/02900/Android-One-Hand-Keyboard/releases/latest) and install one of the APKs: **debug** updates itself but needs internet permission, **release** has no network access and is updated by hand (see [UPDATES.md](UPDATES.md)). If you had a build signed with a different key, uninstall it first.
 2. In the app, tap **Teclado → Activar** (Keyboard → Enable), or go to **Settings → System → Languages & input → On-screen keyboard**, and enable **OneHandKeyboard**.
 3. In any text field, tap the keyboard icon and choose **OneHandKeyboard**.
 
@@ -67,5 +67,5 @@ Memes/
 
 ## Updates and sharing
 
-- **Versión → Actualizar** (version → update) checks for a new build when the settings open. With **Actualizar sola** (update by itself, Android 12+), after the first confirmed update the next ones install on their own when the keyboard hides. Details in [UPDATES.md](UPDATES.md).
-- **Compartir app → Compartir** (share app) sends the installed APK as a file (Telegram, WhatsApp…). Whoever installs it also gets the GitHub updates.
+- Debug APK only (the release APK has no network access, so these rows don't appear): **Versión → Actualizar** (version → update) checks for a new build when the settings open. With **Actualizar sola** (update by itself, Android 12+), after the first confirmed update the next ones install on their own when the keyboard hides. Details in [UPDATES.md](UPDATES.md).
+- **Compartir app → Compartir** (share app) sends the installed APK as a file (Telegram, WhatsApp…). If it is the debug APK, whoever installs it also gets the GitHub updates.
