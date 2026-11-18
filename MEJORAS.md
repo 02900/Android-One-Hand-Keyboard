@@ -227,6 +227,12 @@ da latencia y consumo mínimos, y animaciones más fáciles (todo es un valor in
 - [x] 4.5 DSL de configuración con validación y tests de cobertura de alfabeto.
 - [x] 3.5, 3.8 y 3.9: idioma, cambio de IME y accesibilidad.
 
+### Después de las fases — Autocorrector
+- [x] Corrección de palabras y tildes al cerrar la palabra, solo para palabras desconocidas.
+- [x] `⌫` justo después deshace la corrección y aprende la palabra (no se vuelve a corregir).
+- [x] Barra de sugerencias (alternativas, tildes ambiguas, palabra original).
+- [x] Aprendizaje de palabras repetidas; borrar lo aprendido desde ajustes.
+
 ---
 
 ## 6. Métricas para saber si mejoró

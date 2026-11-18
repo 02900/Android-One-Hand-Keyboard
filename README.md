@@ -13,6 +13,7 @@ Teclado Android de una mano: una cuadrícula 4×4 (bloque de letras 3×3 + colum
 - **Layouts Dinámicos**: Intercambio entre Letters/Symbols y modos de mayúsculas
 - **Gestos Simplificados**: Tap y Swipe en 8 direcciones con detección por desplazamiento
 - **Sistema de Temas**: 5 tokens esenciales con colores diferenciados para grupos de celdas
+- **Autocorrector sin imponerse**: corrige palabras y tildes al cerrar la palabra, con barra de sugerencias; borrar justo después deshace la corrección y el teclado aprende la palabra
 
 ## 🏗️ Arquitectura
 
@@ -44,6 +45,16 @@ OneHandKeyboardService (InputMethodService)
 | Borrar (11) | borrar (mantener = repetir) | ← palabra · ↑ todo · → deshacer |
 | Espacio (12–14) | espacio (doble = ". ") | arrastrar ↔ = cursor · ↑/↓ = idioma |
 | Enter (15) | acción del campo (↵ 🔍 ➤ ✓) | → enviar |
+
+## ✍️ Autocorrector
+
+- **Cuándo corrige:** solo al cerrar una palabra (espacio o `. , ; : ? !`) y solo palabras que **no existen** ni en el diccionario ni entre las aprendidas. Las parejas válidas (`esta/está`, `como/cómo`, `si/sí`) nunca se cambian solas: aparecen en la barra.
+- **Cómo corrige:** primero tildes faltantes (`cancion` → `canción`, `tenes` → `tenés`), después errores de tipeo (letras cambiadas, de más o de menos). Un swipe en la dirección equivocada dentro de la misma celda cuesta la mitad, porque es el error típico de este teclado.
+- **No se impone:** `⌫` justo después de una corrección devuelve lo que escribiste y aprende esa palabra; tocar la palabra entre comillas en la barra hace lo mismo. Una palabra desconocida que escribes dos veces sin corregir también queda aprendida.
+- **Dónde no actúa:** contraseñas, URL, email, números y campos que piden no sugerir. Los nombres (mayúscula en medio de la frase) y las palabras pegadas a números o símbolos no se corrigen. En campos de incógnito no aprende.
+- **Barra de sugerencias:** izquierda / centro / derecha; el centro es lo que se escribirá al poner espacio (en negrita si es una corrección).
+- **Privacidad:** todo es local, el teclado no tiene permiso de Internet. Las palabras aprendidas están en el almacenamiento privado de la app y se borran desde Ajustes → Escritura.
+- **Diccionarios:** `app/src/main/assets/dict/` (~48k palabras por idioma), generados con `tools/build_dictionary.py` a partir de [FrequencyWords](https://github.com/hermitdave/FrequencyWords) (CC BY-SA 4.0, ver `assets/dict/LICENSE.txt`).
 
 ## 🛠️ Stack Tecnológico
 
@@ -324,6 +335,9 @@ adb install app/build/outputs/apk/debug/app-ime-debug.apk
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+
+Los diccionarios del autocorrector (`app/src/main/assets/dict/*.tsv`) derivan de FrequencyWords
+y se distribuyen bajo CC BY-SA 4.0 (ver [`assets/dict/LICENSE.txt`](app/src/main/assets/dict/LICENSE.txt)).
 
 ## 🔒 Privacidad
 
