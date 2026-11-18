@@ -1,430 +1,319 @@
 package com.onehandkeyboard
 
-import android.content.Context
-import android.util.Log
-import android.view.MotionEvent
-import android.widget.LinearLayout
+import android.os.Handler
+import android.os.Looper
+import android.view.View
+import android.view.ViewConfiguration
 import com.onehandkeyboard.actions.ActionConfig
-import com.onehandkeyboard.config.*
-import com.onehandkeyboard.core.domain.model.Cell
+import com.onehandkeyboard.actions.toKeyboardOutput
 import com.onehandkeyboard.core.domain.model.Direction
-import com.onehandkeyboard.gestures.GestureAction
-import com.onehandkeyboard.core.domain.model.GestureConfig
 import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
-import com.onehandkeyboard.core.domain.model.LayoutType
-import com.onehandkeyboard.core.gesture.CellBounds
-import com.onehandkeyboard.core.gesture.GestureDetector
-import com.onehandkeyboard.enums.Language
-import com.onehandkeyboard.enums.LayoutMode
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
+import com.onehandkeyboard.core.gesture.GestureTracker
+import com.onehandkeyboard.gestures.GestureAction
+import com.onehandkeyboard.ui.KeyFeedback
+import kotlin.math.abs
+import kotlin.math.max
 
 /**
- * Handles gesture integration and processing for the OneHandKeyboard.
+ * Gesture logic of the keyboard keys, fed one pointer at a time by the view layer.
  *
- * This class centralizes all gesture-related logic including:
- * - Gesture system initialization with DefaultGestureDetector
- * - Cell bounds calculation for 3x3 grid layout
- * - Domain keyboard layout creation from configuration
- * - Gesture processing and event handling via coroutines
- * - Direction detection and mapping to keyboard actions
- * - Integration between UI touch events and gesture detection
+ * - One [GestureTracker] track per pointer: roll-over typing never mixes fingers.
+ * - Swipe threshold scales with the key size (and never goes below the system touch slop).
+ * - Swipes snap to the closest configured direction, or fall back to a tap.
+ * - Instant feedback on pointer down (pressed state, haptic, optional sound) and live
+ *   direction preview through [CellListener.onDirectionChanged].
+ * - Holding backspace repeats with acceleration.
+ * - Space bar: horizontal drag moves the cursor (trackpad), vertical swipe switches language.
+ * - Long-press on the layout key starts a live height resize (vertical drag).
  *
- * Extracted from OneHandKeyboardService for better separation of concerns.
- * Uses manual initialization due to Context and callback dependencies.
+ * Privacy: nothing that reveals what the user types is logged.
  */
 class GestureIntegration(
-    private val context: Context,
+    context: android.content.Context,
     private val layoutManager: KeyboardLayoutManager,
-    private val gestureDetector: GestureDetector,
+    private val feedback: KeyFeedback,
+    private val tracker: GestureTracker = GestureTracker(),
 ) {
-    // Estado para procesamiento directo de gestos
-    private var gestureStartTime = 0L
-    private var gestureStartX = 0f
-    private var gestureStartY = 0f
-    private var gestureOriginCellIndex = -1 // Celda donde inició el gesto
-    private val swipeThreshold = 50f // pixels
+    /** UI hooks implemented by the view layer. */
+    interface CellListener {
+        fun onCellPressed(cellIndex: Int)
 
-    // Sistema de gestos avanzado
-    private var currentKeyboardLayout: com.onehandkeyboard.core.domain.model.KeyboardLayout? = null
-    private var cellBounds: Array<CellBounds> = emptyArray()
-    private var gestureJob: Job? = null
-    private val gestureScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+        fun onCellReleased(cellIndex: Int)
 
-    // ============================================================================
-    // REGION: GESTURE SYSTEM INITIALIZATION
-    // ============================================================================
+        fun onDirectionChanged(
+            cellIndex: Int,
+            direction: Direction,
+        ) {}
 
-    /**
-     * Inicializa el sistema de gestos avanzado
-     */
-    fun initializeGestureSystem() {
-        Log.d("OneHandKeyboard", "🔥 Initializing advanced gesture system...")
+        fun onResizeStarted() {}
 
-        // Crear layout del dominio
-        currentKeyboardLayout = createDomainKeyboardLayout()
+        /** [totalDyPx]: vertical drag on screen since the resize started (negative = up = taller). */
+        fun onResizeDrag(totalDyPx: Float) {}
 
-        // Configurar el detector de gestos con configuración por defecto
-        val config = GestureConfig()
-        gestureDetector.updateConfig(config)
-        Log.d("OneHandKeyboard", "🔥 Gesture detector configured with: $config")
-
-        // Iniciar recolección de gestos
-        gestureJob?.cancel()
-        gestureJob =
-            gestureScope.launch {
-                try {
-                    gestureDetector.gestures.collect { gesture ->
-                        Log.d("OneHandKeyboard", "🔥 GESTURE DETECTED: $gesture")
-                        // TODO: Implement gesture handling when needed
-                    }
-                } catch (e: Exception) {
-                    Log.e("OneHandKeyboard", "🔥 Error in gesture collection", e)
-                }
-            }
-
-        Log.d("OneHandKeyboard", "🔥 Advanced gesture system initialized successfully")
+        fun onResizeEnded() {}
     }
 
-    // ============================================================================
-    // REGION: CELL BOUNDS CALCULATION
-    // ============================================================================
+    private enum class Mode { NORMAL, SPACE, LAYOUT_KEY }
 
-    /**
-     * Calcula los bounds de las celdas para el detector de gestos
-     */
-    fun calculateCellBounds(keyboardView: LinearLayout?) {
-        if (keyboardView == null) {
-            Log.w("OneHandKeyboard", "🔥 Cannot calculate bounds - keyboardView is null")
-            return
-        }
-
-        Log.d("OneHandKeyboard", "🔥 Starting cell bounds calculation...")
-
-        // Buscar el gridContainer (segundo hijo del LinearLayout principal)
-        val mainRow = keyboardView.getChildAt(1) as? LinearLayout
-        if (mainRow == null) {
-            Log.e("OneHandKeyboard", "🔥 Cannot find mainRow")
-            return
-        }
-
-        val gridContainer = mainRow.getChildAt(0) as? LinearLayout
-        if (gridContainer == null) {
-            Log.e("OneHandKeyboard", "🔥 Cannot find gridContainer")
-            return
-        }
-
-        val bounds = mutableListOf<CellBounds>()
-
-        // Iterar por las 3 filas
-        for (row in 0..2) {
-            val rowLayout = gridContainer.getChildAt(row) as? LinearLayout
-            if (rowLayout == null) {
-                Log.w("OneHandKeyboard", "🔥 Row $row is null")
-                continue
-            }
-
-            // Iterar por las 3 columnas
-            for (col in 0..2) {
-                val cellIndex = row * 3 + col
-                val cellView = rowLayout.getChildAt(col)
-
-                if (cellView != null) {
-                    val location = IntArray(2)
-                    cellView.getLocationOnScreen(location)
-
-                    val cellBounds =
-                        CellBounds(
-                            cellIndex = cellIndex,
-                            left = location[0].toFloat(),
-                            top = location[1].toFloat(),
-                            right = (location[0] + cellView.width).toFloat(),
-                            bottom = (location[1] + cellView.height).toFloat(),
-                        )
-
-                    bounds.add(cellBounds)
-                    Log.d("OneHandKeyboard", "🔥 Cell $cellIndex bounds: $cellBounds")
-                } else {
-                    Log.w("OneHandKeyboard", "🔥 Cell view at [$row][$col] is null")
-                }
-            }
-        }
-
-        cellBounds = bounds.toTypedArray()
-
-        Log.d("OneHandKeyboard", "🔥 Cell bounds calculation completed. Total bounds: ${cellBounds.size}")
-    }
-
-    // ============================================================================
-    // REGION: DOMAIN KEYBOARD LAYOUT CREATION
-    // ============================================================================
-
-    /**
-     * Crea el layout del dominio según el idioma y modo actual usando configuración externa
-     */
-    fun createDomainKeyboardLayout(): com.onehandkeyboard.core.domain.model.KeyboardLayout {
-        // TODO: Use external configuration instead of hardcoded layouts
-        // For now, return a simple layout to avoid compilation errors
-        val cells =
-            (0..8).map { index ->
-                Cell.create(
-                    index = index,
-                    label = "Cell$index",
-                    primaryChars = listOf('a'),
-                    secondaryChars = emptyMap(),
-                )
-            }
-
-        return com.onehandkeyboard.core.domain.model.KeyboardLayout(
-            id = "${layoutManager.currentLanguage.name.lowercase()}_${layoutManager.currentMode.name.lowercase()}",
-            name = "${layoutManager.currentLanguage.name} ${layoutManager.currentMode.name}",
-            description = "Current active layout: ${layoutManager.currentLanguage.name} ${layoutManager.currentMode.name}",
-            cells = cells,
-            type =
-                when (layoutManager.currentMode) {
-                    LayoutMode.LETTERS -> LayoutType.LETTERS
-                    LayoutMode.SYMBOLS -> LayoutType.NUMBERS
-                },
-            locale =
-                when (layoutManager.currentLanguage) {
-                    Language.SPANISH -> "es-MX"
-                    Language.ENGLISH -> "en-US"
-                },
-        )
-    }
-
-    // TODO: Remove hardcoded cell creation functions - use external configuration instead
-
-    // ============================================================================
-    // REGION: GESTURE PROCESSING
-    // ============================================================================
-
-    /**
-     * Procesa eventos de gesto determinando tap/swipe solo en ACTION_UP
-     * Permite gestos que inicien en una celda y terminen fuera de ella
-     */
-    fun processGestureEvent(
-        event: MotionEvent,
-        cellIndex: Int,
-        onGestureProcessed: (KeyboardOutput?) -> Unit,
+    private class PointerState(
+        val mode: Mode,
+        val view: View,
     ) {
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {
-                gestureStartTime = System.currentTimeMillis()
-                gestureStartX = event.rawX // Usar coordenadas absolutas de pantalla
-                gestureStartY = event.rawY
-                gestureOriginCellIndex = cellIndex // Recordar celda de origen
-                Log.d("OneHandKeyboard", "🎯 ACTION_DOWN on cell $cellIndex at screen coords (${event.rawX}, ${event.rawY})")
+        var trackpadActive = false
+        var trackpadAnchorX = 0f
+        var verticalSwipe: Direction = Direction.CENTER
+        var resizing = false
+        var resizeStartScreenY = 0f
+        var lastScreenY = 0f
+    }
+
+    var onOutput: (KeyboardOutput) -> Unit = {}
+    var cellListener: CellListener? = null
+
+    private val density = context.resources.displayMetrics.density
+    private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop.toFloat()
+    private val longPressTimeout = ViewConfiguration.getLongPressTimeout().toLong()
+    private val handler = Handler(Looper.getMainLooper())
+    private val pointers = HashMap<Int, PointerState>()
+
+    private var repeatPointerId = NO_POINTER
+    private var repeatFired = false
+    private var repeatInterval = REPEAT_START_INTERVAL_MS
+    private val repeatRunnable =
+        object : Runnable {
+            override fun run() {
+                repeatFired = true
+                onOutput(KeyboardOutput.Action(KeyAction.Backspace))
+                repeatInterval = max(REPEAT_MIN_INTERVAL_MS, repeatInterval - REPEAT_ACCELERATION_MS)
+                handler.postDelayed(this, repeatInterval)
             }
+        }
 
-            MotionEvent.ACTION_MOVE -> {
-                // Solo registrar el movimiento, no procesar gestos aún
-                val deltaX = event.rawX - gestureStartX
-                val deltaY = event.rawY - gestureStartY
-                val distance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
-                Log.d("OneHandKeyboard", "🎯 ACTION_MOVE: distance=${distance}px from origin cell $gestureOriginCellIndex")
+    private var longPressPointerId = NO_POINTER
+    private val longPressRunnable = Runnable { startResize(longPressPointerId) }
+
+    /**
+     * A finger lands on [cellIndex]. Coordinates are in the view; [screenY] is the same point
+     * in screen coordinates (used by the resize, because the view moves while it grows).
+     */
+    @Suppress("LongParameterList")
+    fun pointerDown(
+        view: View,
+        pointerId: Int,
+        cellIndex: Int,
+        x: Float,
+        y: Float,
+        screenY: Float,
+        time: Long,
+        cellMinSizePx: Float,
+    ) {
+        val cell = layoutManager.getCellConfiguration(cellIndex)
+        val tapAction = cell?.getActionFor(GestureType.TAP, Direction.CENTER)
+        val mode =
+            when (tapAction) {
+                ActionConfig.Space -> Mode.SPACE
+                ActionConfig.SwitchLayout, ActionConfig.ShowNumbers, ActionConfig.ShowLetters -> Mode.LAYOUT_KEY
+                else -> Mode.NORMAL
             }
+        pointers[pointerId] = PointerState(mode, view).apply { lastScreenY = screenY }
+        // The space bar handles its own directions (trackpad / language); other keys snap.
+        val configured = if (mode == Mode.SPACE) null else cell?.getDirectionsFor(GestureType.SWIPE)?.toSet().orEmpty()
+        tracker.down(
+            pointerId = pointerId,
+            cellIndex = cellIndex,
+            x = x,
+            y = y,
+            time = time,
+            thresholdPx = max(touchSlop * SLOP_MULTIPLIER, cellMinSizePx * THRESHOLD_CELL_RATIO),
+            configured = configured,
+        )
+        cellListener?.onCellPressed(cellIndex)
 
-            MotionEvent.ACTION_UP -> {
-                val currentTime = System.currentTimeMillis()
-                val deltaTime = currentTime - gestureStartTime
-                val deltaX = event.rawX - gestureStartX // Desplazamiento total desde inicio
-                val deltaY = event.rawY - gestureStartY
-                val distance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
+        feedback.keyDown(view, soundFor(tapAction))
+        if (tapAction == ActionConfig.Backspace) startRepeat(pointerId)
+        if (mode == Mode.LAYOUT_KEY) scheduleLongPress(pointerId)
+    }
 
-                Log.d("OneHandKeyboard", "🎯 ACTION_UP: total displacement=${distance}px from cell $gestureOriginCellIndex to current position")
+    fun pointerMove(
+        pointerId: Int,
+        x: Float,
+        y: Float,
+        screenY: Float,
+    ) {
+        val state = pointers[pointerId] ?: return
+        state.lastScreenY = screenY
+        when {
+            state.resizing -> cellListener?.onResizeDrag(screenY - state.resizeStartScreenY)
+            state.mode == Mode.SPACE -> moveOnSpace(pointerId, state, x, y)
+            else -> moveOnKey(pointerId, state, x, y)
+        }
+    }
 
-                // Determinar gesto basado en desplazamiento total
-                if (distance < swipeThreshold) {
-                    Log.d("OneHandKeyboard", "🎯 TAP detected on origin cell $gestureOriginCellIndex (displacement: ${distance}px)")
-                    handleGestureAction(gestureOriginCellIndex, GestureType.TAP, Direction.CENTER, onGestureProcessed)
-                } else {
-                    // Swipe: aplicar dirección a la celda de origen
-                    val direction = getSwipeDirection(deltaX, deltaY)
-                    Log.d("OneHandKeyboard", "🎯 SWIPE detected from origin cell $gestureOriginCellIndex, direction: $direction (displacement: ${distance}px)")
-                    handleGestureAction(gestureOriginCellIndex, GestureType.SWIPE, direction, onGestureProcessed)
+    fun pointerUp(
+        pointerId: Int,
+        x: Float,
+        y: Float,
+        time: Long,
+    ) {
+        val state = pointers.remove(pointerId)
+        val result = tracker.up(pointerId, x, y, time) ?: return
+        val consumedByRepeat = pointerId == repeatPointerId && repeatFired
+        if (pointerId == repeatPointerId) stopRepeat()
+        if (pointerId == longPressPointerId) cancelLongPress()
+        cellListener?.onCellReleased(result.cellIndex)
+
+        when {
+            state?.resizing == true -> cellListener?.onResizeEnded()
+            state?.mode == Mode.SPACE -> {
+                when {
+                    state.trackpadActive -> Unit
+                    state.verticalSwipe != Direction.CENTER -> onOutput(KeyboardOutput.Action(KeyAction.SwitchLanguage))
+                    else -> perform(result.cellIndex, Direction.CENTER)
                 }
             }
+            consumedByRepeat && result.direction == Direction.CENTER -> Unit
+            else -> perform(result.cellIndex, result.direction)
         }
     }
 
-    /**
-     * Determina la dirección del swipe basado en deltaX y deltaY
-     */
-    private fun getSwipeDirection(
-        deltaX: Float,
-        deltaY: Float,
-    ): Direction {
-        val absX = kotlin.math.abs(deltaX)
-        val absY = kotlin.math.abs(deltaY)
-
-        return when {
-            absX > absY * 2 -> if (deltaX > 0) Direction.E else Direction.W
-            absY > absX * 2 -> if (deltaY > 0) Direction.S else Direction.N
-            deltaX > 0 && deltaY < 0 -> Direction.NE
-            deltaX > 0 && deltaY > 0 -> Direction.SE
-            deltaX < 0 && deltaY > 0 -> Direction.SW
-            deltaX < 0 && deltaY < 0 -> Direction.NW
-            else -> Direction.CENTER
-        }
+    /** Emits the action of a tap ([Direction.CENTER]) or swipe; also used by accessibility. */
+    fun perform(
+        cellIndex: Int,
+        direction: Direction,
+    ) {
+        val gestureType = if (direction == Direction.CENTER) GestureType.TAP else GestureType.SWIPE
+        resolveOutput(cellIndex, gestureType, direction)?.let(onOutput)
     }
 
-    // ============================================================================
-    // REGION: GESTURE HANDLING
-    // ============================================================================
+    /** Drops every in-flight gesture (e.g. when the keyboard view is replaced or hidden). */
+    fun cancelAll() {
+        tracker.activePointers.toList().forEach { pointerId ->
+            tracker.track(pointerId)?.let { cellListener?.onCellReleased(it.cellIndex) }
+        }
+        if (pointers.values.any { it.resizing }) cellListener?.onResizeEnded()
+        tracker.cancelAll()
+        pointers.clear()
+        stopRepeat()
+        cancelLongPress()
+    }
 
-    /**
-     * Maneja una acción de gesto detectada usando configuración externa
-     */
-    fun handleGestureAction(
+    /** Maps a gesture on a cell to its output using the active configuration. */
+    fun resolveOutput(
         cellIndex: Int,
         gestureType: GestureType,
         direction: Direction,
-        onGestureProcessed: (KeyboardOutput?) -> Unit,
-    ) {
-        Log.d("OneHandKeyboard", "🎯 Processing direct gesture: $gestureType + $direction on cell $cellIndex")
-
-        // Validar combinación de gesto y dirección
-        val isValidCombination =
-            when (gestureType) {
-                GestureType.TAP -> direction == Direction.CENTER
-                GestureType.SWIPE -> direction != Direction.CENTER
-                GestureType.DRAG, GestureType.FLICK -> direction != Direction.CENTER
-            }
-
-        if (!isValidCombination) {
-            Log.e("OneHandKeyboard", "🎯 INVALID GESTURE: $gestureType cannot be performed in direction $direction")
-            onGestureProcessed(null)
-            return
-        }
-
-        // Buscar la configuración de la celda
-        val cellConfig = layoutManager.keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
-        if (cellConfig == null) {
-            Log.w("OneHandKeyboard", "🎯 No configuration found for cell $cellIndex")
-            onGestureProcessed(null)
-            return
-        }
-
-        // Buscar la acción configurada para este gesto
-        val actionConfig = cellConfig.actions[GestureAction(gestureType, direction)]
-        if (actionConfig == null) {
-            Log.d("OneHandKeyboard", "🎯 No action configured for $gestureType + $direction on cell $cellIndex")
-            onGestureProcessed(null)
-            return
-        }
-
-        Log.d("OneHandKeyboard", "🎯 Found action config: $actionConfig")
-
-        // Convertir a KeyboardOutput
-        val output =
-            when (actionConfig) {
-                is ActionConfig.Character -> {
-                    val char = layoutManager.applyCase(actionConfig.char.toString())
-                    Log.d("OneHandKeyboard", "🎯 SENDING CHARACTER: '$char' (original: '${actionConfig.char}')")
-                    KeyboardOutput.Character(char)
-                }
-                is ActionConfig.Action -> {
-                    Log.d("OneHandKeyboard", "🎯 EXECUTING ACTION: ${actionConfig.keyAction}")
-                    KeyboardOutput.Action(actionConfig.keyAction)
-                }
-                is ActionConfig.Text -> {
-                    val text = layoutManager.applyCase(actionConfig.text)
-                    Log.d("OneHandKeyboard", "🎯 SENDING TEXT: '$text'")
-                    KeyboardOutput.Character(text)
-                }
-                is ActionConfig.SwitchLayout -> {
-                    KeyboardOutput.Action(KeyAction.SwitchToNumbers) // This will trigger UI refresh
-                }
-                is ActionConfig.SwitchCase -> {
-                    KeyboardOutput.Action(KeyAction.ToggleCase) // This will trigger UI refresh
-                }
-                is ActionConfig.Backspace -> {
-                    KeyboardOutput.Action(KeyAction.Backspace)
-                }
-                is ActionConfig.Space -> {
-                    KeyboardOutput.Action(KeyAction.Space)
-                }
-                is ActionConfig.Enter -> {
-                    KeyboardOutput.Action(KeyAction.Enter)
-                }
-                is ActionConfig.Submit -> {
-                    KeyboardOutput.Action(KeyAction.Submit)
-                }
-                is ActionConfig.ShowNumbers -> {
-                    KeyboardOutput.Action(KeyAction.SwitchToNumbers) // This will trigger UI refresh
-                }
-                is ActionConfig.ShowLetters -> {
-                    KeyboardOutput.Action(KeyAction.SwitchToLetters) // This will trigger UI refresh
-                }
-                is ActionConfig.Paste -> {
-                    KeyboardOutput.Action(KeyAction.Paste)
-                }
-                is ActionConfig.CopyAll -> {
-                    KeyboardOutput.Action(KeyAction.CopyAll)
-                }
-                is ActionConfig.DeleteAll -> {
-                    KeyboardOutput.Action(KeyAction.DeleteAll)
-                }
-                is ActionConfig.IncreaseCellHeight -> {
-                    KeyboardOutput.Action(KeyAction.IncreaseCellHeight)
-                }
-                is ActionConfig.DecreaseCellHeight -> {
-                    KeyboardOutput.Action(KeyAction.DecreaseCellHeight)
-                }
-                is ActionConfig.ResetCellHeight -> {
-                    KeyboardOutput.Action(KeyAction.ResetCellHeight)
-                }
-                is ActionConfig.CustomFunction -> {
-                    Log.d("OneHandKeyboard", "🎯 CUSTOM FUNCTION: ${actionConfig.functionId}")
-                    // Process custom function here or delegate to ActionProcessor
-                    null
-                }
-            }
-
-        output?.let { onGestureProcessed(it) }
+    ): KeyboardOutput? {
+        if (!GestureAction.isValidGestureAction(gestureType, direction)) return null
+        val cell = layoutManager.getCellConfiguration(cellIndex) ?: return null
+        val actionConfig = cell.getActionFor(gestureType, direction) ?: return null
+        return actionConfig.toKeyboardOutput(layoutManager::transformChar)
     }
 
-    // TODO: Implement handleGesture function when needed
-
-    /**
-     * Procesa gestos directamente desde eventos de toque de botones
-     * Este método es un wrapper que conecta los eventos de toque con el procesamiento completo
-     */
-    fun processGestureDirectly(
-        event: MotionEvent,
-        cellIndex: Int,
-        onGestureProcessed: (KeyboardOutput?) -> Unit = {},
+    private fun moveOnKey(
+        pointerId: Int,
+        state: PointerState,
+        x: Float,
+        y: Float,
     ) {
-        Log.d("OneHandKeyboard", "🎯 Processing gesture directly on cell $cellIndex: ${event.action}")
+        val changed = tracker.move(pointerId, x, y) ?: return
+        val track = tracker.track(pointerId) ?: return
+        if (changed != Direction.CENTER) {
+            if (pointerId == repeatPointerId) stopRepeat()
+            if (pointerId == longPressPointerId) cancelLongPress()
+            feedback.directionTick(state.view)
+        }
+        cellListener?.onDirectionChanged(track.cellIndex, changed)
+    }
 
-        // Usar el método existente de procesamiento de gestos
-        processGestureEvent(event, cellIndex) { keyboardOutput ->
-            Log.d("OneHandKeyboard", "🎯 Gesture processing result: $keyboardOutput")
-
-            // Pasar el resultado al callback para que sea procesado externamente
-            onGestureProcessed(keyboardOutput)
+    private fun moveOnSpace(
+        pointerId: Int,
+        state: PointerState,
+        x: Float,
+        y: Float,
+    ) {
+        val track = tracker.track(pointerId) ?: return
+        val dx = x - track.startX
+        val dy = y - track.startY
+        if (!state.trackpadActive) {
+            val raw = tracker.move(pointerId, x, y)
+            val horizontal = abs(dx) >= track.thresholdPx && abs(dx) > abs(dy)
+            if (horizontal) {
+                state.trackpadActive = true
+                state.trackpadAnchorX = x
+                state.verticalSwipe = Direction.CENTER
+                feedback.directionTick(state.view)
+                return
+            }
+            if (raw != null) {
+                state.verticalSwipe = if (raw == Direction.N || raw == Direction.S) raw else Direction.CENTER
+                if (state.verticalSwipe != Direction.CENTER) feedback.directionTick(state.view)
+            }
+            return
+        }
+        val stepPx = TRACKPAD_STEP_DP * density
+        val steps = ((x - state.trackpadAnchorX) / stepPx).toInt()
+        if (steps != 0) {
+            state.trackpadAnchorX += steps * stepPx
+            val action = if (steps < 0) KeyAction.CursorLeft else KeyAction.CursorRight
+            repeat(abs(steps)) { onOutput(KeyboardOutput.Action(action)) }
         }
     }
 
-    // ============================================================================
-    // REGION: CLEANUP
-    // ============================================================================
+    private fun startRepeat(pointerId: Int) {
+        stopRepeat()
+        repeatPointerId = pointerId
+        repeatInterval = REPEAT_START_INTERVAL_MS
+        handler.postDelayed(repeatRunnable, REPEAT_INITIAL_DELAY_MS)
+    }
 
-    /**
-     * Limpia recursos del sistema de gestos
-     */
+    private fun stopRepeat() {
+        handler.removeCallbacks(repeatRunnable)
+        repeatPointerId = NO_POINTER
+        repeatFired = false
+    }
+
+    private fun scheduleLongPress(pointerId: Int) {
+        cancelLongPress()
+        longPressPointerId = pointerId
+        handler.postDelayed(longPressRunnable, longPressTimeout)
+    }
+
+    private fun cancelLongPress() {
+        handler.removeCallbacks(longPressRunnable)
+        longPressPointerId = NO_POINTER
+    }
+
+    private fun startResize(pointerId: Int) {
+        val state = pointers[pointerId] ?: return
+        longPressPointerId = NO_POINTER
+        state.resizing = true
+        state.resizeStartScreenY = state.lastScreenY
+        feedback.longPress(state.view)
+        cellListener?.onResizeStarted()
+    }
+
+    private fun soundFor(action: ActionConfig?): KeyFeedback.Sound =
+        when (action) {
+            ActionConfig.Backspace -> KeyFeedback.Sound.DELETE
+            ActionConfig.Space -> KeyFeedback.Sound.SPACE
+            ActionConfig.Enter -> KeyFeedback.Sound.RETURN
+            else -> KeyFeedback.Sound.STANDARD
+        }
+
     fun cleanup() {
-        gestureJob?.cancel()
-        gestureJob = null
-        Log.d("OneHandKeyboard", "🔥 Gesture system cleaned up")
+        cancelAll()
+    }
+
+    private companion object {
+        const val NO_POINTER = -1
+        const val SLOP_MULTIPLIER = 1.5f
+        const val THRESHOLD_CELL_RATIO = 0.22f
+        const val TRACKPAD_STEP_DP = 12f
+        const val REPEAT_INITIAL_DELAY_MS = 350L
+        const val REPEAT_START_INTERVAL_MS = 80L
+        const val REPEAT_MIN_INTERVAL_MS = 30L
+        const val REPEAT_ACCELERATION_MS = 5L
     }
 }
-
-// KeyboardOutput moved to KeyboardActionProcessor.kt

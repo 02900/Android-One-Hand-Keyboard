@@ -85,6 +85,36 @@ sealed class KeyAction {
     object DeleteAll : KeyAction()
 
     /**
+     * Restore the text removed by the last bulk delete (e.g. DeleteAll)
+     */
+    object UndoDelete : KeyAction()
+
+    /**
+     * Delete the word (and trailing spaces) before the cursor
+     */
+    object DeleteWord : KeyAction()
+
+    /**
+     * Switch between the available keyboard languages
+     */
+    object SwitchLanguage : KeyAction()
+
+    /**
+     * Toggle the narrow one-handed keyboard mode
+     */
+    object ToggleOneHand : KeyAction()
+
+    /**
+     * Switch to the next input method (system keyboard switcher)
+     */
+    object SwitchInputMethod : KeyAction()
+
+    /**
+     * Dead key: the next vowel is combined with [accent] (e.g. ´ + e = é)
+     */
+    data class DeadKey(val accent: Char) : KeyAction()
+
+    /**
      * Increase cell height by 1dp
      */
     object IncreaseCellHeight : KeyAction()

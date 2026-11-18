@@ -6,253 +6,236 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.inputmethodservice.InputMethodService
 import android.os.Build
+import android.text.InputType
 import android.util.Log
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.view.inputmethod.InputMethodSubtype
 import android.widget.LinearLayout
-import com.onehandkeyboard.KeyboardActionProcessor
-import com.onehandkeyboard.KeyboardLayoutManager
-import com.onehandkeyboard.KeyboardUiFactory
 import com.onehandkeyboard.core.design.theme.ThemeManager
-import com.onehandkeyboard.core.gesture.DefaultGestureDetector
-import com.onehandkeyboard.GestureIntegration
+import com.onehandkeyboard.enums.Language
+import com.onehandkeyboard.enums.LayoutMode
+import com.onehandkeyboard.input.InputCommitter
+import com.onehandkeyboard.prefs.KeyboardPreferences
+import com.onehandkeyboard.ui.GestureHintProvider
+import com.onehandkeyboard.ui.KeyFeedback
+import com.onehandkeyboard.ui.KeyboardView
+import com.onehandkeyboard.ui.LayoutCalculator
 import dagger.hilt.android.AndroidEntryPoint
-
 import javax.inject.Inject
 
 /**
- * Main InputMethodService for OneHandKeyboard - A 3x3 gesture-based keyboard.
+ * Main InputMethodService for OneHandKeyboard - a 4x4 grid keyboard with 8-direction swipes.
  *
- * This service provides a compact 9-key keyboard with 8-directional swipe gestures,
- * supporting multiple languages (Spanish, English) and layout modes (Letters, Symbols).
- *
- * REFACTORED ARCHITECTURE:
- * This service now acts as a clean coordinator, delegating responsibilities to specialized components:
- * - KeyboardLayoutManager: Layout and configuration management (Hilt singleton)
- * - KeyboardViewBuilder: UI creation and view building (manual init)
- * - KeyboardEventCoordinator: Event coordination and gesture integration (manual init)
- * - KeyboardUiFactory: UI factory for components (manual init)
- * - GestureIntegration: Gesture processing (manual init)
- * - KeyboardActionProcessor: Action execution (manual init)
- *
- * Features:
- * - 3x3 grid with gesture hints and modern styling
- * - Multi-directional swipes (8 directions + tap + long press)
- * - Dynamic layout switching and case mode management
- * - Offline-first, privacy-focused design
- * - Clean modular architecture following SRP
+ * Lifecycle:
+ * - [onCreate] builds every component once (after Hilt injection) and registers the theme receiver.
+ * - [onCreateInputView] may run several times (rotation, config changes); it only builds the view.
+ * - State changes (case, layer, height, theme) update the existing view in place.
+ * - [onDestroy] releases the receiver and pending callbacks.
  */
 @AndroidEntryPoint
 class OneHandKeyboardService : InputMethodService() {
-    private var keyboardView: LinearLayout? = null
-
-    // Core dependencies - injected by Hilt
-
-    @Inject
-    lateinit var gestureDetector: DefaultGestureDetector
-
     @Inject
     lateinit var layoutManager: KeyboardLayoutManager
 
     @Inject
     lateinit var themeManager: ThemeManager
-    
+
     @Inject
-    lateinit var configFactory: com.onehandkeyboard.config.KeyboardConfigurationFactory
-    
-    // BroadcastReceiver for theme changes
+    lateinit var preferences: KeyboardPreferences
+
     private var themeChangeReceiver: BroadcastReceiver? = null
 
-    // Components initialized manually due to context dependencies
-    private lateinit var uiFactory: KeyboardUiFactory
-    private lateinit var unifiedGridBuilder: UnifiedGridKeyboardBuilder
+    private lateinit var layoutCalculator: LayoutCalculator
+    private lateinit var labels: GestureHintProvider
     private lateinit var gestureIntegration: GestureIntegration
     private lateinit var actionProcessor: KeyboardActionProcessor
 
-    // ============================================================================
-    // REGION: LIFECYCLE & CORE SERVICE
-    // ============================================================================
+    /** Current input view; recreated by the system on rotation/config changes. */
+    private var keyboardView: KeyboardView? = null
 
-    override fun onCreateInputView(): View? {
-        Log.d("OneHandKeyboard", "Creating input view")
+    override fun onCreate() {
+        super.onCreate() // Hilt injects here
+        initializeComponents()
+        registerThemeChangeReceiver()
+    }
 
+    @Suppress("TooGenericExceptionCaught") // any failure must still leave the user a usable view
+    override fun onCreateInputView(): View {
         return try {
-            Log.d("OneHandKeyboard", "Step 1: Refreshing theme...")
-            // Refresh theme from SharedPreferences to get latest selection
             themeManager.refreshTheme()
-            Log.d("OneHandKeyboard", "Step 1: Theme refreshed successfully")
-            
-            Log.d("OneHandKeyboard", "Step 2: Initializing components...")
-            // Initialize all components first
-            initializeComponents()
-            Log.d("OneHandKeyboard", "Step 2: Components initialized successfully")
-
-            Log.d("OneHandKeyboard", "Step 3: Creating main keyboard...")
-            // Create the main keyboard view using unified grid builder
-            val mainKeyboard = unifiedGridBuilder.createKeyboardLayout()
-            keyboardView = mainKeyboard
-            Log.d("OneHandKeyboard", "Step 3: Main keyboard created successfully")
-
-            Log.d("OneHandKeyboard", "Step 4: Keyboard ready")
-
-            Log.d("OneHandKeyboard", "Input view created successfully")
-            mainKeyboard
+            gestureIntegration.cancelAll()
+            KeyboardView(
+                context = this,
+                layoutManager = layoutManager,
+                themeManager = themeManager,
+                labels = labels,
+                layoutCalculator = layoutCalculator,
+                gestures = gestureIntegration,
+                prefs = preferences,
+            ).also { keyboardView = it }
         } catch (e: Exception) {
-            Log.e("OneHandKeyboard", "Error creating input view at step: ${e.message}", e)
-            e.printStackTrace()
+            Log.e(TAG, "Error creating input view", e)
             createFallbackView()
         }
     }
 
     /**
-     * Initializes all components that require context dependencies
+     * Initializes all components that require the service context. Runs once per service
+     * instance, so their state survives input view re-creations.
      */
     private fun initializeComponents() {
-        // Initialize UI factory (requires context, config manager, and theme manager)
-        uiFactory = KeyboardUiFactory(this, layoutManager, themeManager)
+        layoutCalculator = LayoutCalculator(this, preferences)
+        labels = GestureHintProvider(layoutManager)
+        gestureIntegration = GestureIntegration(this, layoutManager, KeyFeedback(this, preferences))
 
-        // Initialize gesture integration (requires service callbacks)
-        gestureIntegration = GestureIntegration(this, layoutManager, gestureDetector)
-        gestureIntegration.initializeGestureSystem()
-
-        // Initialize action processor (requires service callbacks)
         actionProcessor =
             KeyboardActionProcessor(
                 service = this,
                 configManager = layoutManager,
-                layoutCalculator = uiFactory.layoutCalculator,
-                onLayoutSwitch = { recreateKeyboard() },
-                onCaseSwitch = { recreateKeyboard() },
-                onHeightChanged = { recreateKeyboard() },
+                layoutCalculator = layoutCalculator,
+                onLayoutSwitch = { keyboardView?.showCurrentLayout() },
+                onCaseSwitch = { keyboardView?.refreshLabels() },
+                onHeightChanged = { keyboardView?.applyCellHeight() },
+                onToggleOneHand = { keyboardView?.toggleOneHand() },
+                onSwitchInputMethod = ::switchToNextKeyboard,
             )
-        
-        // Initialize unified grid builder (new 4x4 grid system)
-        unifiedGridBuilder = UnifiedGridKeyboardBuilder(this, themeManager, uiFactory.styleProvider, layoutManager, gestureIntegration, actionProcessor, uiFactory, configFactory)
 
-        Log.d("OneHandKeyboard", "All components initialized successfully")
-        
-        // Register theme change receiver
-        registerThemeChangeReceiver()
+        gestureIntegration.onOutput = actionProcessor::processKeyboardOutput
     }
-    
-    /**
-     * Recreates the keyboard when layout or case mode changes
-     */
-    private fun recreateKeyboard() {
-        Log.d("OneHandKeyboard", "Recreating keyboard due to layout/case change")
-        keyboardView = unifiedGridBuilder.createKeyboardLayout()
-        setInputView(keyboardView)
+
+    /** Next enabled IME; falls back to the system picker when there is no "next" one. */
+    @Suppress("DEPRECATION") // InputMethodManager.switchToNextInputMethod is the only option before API 28
+    private fun switchToNextKeyboard() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        val switched =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                switchToNextInputMethod(false)
+            } else {
+                val token = window?.window?.attributes?.token
+                token != null && imm?.switchToNextInputMethod(token, false) == true
+            }
+        if (!switched) imm?.showInputMethodPicker()
     }
-    
+
+    override fun onStartInputView(
+        info: EditorInfo?,
+        restarting: Boolean,
+    ) {
+        super.onStartInputView(info, restarting)
+        if (!restarting) {
+            layoutManager.resetForNewInput(info?.inputType ?: InputType.TYPE_CLASS_TEXT)
+            keyboardView?.showCurrentLayout(animate = false)
+        }
+        keyboardView?.previewEnabled = !InputCommitter.isPassword(info)
+        labels.enterLabel = GestureHintProvider.enterLabelFor(info)
+        keyboardView?.refreshLabels()
+        updateAutoShift()
+    }
+
+    override fun onCurrentInputMethodSubtypeChanged(newSubtype: InputMethodSubtype?) {
+        super.onCurrentInputMethodSubtypeChanged(newSubtype)
+        val tag = subtypeLanguageTag(newSubtype) ?: return
+        val language = if (tag.startsWith("en")) Language.ENGLISH else Language.SPANISH
+        if (layoutManager.setLanguage(language)) keyboardView?.showCurrentLayout()
+    }
+
+    override fun onUpdateSelection(
+        oldSelStart: Int,
+        oldSelEnd: Int,
+        newSelStart: Int,
+        newSelEnd: Int,
+        candidatesStart: Int,
+        candidatesEnd: Int,
+    ) {
+        super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        if (newSelStart == newSelEnd) updateAutoShift()
+    }
+
+    @Suppress("DEPRECATION") // InputMethodSubtype.locale is the only option before API 24
+    private fun subtypeLanguageTag(subtype: InputMethodSubtype?): String? {
+        subtype ?: return null
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            subtype.languageTag.takeIf { it.isNotEmpty() }?.let { return it }
+        }
+        return subtype.locale.takeIf { it.isNotEmpty() }
+    }
+
+    override fun onFinishInputView(finishingInput: Boolean) {
+        super.onFinishInputView(finishingInput)
+        gestureIntegration.cancelAll()
+    }
+
     /**
-     * Register BroadcastReceiver to listen for theme changes
+     * Capitalizes the next letter when the field asks for it at the cursor (sentence start,
+     * after ". ", etc.). Fields that do not request capitalization (email, URL, password)
+     * return 0 from `getCursorCapsMode` and are left alone.
      */
+    private fun updateAutoShift() {
+        val ic = currentInputConnection ?: return
+        val info = currentInputEditorInfo ?: return
+        if (layoutManager.currentMode != LayoutMode.LETTERS || info.inputType == InputType.TYPE_NULL) return
+        val shouldCapitalize = ic.getCursorCapsMode(info.inputType) != 0
+        if (layoutManager.updateAutoShift(shouldCapitalize)) keyboardView?.refreshLabels()
+    }
+
     private fun registerThemeChangeReceiver() {
-        themeChangeReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == ThemeManager.ACTION_THEME_CHANGED) {
-                    val themeName = intent.getStringExtra(ThemeManager.EXTRA_THEME_NAME)
-                    Log.d("OneHandKeyboard", "Received theme change broadcast: $themeName")
-                    
-                    // Refresh theme and recreate keyboard
-                    themeManager.refreshTheme()
-                    recreateKeyboard()
+        val receiver =
+            object : BroadcastReceiver() {
+                override fun onReceive(
+                    context: Context?,
+                    intent: Intent?,
+                ) {
+                    if (intent?.action == ThemeManager.ACTION_THEME_CHANGED) {
+                        themeManager.refreshTheme()
+                        keyboardView?.applyTheme()
+                    }
                 }
             }
-        }
-        
         val filter = IntentFilter(ThemeManager.ACTION_THEME_CHANGED)
-        
-        // Register receiver with proper flags for Android 14+ compatibility
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(themeChangeReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
-            registerReceiver(themeChangeReceiver, filter)
+            registerReceiver(receiver, filter)
         }
-        
-        Log.d("OneHandKeyboard", "Theme change receiver registered")
+        themeChangeReceiver = receiver
     }
 
-    /**
-     * Creates a fallback view in case of initialization errors
-     */
     private fun createFallbackView(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(16, 16, 16, 16)
+            val padding = (FALLBACK_PADDING_DP * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
             addView(
                 android.widget.TextView(this@OneHandKeyboardService).apply {
                     text = "Keyboard Error - Please restart"
-                    textSize = 16f
+                    textSize = FALLBACK_TEXT_SP
                     setTextColor(android.graphics.Color.RED)
                 },
             )
         }
     }
 
-    override fun onStartInputView(
-        info: android.view.inputmethod.EditorInfo?,
-        restarting: Boolean,
-    ) {
-        super.onStartInputView(info, restarting)
-        Log.d("OneHandKeyboard", "Starting input view")
-        
-        // Setup cell bounds when view is ready
-        keyboardView?.let { view ->
-            view.post {
-                gestureIntegration.calculateCellBounds(keyboardView)
-            }
-        }
-    }
-
     override fun onDestroy() {
-        super.onDestroy()
-        Log.d("OneHandKeyboard", "Service destroying - cleaning up components")
-
-        // Unregister theme change receiver
         themeChangeReceiver?.let { receiver ->
             try {
                 unregisterReceiver(receiver)
-                Log.d("OneHandKeyboard", "Theme change receiver unregistered")
             } catch (e: IllegalArgumentException) {
-                // Receiver was not registered, ignore
-                Log.w("OneHandKeyboard", "Theme change receiver was not registered")
+                Log.w(TAG, "Theme change receiver was not registered", e)
             }
         }
         themeChangeReceiver = null
 
-        // Cleanup components
         if (::gestureIntegration.isInitialized) {
             gestureIntegration.cleanup()
         }
-
-        // Reset gesture detector
-        gestureDetector.reset()
+        super.onDestroy()
     }
 
-    // ============================================================================
-    // REGION: LIFECYCLE METHODS
-    // ============================================================================
-
-    override fun onFinishInputView(finishingInput: Boolean) {
-        super.onFinishInputView(finishingInput)
-        Log.d("OneHandKeyboard", "onFinishInputView() called - keyboard hiding")
-    }
-
-    override fun onComputeInsets(outInsets: InputMethodService.Insets) {
-        super.onComputeInsets(outInsets)
-        Log.d("OneHandKeyboard", "onComputeInsets() called")
-
-        // Force keyboard to occupy visible space
-        outInsets.contentTopInsets = 0
-        outInsets.visibleTopInsets = 0
-        outInsets.touchableInsets = InputMethodService.Insets.TOUCHABLE_INSETS_VISIBLE
-
-        Log.d("OneHandKeyboard", "Insets configured - keyboard should be visible")
-    }
-
-    override fun onEvaluateInputViewShown(): Boolean {
-        Log.d("OneHandKeyboard", "onEvaluateInputViewShown() called")
-        // Force keyboard to always show
-        return true
+    private companion object {
+        const val TAG = "OneHandKeyboard"
+        const val FALLBACK_PADDING_DP = 16f
+        const val FALLBACK_TEXT_SP = 16f
     }
 }
