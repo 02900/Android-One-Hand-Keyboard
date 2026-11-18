@@ -45,7 +45,7 @@ class KeyboardViewTest {
             layoutManager = layoutManager,
             themeManager = ThemeManager(context),
             labels = GestureHintProvider(layoutManager),
-            layoutCalculator = LayoutCalculator(context, prefs),
+            layoutCalculator = LayoutCalculator(context),
             gestures = gestures,
             prefs = prefs,
         ).apply {
@@ -57,7 +57,7 @@ class KeyboardViewTest {
         }.also { view = it }
     }
 
-    private val gridHeight get() = LayoutCalculator(context, prefs).calculateCellHeight() * 4
+    private val gridHeight get() = LayoutCalculator(context).calculateCellHeight() * 4
 
     /** Height of the suggestion strip above the grid. */
     private val stripHeight get() = view.height - gridHeight

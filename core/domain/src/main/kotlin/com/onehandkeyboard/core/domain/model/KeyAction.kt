@@ -110,21 +110,6 @@ sealed class KeyAction {
     data class DeadKey(val accent: Char) : KeyAction()
 
     /**
-     * Increase cell height by 1dp
-     */
-    object IncreaseCellHeight : KeyAction()
-
-    /**
-     * Decrease cell height by 1dp
-     */
-    object DecreaseCellHeight : KeyAction()
-
-    /**
-     * Reset cell height to default value (60dp)
-     */
-    object ResetCellHeight : KeyAction()
-
-    /**
      * Custom action with a specific function
      */
     data class Custom(val action: () -> Unit) : KeyAction()

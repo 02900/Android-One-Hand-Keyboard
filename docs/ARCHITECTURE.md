@@ -10,7 +10,7 @@ OneHandKeyboardService (InputMethodService)
  │                            animations, preview bubble, suggestion strip,
  │                            accessibility (ExploreByTouchHelper)
  ├─ GestureIntegration ...... per-pointer gesture logic (tap/swipe, backspace
- │                            repeat, space-bar trackpad, long-press resize)
+ │                            repeat, space-bar trackpad)
  │    └─ core:gesture ....... GestureTracker + SwipeResolver (pure, tested)
  ├─ KeyboardLayoutManager ... state: layer, language, shift/caps/auto-capitalize, dead key
  │    └─ KeyboardConfigurationFactory ... layouts with the DSL `keyboardGrid { cell(i) { … } }`
