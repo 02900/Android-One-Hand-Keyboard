@@ -85,6 +85,11 @@ sealed class KeyAction {
     object DeleteAll : KeyAction()
 
     /**
+     * Restore the text removed by the last bulk delete (e.g. DeleteAll)
+     */
+    object UndoDelete : KeyAction()
+
+    /**
      * Increase cell height by 1dp
      */
     object IncreaseCellHeight : KeyAction()
