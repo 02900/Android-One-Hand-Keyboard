@@ -1,12 +1,12 @@
 package com.onehandkeyboard.ui
 
 import android.content.Context
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.LayerDrawable
 import androidx.compose.ui.graphics.toArgb
 import com.onehandkeyboard.core.design.theme.ThemeManager
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlin.math.roundToInt
 
 /**
  * Proveedor de estilos para botones del teclado.
@@ -23,88 +23,43 @@ class ButtonStyleProvider(
     /**
      * Gets current theme tokens synchronously
      */
-    private fun getCurrentTheme() = runBlocking {
-        themeManager.currentTheme.first()
-    }
+    private fun getCurrentTheme() = themeManager.currentTheme.value
     
     /**
-     * Crea el fondo del botón con bordes redondeados usando tokens del tema
+     * Crea el fondo de una celda o botón usando los tokens del tema.
+     *
+     * Las celdas del grid llevan un borde de 1dp solo a la derecha y abajo (excepto en la
+     * última columna/fila), para que las líneas interiores no queden dobles.
      */
     fun createButtonBackground(
-        pressed: Boolean = false, // Ignorar estado pressed para apariencia plana
+        pressed: Boolean = false,
         isBackspace: Boolean = false,
         isControl: Boolean = false,
         isGridCell: Boolean = false,
-        cellIndex: Int = -1, // Índice de celda para aplicar colores diferenciados
-        row: Int = -1, // Fila de la celda (0-3)
-        column: Int = -1, // Columna de la celda (0-3)
-        totalRows: Int = 4, // Total de filas en el grid
-        totalColumns: Int = 4, // Total de columnas en el grid
-    ): GradientDrawable {
-        val theme = getCurrentTheme()
-        
-        return GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            cornerRadius = 0f // Sin bordes redondeados para ningún botón
-
+        cellIndex: Int = -1,
+        row: Int = -1,
+        column: Int = -1,
+        totalRows: Int = 4,
+        totalColumns: Int = 4,
+    ): Drawable {
+        val colors = getCurrentTheme().colors
+        val fillColor =
             when {
-                isBackspace -> {
-                    // Backspace usa backgroundSecondary como los otros botones de control
-                    val baseColor = theme.colors.backgroundSecondary.toArgb()
-                    setColor(baseColor)
-                }
-                isControl -> {
-                    // Botones de control usan backgroundSecondary
-                    val baseColor = theme.colors.backgroundSecondary.toArgb()
-                    setColor(baseColor)
-                }
-                isGridCell -> {
-                    // Aplicar colores diferenciados según la posición de la celda
-                    val baseColor = if (isPrimaryCellGroup(cellIndex)) {
-                        theme.colors.backgroundPrimary.toArgb()
-                    } else {
-                        theme.colors.backgroundSecondary.toArgb()
-                    }
-                    setColor(baseColor)
-                    
-                    // Agregar bordes right y bottom, excepto en última fila y columna
-                    if (row != -1 && column != -1) {
-                        val borderColor = theme.colors.backgroundRoot.toArgb()
-                        val borderWidth = 1 // 1px border
-                        
-                        // Determinar qué bordes agregar
-                        val needsRightBorder = column < totalColumns - 1
-                        val needsBottomBorder = row < totalRows - 1
-                        
-                        if (needsRightBorder || needsBottomBorder) {
-                            // Crear un drawable con bordes selectivos usando LayerDrawable
-                            // Por simplicidad, usamos stroke completo pero esto se puede mejorar
-                            if (needsRightBorder && needsBottomBorder) {
-                                // Ambos bordes
-                                setStroke(borderWidth, borderColor)
-                            } else if (needsRightBorder) {
-                                // Solo borde derecho - usar stroke parcial no es directo en GradientDrawable
-                                setStroke(borderWidth, borderColor)
-                            } else if (needsBottomBorder) {
-                                // Solo borde inferior - usar stroke parcial no es directo en GradientDrawable
-                                setStroke(borderWidth, borderColor)
-                            }
-                        }
-                    }
-                }
-                else -> {
-                    // Fallback a backgroundPrimary para compatibilidad
-                    val baseColor = theme.colors.backgroundPrimary.toArgb()
-                    setColor(baseColor)
-                }
+                isBackspace || isControl -> colors.backgroundSecondary.toArgb()
+                isGridCell && !isPrimaryCellGroup(cellIndex) -> colors.backgroundSecondary.toArgb()
+                else -> colors.backgroundPrimary.toArgb()
             }
+        val fill = ColorDrawable(fillColor)
 
-            // Sin gradiente para apariencia plana
+        if (!isGridCell || row == -1 || column == -1) return fill
 
-            // Bordes se configuran arriba para celdas del grid
-            if (!isGridCell) {
-                setStroke(0, Color.TRANSPARENT)
-            }
+        val borderPx = (context.resources.displayMetrics.density * BORDER_DP).roundToInt().coerceAtLeast(1)
+        val right = if (column < totalColumns - 1) borderPx else 0
+        val bottom = if (row < totalRows - 1) borderPx else 0
+        if (right == 0 && bottom == 0) return fill
+
+        return LayerDrawable(arrayOf(ColorDrawable(colors.backgroundRoot.toArgb()), fill)).apply {
+            setLayerInset(1, 0, 0, right, bottom)
         }
     }
 
@@ -196,4 +151,8 @@ class ButtonStyleProvider(
      * Obtiene el tamaño de texto para el centro
      */
     fun getCenterTextSize(): Float = 14f
+
+    private companion object {
+        const val BORDER_DP = 1f
+    }
 }
