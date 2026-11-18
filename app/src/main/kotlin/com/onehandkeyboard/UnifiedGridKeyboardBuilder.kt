@@ -15,8 +15,6 @@ import com.onehandkeyboard.config.CellConfiguration
 import com.onehandkeyboard.config.KeyboardConfigurationFactory
 import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 
 /**
  * Unified 4x4 grid keyboard builder
@@ -46,9 +44,7 @@ class UnifiedGridKeyboardBuilder(
     /**
      * Gets current theme tokens synchronously
      */
-    private fun getCurrentTheme() = runBlocking {
-        themeManager.currentTheme.first()
-    }
+    private fun getCurrentTheme() = themeManager.currentTheme.value
 
     /**
      * Creates the unified 4x4 grid keyboard layout
@@ -109,10 +105,8 @@ class UnifiedGridKeyboardBuilder(
             KeyData("", "", ""), // Will be populated by gesture integration
             cellConfig.cellIndex
         ) { event, index ->
-            Log.d("UnifiedGridKeyboardBuilder", "🎯 Touch event on cell ${cellConfig.cellIndex} ($row,$col): ${event.action}")
-            gestureIntegration.processGestureDirectly(event, index) { keyboardOutput ->
+            gestureIntegration.processGestureEvent(event, index) { keyboardOutput ->
                 keyboardOutput?.let { actionProcessor.processKeyboardOutput(it) }
-                true
             }
             true
         }.apply {
