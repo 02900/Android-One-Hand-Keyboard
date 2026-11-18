@@ -190,6 +190,33 @@ class KeyboardViewTest {
     }
 
     @Test
+    fun `a tap on space that slides a little still types the space`() {
+        createView()
+        val start = cellCenter(13)
+        val end = floatArrayOf(start[0] + rowHeight * 0.45f, start[1])
+        send(MotionEvent.ACTION_DOWN, listOf(0 to start))
+        send(MotionEvent.ACTION_MOVE, listOf(0 to end))
+        send(MotionEvent.ACTION_UP, listOf(0 to end))
+
+        assertEquals(listOf<KeyboardOutput>(KeyboardOutput.Action(KeyAction.Space)), outputs)
+    }
+
+    @Test
+    fun `dragging on space moves the cursor without typing a space`() {
+        createView()
+        val start = cellCenter(13)
+        val activated = floatArrayOf(start[0] + rowHeight * 0.45f, start[1])
+        val end = floatArrayOf(activated[0] + columnWidth, start[1])
+        send(MotionEvent.ACTION_DOWN, listOf(0 to start))
+        send(MotionEvent.ACTION_MOVE, listOf(0 to activated))
+        send(MotionEvent.ACTION_MOVE, listOf(0 to end))
+        send(MotionEvent.ACTION_UP, listOf(0 to end))
+
+        assertTrue(outputs.isNotEmpty())
+        assertTrue(outputs.all { it == KeyboardOutput.Action(KeyAction.CursorRight) })
+    }
+
+    @Test
     fun `delete key swipe left deletes a word`() {
         createView()
         val start = cellCenter(11)
