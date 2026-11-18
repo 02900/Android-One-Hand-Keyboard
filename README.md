@@ -14,6 +14,7 @@ Teclado Android de una mano: una cuadrícula 4×4 (bloque de letras 3×3 + colum
 - **Gestos Simplificados**: Tap y Swipe en 8 direcciones con detección por desplazamiento
 - **Sistema de Temas**: 5 tokens esenciales con colores diferenciados para grupos de celdas
 - **Autocorrector sin imponerse**: corrige palabras y tildes al cerrar la palabra, con barra de sugerencias; borrar justo después deshace la corrección y el teclado aprende la palabra
+- **Biblioteca de memes**: GIFs y stickers desde una carpeta del teléfono que tú eliges, por categorías, sin Internet
 
 ## 🏗️ Arquitectura
 
@@ -40,7 +41,7 @@ OneHandKeyboardService (InputMethodService)
 ### Gestos de la columna de control
 | Tecla | Tap | Swipe / long-press |
 |---|---|---|
-| Capa (3) | ABC ↔ 123 | ← altura por defecto · long-press + arrastrar = altura |
+| Capa (3) | ABC ↔ 123 | ← altura por defecto · ↓ memes · long-press + arrastrar = altura |
 | Mayúsculas (7) | una vez / doble tap = bloqueo | ↑ copiar todo · ↓ pegar |
 | Borrar (11) | borrar (mantener = repetir) | ← palabra · ↑ todo · → deshacer |
 | Espacio (12–14) | espacio (doble = ". ") | arrastrar ↔ = cursor · ↑/↓ = idioma |
@@ -57,6 +58,31 @@ OneHandKeyboardService (InputMethodService)
 - **Barra de sugerencias:** izquierda / centro / derecha; el centro es lo que se escribirá al poner espacio (en negrita si es una corrección).
 - **Privacidad:** todo es local, el teclado no tiene permiso de Internet. Las palabras aprendidas están en el almacenamiento privado de la app y se borran desde Ajustes → Escritura.
 - **Diccionarios:** `app/src/main/assets/dict/` (~48k palabras por idioma), generados con `tools/build_dictionary.py` a partir de [FrequencyWords](https://github.com/hermitdave/FrequencyWords) (CC BY-SA 4.0, ver `assets/dict/LICENSE.txt`).
+
+## 🖼️ Biblioteca de memes
+
+Los memes no vienen dentro de la app: son un pack (add-on) que copias al teléfono.
+
+1. Copia la carpeta del pack al almacenamiento del teléfono (por ejemplo `Download/Memes`).
+2. Ajustes del teclado → **Biblioteca de memes** → **Elegir carpeta**. El teclado solo puede leer esa carpeta (permiso del selector de Android, sin permiso de almacenamiento).
+3. En el teclado, desliza **hacia abajo en la tecla 123/ABC**. `ABC` vuelve a las letras.
+
+Formato del pack:
+
+```
+Memes/
+├── 01-Reacciones/      ← cada subcarpeta es una pestaña; el número solo ordena y no se muestra
+│   ├── aplausos.gif
+│   └── no-puede-ser.webp
+├── 02-Saludos/
+└── suelto.png          ← los archivos sueltos van a la pestaña "General"
+```
+
+- Formatos: `gif`, `webp` (animado o no), `png`, `jpg`. El resto se ignora, igual que los archivos y carpetas ocultos (`.gitkeep`).
+- Subcarpetas dentro de una categoría cuentan para esa categoría.
+- La pestaña **🕘 Recientes** muestra los últimos 24 enviados.
+- **Cómo se envía:** si la app acepta imágenes en ese campo (WhatsApp, Telegram, Signal…), el meme se inserta directo. Si no, queda copiado en el portapapeles y aparece un aviso para pegarlo.
+- Para actualizar el pack basta con cambiar los archivos de la carpeta: se vuelve a leer cada vez que abres el panel.
 
 ## 🛠️ Stack Tecnológico
 
@@ -344,6 +370,7 @@ y se distribuyen bajo CC BY-SA 4.0 (ver [`assets/dict/LICENSE.txt`](app/src/main
 ## 🔒 Privacidad
 
 - **Sin permisos de red** por defecto
+- **Memes:** solo lee la carpeta que eliges en ajustes; nada se descarga ni se sube
 - **Sin telemetría** obligatoria
 - **Datos locales** únicamente
 - **Código abierto** y auditable

@@ -236,6 +236,11 @@ da latencia y consumo mínimos, y animaciones más fáciles (todo es un valor in
 - [x] Un toque en la barra espaciadora que se desliza sin mover el cursor ya no pierde el espacio.
 - [x] Se quitan el cambio de teclado (🌐) y el modo una mano de la tecla de capa: devolvían el teclado de Google por accidente y el panel lateral no se usaba.
 
+### Biblioteca de memes (add-on)
+- [x] Panel de GIFs y stickers (deslizar ↓ en la tecla de capa) con pestañas por categoría y recientes.
+- [x] El pack vive fuera de la app, en una carpeta que el usuario elige (Storage Access Framework); sin Internet ni permiso de almacenamiento.
+- [x] Envío con `commitContent` a las apps que aceptan imágenes; portapapeles como alternativa.
+
 ---
 
 ## 6. Métricas para saber si mejoró
