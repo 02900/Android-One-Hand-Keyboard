@@ -9,6 +9,7 @@ import com.onehandkeyboard.config.CellConfiguration
 import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.input.InputCommitter
+import com.onehandkeyboard.spell.Suggestion
 
 /**
  * Visible labels and accessibility descriptions of the keys, derived from the current
@@ -62,6 +63,15 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
     }
 
     companion object {
+        /** TalkBack text of a suggestion strip slot. */
+        fun describeSuggestion(suggestion: Suggestion): String =
+            when (suggestion.kind) {
+                Suggestion.Kind.AUTO -> "Corrección: ${suggestion.text}"
+                Suggestion.Kind.TYPED -> "Mantener: ${suggestion.text}"
+                Suggestion.Kind.REVERT -> "Deshacer corrección: ${suggestion.text}"
+                Suggestion.Kind.ALTERNATIVE -> "Sugerencia: ${suggestion.text}"
+            }
+
         /** Enter key label for the field's IME action. */
         fun enterLabelFor(info: EditorInfo?): String {
             if (InputCommitter.wantsNewline(info) || !InputCommitter.hasEditorAction(info)) return "↵"

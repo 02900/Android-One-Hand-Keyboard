@@ -43,7 +43,6 @@ class ActionLabelsTest {
         assertEquals("🔍", ActionConfig.Enter.label(LabelContext(enterLabel = "🔍")))
         assertEquals("EN", ActionConfig.Action(KeyAction.SwitchLanguage).label(LabelContext(languageLabel = "EN")))
         assertEquals("´", ActionConfig.Action(KeyAction.DeadKey(DeadKeys.ACUTE)).label(LabelContext()))
-        assertEquals("🌐", ActionConfig.Action(KeyAction.SwitchInputMethod).label(LabelContext()))
     }
 
     @Test
@@ -67,7 +66,7 @@ class ActionLabelsTest {
     fun `spoken names describe control keys in words`() {
         assertEquals("borrar", ActionConfig.Backspace.spokenName(LabelContext()))
         assertEquals("tilde", ActionConfig.Action(KeyAction.DeadKey(DeadKeys.ACUTE)).spokenName(LabelContext()))
-        assertEquals("cambiar de teclado", ActionConfig.Action(KeyAction.SwitchInputMethod).spokenName(LabelContext()))
+        assertEquals("borrar palabra", ActionConfig.Action(KeyAction.DeleteWord).spokenName(LabelContext()))
         assertEquals("ñ", ActionConfig.Character('ñ').spokenName(LabelContext()))
     }
 }

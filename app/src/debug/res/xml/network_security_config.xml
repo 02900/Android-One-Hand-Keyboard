@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The update server is plain HTTP on the LAN. The APK is checked against the SHA-256 of
+     update.json, and Android only installs it if it has the app's signature. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

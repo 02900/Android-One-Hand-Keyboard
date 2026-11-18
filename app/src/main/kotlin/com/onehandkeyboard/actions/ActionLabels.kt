@@ -49,8 +49,7 @@ fun KeyAction.label(ctx: LabelContext): String =
         KeyAction.UndoDelete -> "↶"
         KeyAction.DeleteWord -> "⇤"
         KeyAction.SwitchLanguage -> ctx.languageLabel
-        KeyAction.ToggleOneHand -> "◧"
-        KeyAction.SwitchInputMethod -> "🌐"
+        KeyAction.ShowMemes -> "🖼️"
         is KeyAction.DeadKey -> accent.toString()
         KeyAction.IncreaseCellHeight -> "⬆️"
         KeyAction.DecreaseCellHeight -> "⬇️"
@@ -86,8 +85,7 @@ private fun KeyAction.spokenName(ctx: LabelContext): String =
         KeyAction.UndoDelete -> "deshacer borrado"
         KeyAction.DeleteWord -> "borrar palabra"
         KeyAction.SwitchLanguage -> "cambiar idioma"
-        KeyAction.ToggleOneHand -> "modo una mano"
-        KeyAction.SwitchInputMethod -> "cambiar de teclado"
+        KeyAction.ShowMemes -> "memes"
         KeyAction.CursorLeft -> "cursor a la izquierda"
         KeyAction.CursorRight -> "cursor a la derecha"
         is KeyAction.DeadKey -> if (accent == DeadKeys.ACUTE) "tilde" else "diéresis"

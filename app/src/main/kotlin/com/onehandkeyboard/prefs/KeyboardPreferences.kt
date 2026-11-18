@@ -29,20 +29,63 @@ class KeyboardPreferences
             get() = prefs.getFloat(KEY_CELL_HEIGHT, DEFAULT_CELL_HEIGHT_DP)
             set(value) = prefs.edit().putFloat(KEY_CELL_HEIGHT, value).apply()
 
-        /** Narrow keyboard aligned to one side, for one-handed use on large phones. */
-        var oneHandEnabled: Boolean
-            get() = prefs.getBoolean(KEY_ONE_HAND, false)
-            set(value) = prefs.edit().putBoolean(KEY_ONE_HAND, value).apply()
+        /** Replace unknown words with a confident correction on space / punctuation. */
+        var autocorrectEnabled: Boolean
+            get() = prefs.getBoolean(KEY_AUTOCORRECT, true)
+            set(value) = prefs.edit().putBoolean(KEY_AUTOCORRECT, value).apply()
 
-        /** True = keyboard aligned to the right edge (right thumb), false = left. */
-        var oneHandRight: Boolean
-            get() = prefs.getBoolean(KEY_ONE_HAND_RIGHT, true)
-            set(value) = prefs.edit().putBoolean(KEY_ONE_HAND_RIGHT, value).apply()
+        /** Suggestion strip above the keys. */
+        var suggestionsEnabled: Boolean
+            get() = prefs.getBoolean(KEY_SUGGESTIONS, true)
+            set(value) = prefs.edit().putBoolean(KEY_SUGGESTIONS, value).apply()
+
+        /** Keys without labels or preview, for users who know the layout by heart. */
+        var expertMode: Boolean
+            get() = prefs.getBoolean(KEY_EXPERT_MODE, false)
+            set(value) = prefs.edit().putBoolean(KEY_EXPERT_MODE, value).apply()
+
+        /** Folder (Storage Access Framework tree URI) with the user's memes, or null if not set. */
+        var memeFolderUri: String?
+            get() = prefs.getString(KEY_MEME_FOLDER, null)
+            set(value) = prefs.edit().putString(KEY_MEME_FOLDER, value).apply()
+
+        /** URIs of the last memes sent, most recent first. */
+        var recentMemes: List<String>
+            get() = prefs.getString(KEY_RECENT_MEMES, null)?.split(LIST_SEPARATOR)?.filter { it.isNotEmpty() }.orEmpty()
+            set(value) = prefs.edit().putString(KEY_RECENT_MEMES, value.joinToString(LIST_SEPARATOR)).apply()
+
+        /** Install new builds from the update server by themselves (debug builds). */
+        var autoUpdate: Boolean
+            get() = prefs.getBoolean(KEY_AUTO_UPDATE, true)
+            set(value) = prefs.edit().putBoolean(KEY_AUTO_UPDATE, value).apply()
+
+        /** Last address where the update server answered (used when the broadcast gets no answer). */
+        var updateServer: String?
+            get() = prefs.getString(KEY_UPDATE_SERVER, null)
+            set(value) = prefs.edit().putString(KEY_UPDATE_SERVER, value).apply()
+
+        /** A background install needed a tap: wait for the user to update from settings. */
+        var updateNeedsConfirmation: Boolean
+            get() = prefs.getBoolean(KEY_UPDATE_NEEDS_CONFIRMATION, false)
+            set(value) = prefs.edit().putBoolean(KEY_UPDATE_NEEDS_CONFIRMATION, value).apply()
+
+        /** Commit of the build that ran last, to notice that the app was updated. */
+        var lastRunCommit: String?
+            get() = prefs.getString(KEY_LAST_RUN_COMMIT, null)
+            set(value) = prefs.edit().putString(KEY_LAST_RUN_COMMIT, value).apply()
 
         companion object {
             const val DEFAULT_CELL_HEIGHT_DP = 60f
-            private const val KEY_ONE_HAND = "one_hand_enabled"
-            private const val KEY_ONE_HAND_RIGHT = "one_hand_right"
+            private const val KEY_EXPERT_MODE = "expert_mode"
+            private const val KEY_AUTO_UPDATE = "auto_update"
+            private const val KEY_UPDATE_SERVER = "update_server"
+            private const val KEY_UPDATE_NEEDS_CONFIRMATION = "update_needs_confirmation"
+            private const val KEY_LAST_RUN_COMMIT = "last_run_commit"
+            private const val KEY_MEME_FOLDER = "meme_folder_uri"
+            private const val KEY_RECENT_MEMES = "recent_memes"
+            private const val LIST_SEPARATOR = "\n"
+            private const val KEY_AUTOCORRECT = "autocorrect_enabled"
+            private const val KEY_SUGGESTIONS = "suggestions_enabled"
             private const val PREFS_NAME = "keyboard_prefs"
             private const val KEY_HAPTICS = "haptics_enabled"
             private const val KEY_SOUND = "sound_enabled"

@@ -11,6 +11,7 @@ import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
 import com.onehandkeyboard.core.gesture.GestureTracker
+import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.gestures.GestureAction
 import com.onehandkeyboard.ui.KeyFeedback
 import kotlin.math.abs
@@ -26,6 +27,7 @@ import kotlin.math.max
  *   direction preview through [CellListener.onDirectionChanged].
  * - Holding backspace repeats with acceleration.
  * - Space bar: horizontal drag moves the cursor (trackpad), vertical swipe switches language.
+ *   A hurried tap that slides a little but never moves the cursor still types the space.
  * - Long-press on the layout key starts a live height resize (vertical drag).
  *
  * Privacy: nothing that reveals what the user types is logged.
@@ -63,6 +65,7 @@ class GestureIntegration(
     ) {
         var trackpadActive = false
         var trackpadAnchorX = 0f
+        var trackpadMoved = false
         var verticalSwipe: Direction = Direction.CENTER
         var resizing = false
         var resizeStartScreenY = 0f
@@ -168,8 +171,9 @@ class GestureIntegration(
             state?.resizing == true -> cellListener?.onResizeEnded()
             state?.mode == Mode.SPACE -> {
                 when {
-                    state.trackpadActive -> Unit
-                    state.verticalSwipe != Direction.CENTER -> onOutput(KeyboardOutput.Action(KeyAction.SwitchLanguage))
+                    state.trackpadMoved -> Unit
+                    state.verticalSwipe != Direction.CENTER && Language.canSwitch ->
+                        onOutput(KeyboardOutput.Action(KeyAction.SwitchLanguage))
                     else -> perform(result.cellIndex, Direction.CENTER)
                 }
             }
@@ -255,6 +259,7 @@ class GestureIntegration(
         val stepPx = TRACKPAD_STEP_DP * density
         val steps = ((x - state.trackpadAnchorX) / stepPx).toInt()
         if (steps != 0) {
+            state.trackpadMoved = true
             state.trackpadAnchorX += steps * stepPx
             val action = if (steps < 0) KeyAction.CursorLeft else KeyAction.CursorRight
             repeat(abs(steps)) { onOutput(KeyboardOutput.Action(action)) }

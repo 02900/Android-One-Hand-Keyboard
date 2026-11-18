@@ -100,14 +100,9 @@ sealed class KeyAction {
     object SwitchLanguage : KeyAction()
 
     /**
-     * Toggle the narrow one-handed keyboard mode
+     * Open the meme library panel (GIFs and stickers from the user's folder)
      */
-    object ToggleOneHand : KeyAction()
-
-    /**
-     * Switch to the next input method (system keyboard switcher)
-     */
-    object SwitchInputMethod : KeyAction()
+    object ShowMemes : KeyAction()
 
     /**
      * Dead key: the next vowel is combined with [accent] (e.g. ´ + e = é)

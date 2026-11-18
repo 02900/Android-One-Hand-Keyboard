@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only these copies are shared: memes being sent (MemeSender) and the app's own APK (AppSharer). -->
+<paths>
+    <cache-path name="memes" path="memes/" />
+    <cache-path name="share" path="share/" />
+</paths>
