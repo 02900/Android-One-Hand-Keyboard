@@ -202,6 +202,7 @@ class OneHandKeyboardService : InputMethodService() {
             keyboardUpdates.onKeyboardShown()
         }
         keyboardView?.previewEnabled = !InputCommitter.isPassword(info)
+        keyboardView?.lettersHidden = preferences.hideLetters
         labels.enterLabel = GestureHintProvider.enterLabelFor(info)
         keyboardView?.refreshLabels()
         keyboardView?.applySuggestionsSetting()

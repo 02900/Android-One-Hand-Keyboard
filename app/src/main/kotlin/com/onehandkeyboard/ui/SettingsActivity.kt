@@ -182,6 +182,13 @@ private fun WritingSettings(
             preferences.suggestionsEnabled = it
         })
     }
+    var hideLetters by remember { mutableStateOf(preferences.hideLetters) }
+    SettingRow("Ocultar letras") {
+        Switch(checked = hideLetters, onCheckedChange = {
+            hideLetters = it
+            preferences.hideLetters = it
+        })
+    }
     SettingRow("Palabras aprendidas") {
         OutlinedButton(onClick = {
             onClearLearnedWords()

@@ -18,6 +18,7 @@ import com.onehandkeyboard.prefs.KeyboardPreferences
 import com.onehandkeyboard.spell.Suggestion
 import com.onehandkeyboard.spell.Suggestions
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -105,6 +106,22 @@ class KeyboardViewTest {
     private fun tap(xy: FloatArray) {
         send(MotionEvent.ACTION_DOWN, listOf(0 to xy))
         send(MotionEvent.ACTION_UP, listOf(0 to xy))
+    }
+
+    @Test
+    fun `hidden letters still type but show no preview`() {
+        createView()
+        val a = cellCenter(0)
+        send(MotionEvent.ACTION_DOWN, listOf(0 to a))
+        assertTrue(view.previewShowing)
+        send(MotionEvent.ACTION_UP, listOf(0 to a))
+
+        view.lettersHidden = true
+        send(MotionEvent.ACTION_DOWN, listOf(0 to a))
+        assertFalse(view.previewShowing)
+        send(MotionEvent.ACTION_UP, listOf(0 to a))
+
+        assertEquals(List(2) { KeyboardOutput.Character("a") }, outputs)
     }
 
     @Test

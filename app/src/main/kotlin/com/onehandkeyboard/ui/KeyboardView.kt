@@ -31,6 +31,7 @@ import com.onehandkeyboard.core.design.theme.ThemeManager
 import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
+import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.prefs.KeyboardPreferences
 import com.onehandkeyboard.spell.Suggestion
 import com.onehandkeyboard.spell.Suggestions
@@ -90,6 +91,23 @@ class KeyboardView(
 
     /** Show the preview bubble (disabled for password fields). */
     var previewEnabled = true
+
+    /**
+     * Blind typing: the letter block is drawn empty and shows no preview of the letter that will
+     * be typed. Control keys and the symbols layer keep their labels.
+     */
+    var lettersHidden = false
+        set(value) {
+            if (field == value) return
+            field = value
+            hideBubble()
+            invalidate()
+        }
+
+    /** The preview bubble is showing (tests). */
+    internal val previewShowing get() = bubbleKey != null
+
+    private fun Key.blank() = lettersHidden && primary && layoutManager.currentMode == LayoutMode.LETTERS
 
     /** A newer build is waiting in settings: marked next to the version label. */
     var updateWaiting = false
@@ -286,6 +304,10 @@ class KeyboardView(
         fillPaint.color = ColorUtils.blendARGB(palette.fill(key.primary), palette.pressed(key.primary), key.press)
         canvas.drawRect(r, fillPaint)
 
+        if (key.blank()) {
+            canvas.restore()
+            return
+        }
         val textColor = palette.text(key.primary)
         val margin = LABEL_MARGIN_DP * density
         drawLabel(
@@ -483,7 +505,8 @@ class KeyboardView(
         val gestureType = if (direction == Direction.CENTER) GestureType.TAP else GestureType.SWIPE
         val action = key.config.getActionFor(gestureType, direction)
         val text = key.label(direction)
-        if (!previewEnabled || !isPreviewable(action) || text.isNullOrEmpty()) {
+        val shown = previewEnabled && !key.blank() && isPreviewable(action)
+        if (!shown || text.isNullOrEmpty()) {
             if (bubbleKey === key || bubbleKey == null) hideBubble()
             return
         }

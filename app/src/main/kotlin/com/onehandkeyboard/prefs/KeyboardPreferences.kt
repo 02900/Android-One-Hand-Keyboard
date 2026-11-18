@@ -39,6 +39,11 @@ class KeyboardPreferences
             get() = prefs.getBoolean(KEY_SUGGESTIONS, true)
             set(value) = prefs.edit().putBoolean(KEY_SUGGESTIONS, value).apply()
 
+        /** Letter keys drawn empty, without a preview of the letter (blind typing). */
+        var hideLetters: Boolean
+            get() = prefs.getBoolean(KEY_HIDE_LETTERS, false)
+            set(value) = prefs.edit().putBoolean(KEY_HIDE_LETTERS, value).apply()
+
         /** Folder (Storage Access Framework tree URI) with the user's memes, or null if not set. */
         var memeFolderUri: String?
             get() = prefs.getString(KEY_MEME_FOLDER, null)
@@ -71,6 +76,7 @@ class KeyboardPreferences
 
         companion object {
             const val DEFAULT_CELL_HEIGHT_DP = 60f
+            private const val KEY_HIDE_LETTERS = "hide_letters"
             private const val KEY_AUTO_UPDATE = "auto_update"
             private const val KEY_UPDATE_SERVER = "update_server"
             private const val KEY_UPDATE_NEEDS_CONFIRMATION = "update_needs_confirmation"
