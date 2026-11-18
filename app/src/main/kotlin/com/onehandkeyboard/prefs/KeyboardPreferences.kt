@@ -39,6 +39,11 @@ class KeyboardPreferences
             get() = prefs.getBoolean(KEY_SUGGESTIONS, true)
             set(value) = prefs.edit().putBoolean(KEY_SUGGESTIONS, value).apply()
 
+        /** Keys without labels or preview, for users who know the layout by heart. */
+        var expertMode: Boolean
+            get() = prefs.getBoolean(KEY_EXPERT_MODE, false)
+            set(value) = prefs.edit().putBoolean(KEY_EXPERT_MODE, value).apply()
+
         /** Folder (Storage Access Framework tree URI) with the user's memes, or null if not set. */
         var memeFolderUri: String?
             get() = prefs.getString(KEY_MEME_FOLDER, null)
@@ -49,8 +54,33 @@ class KeyboardPreferences
             get() = prefs.getString(KEY_RECENT_MEMES, null)?.split(LIST_SEPARATOR)?.filter { it.isNotEmpty() }.orEmpty()
             set(value) = prefs.edit().putString(KEY_RECENT_MEMES, value.joinToString(LIST_SEPARATOR)).apply()
 
+        /** Install new builds from the update server by themselves (debug builds). */
+        var autoUpdate: Boolean
+            get() = prefs.getBoolean(KEY_AUTO_UPDATE, true)
+            set(value) = prefs.edit().putBoolean(KEY_AUTO_UPDATE, value).apply()
+
+        /** Last address where the update server answered (used when the broadcast gets no answer). */
+        var updateServer: String?
+            get() = prefs.getString(KEY_UPDATE_SERVER, null)
+            set(value) = prefs.edit().putString(KEY_UPDATE_SERVER, value).apply()
+
+        /** A background install needed a tap: wait for the user to update from settings. */
+        var updateNeedsConfirmation: Boolean
+            get() = prefs.getBoolean(KEY_UPDATE_NEEDS_CONFIRMATION, false)
+            set(value) = prefs.edit().putBoolean(KEY_UPDATE_NEEDS_CONFIRMATION, value).apply()
+
+        /** Commit of the build that ran last, to notice that the app was updated. */
+        var lastRunCommit: String?
+            get() = prefs.getString(KEY_LAST_RUN_COMMIT, null)
+            set(value) = prefs.edit().putString(KEY_LAST_RUN_COMMIT, value).apply()
+
         companion object {
             const val DEFAULT_CELL_HEIGHT_DP = 60f
+            private const val KEY_EXPERT_MODE = "expert_mode"
+            private const val KEY_AUTO_UPDATE = "auto_update"
+            private const val KEY_UPDATE_SERVER = "update_server"
+            private const val KEY_UPDATE_NEEDS_CONFIRMATION = "update_needs_confirmation"
+            private const val KEY_LAST_RUN_COMMIT = "last_run_commit"
             private const val KEY_MEME_FOLDER = "meme_folder_uri"
             private const val KEY_RECENT_MEMES = "recent_memes"
             private const val LIST_SEPARATOR = "\n"
