@@ -326,7 +326,7 @@ private fun UpdateSettings(preferences: KeyboardPreferences) {
 private fun updateLabel(state: UpdateState): String =
     when (state) {
         UpdateState.Checking -> "Buscando…"
-        UpdateState.NoServer -> "Sin servidor"
+        UpdateState.NoServer -> "Sin conexión"
         UpdateState.UpToDate -> "Al día ✓"
         UpdateState.Failed -> "Reintentar"
         is UpdateState.Downloading -> "${state.percent} %"

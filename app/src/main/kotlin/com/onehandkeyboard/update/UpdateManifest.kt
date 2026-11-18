@@ -51,5 +51,22 @@ object UpdateManifest {
         info: UpdateInfo,
         installedCommit: String,
         installedCommitTime: Long,
-    ): Boolean = info.commit != installedCommit && info.commitTime >= installedCommitTime
+    ): Boolean = !sameCommit(info.commit, installedCommit) && info.commitTime >= installedCommitTime
+
+    /** Short hashes can have different lengths (git lengthens them on bigger clones). */
+    fun sameCommit(
+        a: String,
+        b: String,
+    ): Boolean = a.startsWith(b) || b.startsWith(a)
+
+    /** The newest of the builds found on each server that is an update, with its server. */
+    fun newest(
+        found: Map<String, UpdateInfo>,
+        installedCommit: String,
+        installedCommitTime: Long,
+    ): Pair<String, UpdateInfo>? =
+        found.entries
+            .filter { isNewer(it.value, installedCommit, installedCommitTime) }
+            .maxByOrNull { it.value.commitTime }
+            ?.toPair()
 }

@@ -7,14 +7,16 @@ import java.io.File
 import java.io.IOException
 
 /**
- * Updates the app from `tools/serve_updates.py` running on a PC of the same network. When the
- * server isn't running nothing happens. All functions block (network): call them off the main thread.
+ * Updates the app from the latest GitHub release and from `tools/serve_updates.py` on a PC of the
+ * same network (to try builds before publishing them); the newest of both wins. When neither
+ * answers nothing happens. All functions block (network): call them off the main thread.
  */
 class SelfUpdater(
     context: Context,
     private val preferences: KeyboardPreferences,
     private val discovery: UpdateDiscovery = UpdateDiscovery(),
     private val client: UpdateClient = UpdateClient(),
+    private val releasesUrl: String = BuildConfig.UPDATE_RELEASES_URL,
     val installer: UpdateInstaller = UpdateInstaller(context),
 ) {
     private val folder = File(context.cacheDir, "updates")
@@ -43,20 +45,25 @@ class SelfUpdater(
     }
 
     fun check(): Check {
-        val server = discovery.find()?.also { preferences.updateServer = it } ?: preferences.updateServer
-        val info =
-            try {
-                server?.let(client::fetch)
-            } catch (_: IOException) {
-                null
-            }
+        val lan = discovery.find()?.also { preferences.updateServer = it } ?: preferences.updateServer
+        val found =
+            listOfNotNull(lan, releasesUrl.ifEmpty { null })
+                .mapNotNull { server -> fetch(server)?.let { server to it } }
+                .toMap()
+        val newest = UpdateManifest.newest(found, BuildConfig.GIT_COMMIT, BuildConfig.GIT_COMMIT_TIME)
         return when {
-            server == null || info == null -> Check.NoServer
-            UpdateManifest.isNewer(info, BuildConfig.GIT_COMMIT, BuildConfig.GIT_COMMIT_TIME) ->
-                Check.Available(server, info)
+            newest != null -> Check.Available(newest.first, newest.second)
+            found.isEmpty() -> Check.NoServer
             else -> Check.UpToDate.also { preferences.updateNeedsConfirmation = false }
         }
     }
+
+    private fun fetch(server: String): UpdateInfo? =
+        try {
+            client.fetch(server)
+        } catch (_: IOException) {
+            null
+        }
 
     /** The verified APK of [update] (reused if it was already downloaded). */
     @Throws(IOException::class)

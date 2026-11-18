@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -33,6 +35,21 @@ val gitCommitTime: Long =
             .toLong()
     }.getOrDefault(0L)
 
+// Fixed key for published builds, so every update installs over the previous one (LAN or GitHub).
+// Local builds read keystore.properties (not in git); the release workflow passes OHK_* variables.
+// Without either, builds fall back to the usual per-machine debug key.
+val signingProperties =
+    Properties().apply {
+        rootProject.file("keystore.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
+    }
+
+fun signingValue(
+    property: String,
+    environment: String,
+): String? = signingProperties.getProperty(property) ?: providers.environmentVariable(environment).orNull
+
+val sharedStoreFile = signingValue("storeFile", "OHK_KEYSTORE_FILE")
+
 android {
     namespace = "com.onehandkeyboard"
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -45,12 +62,30 @@ android {
         versionName = "1.0.0"
         buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
         buildConfigField("long", "GIT_COMMIT_TIME", "${gitCommitTime}L")
+        // Latest GitHub release (published by .github/workflows/release.yml); no API, so no rate limit.
+        buildConfigField(
+            "String",
+            "UPDATE_RELEASES_URL",
+            "\"https://github.com/02900/Android-One-Hand-Keyboard/releases/latest/download\"",
+        )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (sharedStoreFile != null) {
+            create("shared") {
+                storeFile = file(sharedStoreFile)
+                storePassword = signingValue("storePassword", "OHK_KEYSTORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "OHK_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "OHK_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
+            signingConfigs.findByName("shared")?.let { signingConfig = it }
             isDebuggable = true
             isMinifyEnabled = false
             applicationIdSuffix = ".debug"

@@ -3,6 +3,8 @@
 
     python tools/serve_updates.py            # build, publish and serve (Ctrl+C to stop)
     python tools/serve_updates.py --no-build # publish the APK that is already built
+    python tools/serve_updates.py --no-build --no-serve --dir dist   # only write APK + update.json
+                                             # (what .github/workflows/release.yml attaches)
 
 The phone finds this PC by itself: it sends a UDP broadcast question (port 47800) and this script
 answers with the HTTP port, so it keeps working when the router gives the PC another IP.
@@ -115,6 +117,7 @@ def main():
         sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--no-build", action="store_true", help="publish the APK already built")
+    parser.add_argument("--no-serve", action="store_true", help="only write the APK and update.json")
     parser.add_argument("--port", type=int, default=8000, help="HTTP port (default 8000)")
     parser.add_argument("--dir", default=OUT, help="folder to publish to (default build/updates)")
     args = parser.parse_args()
@@ -126,6 +129,8 @@ def main():
         build()
     manifest = publish(args.dir)
     print(f"Publicado {manifest['apk']} ({manifest['size'] / 1024 / 1024:.1f} MB)")
+    if args.no_serve:
+        return 0
 
     threading.Thread(target=answer_discovery, args=(args.port,), daemon=True).start()
     handler = functools.partial(QuietHandler, directory=args.dir)
