@@ -12,5 +12,4 @@ data class KeyboardConfiguration(
     val language: Language,
     val mode: LayoutMode,
     val cells: List<CellConfiguration>,
-) {
-}
+)

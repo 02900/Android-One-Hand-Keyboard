@@ -37,6 +37,7 @@ class GestureTracker(
 
     fun track(pointerId: Int): Track? = tracks[pointerId]
 
+    @Suppress("LongParameterList") // one value per property of the new Track
     fun down(
         pointerId: Int,
         cellIndex: Int,

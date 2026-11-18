@@ -106,6 +106,24 @@ class KeyboardConfigurationFactoryTest {
         }
     }
 
+    @Test
+    fun `configurations are cached per language and mode`() {
+        val first = factory.getConfiguration(Language.SPANISH, LayoutMode.LETTERS)
+        assertTrue(first === factory.getConfiguration(Language.SPANISH, LayoutMode.LETTERS))
+        assertFalse(first === factory.getConfiguration(Language.ENGLISH, LayoutMode.LETTERS))
+    }
+
+    @Test
+    fun `layout key offers the next input method on swipe up`() {
+        allConfigurations().forEach { config ->
+            val layoutKey = config.cells.first { it.cellIndex == 3 }
+            assertEquals(
+                ActionConfig.Action(KeyAction.SwitchInputMethod),
+                layoutKey.getActionFor(GestureType.SWIPE, Direction.N),
+            )
+        }
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun `grid dsl rejects a direction declared twice`() {
         keyboardGrid {

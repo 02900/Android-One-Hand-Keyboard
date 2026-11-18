@@ -21,17 +21,29 @@ import javax.inject.Singleton
  *
  * Grid (cell indexes):
  * ```
- *  0  1  2 | 3   layout / height (long-press) / one-hand
+ *  0  1  2 | 3   layout / next IME / height (long-press) / one-hand
  *  4  5  6 | 7   case / clipboard
  *  8  9 10 | 11  backspace / delete word / delete all / undo
  * 12 ---- 14 | 15  space (trackpad, swipe up/down = language) / enter / submit
  * ```
  */
+@Suppress("MagicNumber") // cell indexes are the layout itself (see the grid above)
 @Singleton
 class KeyboardConfigurationFactory
     @Inject
     constructor() {
+        private val cache = HashMap<Pair<Language, LayoutMode>, KeyboardConfiguration>()
+
+        /**
+         * Configurations are immutable, so each (language, mode) is built once and reused:
+         * switching layers never rebuilds the grid and the view can compare by identity.
+         */
         fun getConfiguration(
+            language: Language,
+            mode: LayoutMode,
+        ): KeyboardConfiguration = cache.getOrPut(language to mode) { build(language, mode) }
+
+        private fun build(
             language: Language,
             mode: LayoutMode,
         ): KeyboardConfiguration =
@@ -84,6 +96,7 @@ class KeyboardConfigurationFactory
                 language = Language.ENGLISH,
             )
 
+        @Suppress("LongMethod") // layout data: one block per cell
         private fun spanishLettersGrid() =
             keyboardGrid {
                 cell(0) {
@@ -154,6 +167,7 @@ class KeyboardConfigurationFactory
                 enterCell()
             }
 
+        @Suppress("LongMethod") // layout data: one block per cell
         private fun symbolsGrid() =
             keyboardGrid {
                 cell(0) {
@@ -294,10 +308,14 @@ class KeyboardConfigurationFactory
         // Control column, shared by every layout
         // ------------------------------------------------------------------
 
-        /** Long-press on this key starts the live height resize (handled by the touch layer). */
+        /**
+         * Layer key: tap = switch layer, up = next keyboard (IME), left = default height,
+         * down = one-hand mode. Long-press starts the live height resize (touch layer).
+         */
         private fun GridBuilder.layoutCell(switchAction: ActionConfig) =
             cell(3) {
                 tap(switchAction)
+                swipe(N, ActionConfig.Action(KeyAction.SwitchInputMethod))
                 swipe(W, ActionConfig.ResetCellHeight)
                 swipe(S, ActionConfig.Action(KeyAction.ToggleOneHand))
             }

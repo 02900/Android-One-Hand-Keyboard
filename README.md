@@ -1,6 +1,6 @@
 # OneHandKeyboard - Android 3×3 Gesture IME
 
-Un teclado Android innovador basado en gestos con diseño 3×3, inspirado en MessagEase, construido con Clean Architecture y Android Views para máxima compatibilidad.
+Teclado Android de una mano: una cuadrícula 4×4 (bloque de letras 3×3 + columna de control) con swipes en 8 direcciones, dibujado en un único `KeyboardView` sobre Canvas.
 
 ## 🚀 Características Principales
 
@@ -16,36 +16,41 @@ Un teclado Android innovador basado en gestos con diseño 3×3, inspirado en Mes
 
 ## 🏗️ Arquitectura
 
-El proyecto sigue Clean Architecture con arquitectura modular y está organizado en:
+```
+OneHandKeyboardService (InputMethodService)
+ ├─ KeyboardView ............ Canvas: dibuja la cuadrícula, hit-testing por puntero,
+ │                            animaciones, globo de vista previa, modo una mano,
+ │                            accesibilidad (ExploreByTouchHelper)
+ ├─ GestureIntegration ...... lógica de gestos por puntero (tap/swipe, repetición de
+ │                            borrar, trackpad en espacio, resize con long-press)
+ │    └─ core:gesture ....... GestureTracker + SwipeResolver (puros, testeados)
+ ├─ KeyboardLayoutManager ... estado: capa, idioma, shift/caps/auto-mayúscula, tecla muerta
+ │    └─ KeyboardConfigurationFactory ... layouts con DSL `keyboardGrid { cell(i) { … } }`
+ ├─ KeyboardActionProcessor . acción → InputCommitter (InputConnection)
+ └─ GestureHintProvider ..... etiquetas y descripciones (ActionConfig.label / spokenName)
+```
 
-### Módulos Core
-- `core:domain` - Casos de uso y modelos de dominio
-- `core:gesture` - Motor de detección de gestos simplificado basado en desplazamiento
-- `core:mapping` - Sistema de mapeo (celda, dirección) → acción
-- `core:text` - Adaptadores InputConnection y comandos
-- `core:design` - Design System y componentes UI
-- `core:data` - Repositorios, DataStore y Room
-- `core:analytics` - Telemetría ética opcional
-- `core:testkit` - Utilidades de testing
+### Módulos
+- `app-ime` (carpeta `app/`) – el servicio IME, la vista, los layouts y los ajustes (Compose).
+- `core:gesture` – resolución de swipes (`SwipeResolver`) y seguimiento por puntero (`GestureTracker`).
+- `core:domain` – modelos compartidos (`Direction`, `GestureType`, `KeyAction`, `KeyboardOutput`, `CaseMode`).
+- `core:design` – temas (`ThemeManager`, 5 tokens de color).
 
-### Módulos Feature
-- `feature:keyboard` - UI del teclado y lógica MVI
-- `feature:settings` - Pantallas de configuración
-
-### App Principal
-- `app-ime` - InputMethodService refactorizado en componentes modulares:
-  - **OneHandKeyboardService**: Servicio principal coordinador
-  - **KeyboardConfigManager**: Gestión de configuración y estado (Hilt singleton)
-  - **KeyboardUiFactory**: Creación de UI con Android Views
-  - **GestureIntegration**: Integración de gestos y detección de eventos
-  - **KeyboardActionProcessor**: Procesamiento de acciones y entrada de texto
+### Gestos de la columna de control
+| Tecla | Tap | Swipe / long-press |
+|---|---|---|
+| Capa (3) | ABC ↔ 123 | ↑ siguiente teclado · ← altura por defecto · ↓ modo una mano · long-press + arrastrar = altura |
+| Mayúsculas (7) | una vez / doble tap = bloqueo | ↑ copiar todo · ↓ pegar |
+| Borrar (11) | borrar (mantener = repetir) | ← palabra · ↑ todo · → deshacer |
+| Espacio (12–14) | espacio (doble = ". ") | arrastrar ↔ = cursor · ↑/↓ = idioma |
+| Enter (15) | acción del campo (↵ 🔍 ➤ ✓) | → enviar |
 
 ## 🛠️ Stack Tecnológico
 
 - **Lenguaje**: Kotlin
-- **UI**: Android Views (estable para IME)
+- **UI**: `View` propia dibujada en Canvas (teclado) y Compose (ajustes)
 - **DI**: Hilt (configuración y gestores)
-- **Persistencia**: DataStore + Room (opcional)
+- **Persistencia**: SharedPreferences (`KeyboardPreferences`, `ThemeManager`)
 - **Concurrencia**: Coroutines + Flow
 - **Testing**: JUnit, Robolectric, MockK
 - **Calidad**: ktlint, detekt, CI/CD
@@ -115,7 +120,7 @@ El proyecto sigue Clean Architecture con arquitectura modular y está organizado
 
 ### Prerrequisitos
 - **Android Studio**: Ladybug (2024.2.1) o superior
-- **JDK**: 11+ (recomendado usar el JDK incluido en Android Studio)
+- **JDK**: 17 (recomendado usar el JDK incluido en Android Studio)
 - **Android SDK**: API 26+ (Android 8.0) como mínimo
 - **Git**: Para clonar el repositorio
 
@@ -145,7 +150,7 @@ El proyecto sigue Clean Architecture con arquitectura modular y está organizado
    $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
    
    # O usando tu JDK instalado
-   $env:JAVA_HOME = "C:\Program Files\Java\jdk-11"
+   $env:JAVA_HOME = "C:\Program Files\Java\jdk-17"
    ```
 
 3. Verifica la configuración:
@@ -178,9 +183,6 @@ El proyecto sigue Clean Architecture con arquitectura modular y está organizado
 ```bash
 # Solo módulos core
 ./gradlew :core:domain:build :core:gesture:build
-
-# Solo módulos feature
-./gradlew :feature:keyboard:build :feature:settings:build
 ```
 
 ### Ejecutar Tests
@@ -249,6 +251,13 @@ El proyecto incluye:
 - **Property-based testing**: Motor de gestos
 - **Golden tests**: Trayectorias de gestos
 
+## 📦 Generar el APK
+
+```bash
+./gradlew :app-ime:assembleDebug     # app/build/outputs/apk/debug/
+./gradlew :app-ime:assembleRelease   # app/build/outputs/apk/release/
+```
+
 ## 📱 Instalación y Configuración
 
 ### Paso 1: Compilar el APK
@@ -287,11 +296,11 @@ adb install app/build/outputs/apk/debug/app-ime-debug.apk
 4. Selecciona **"OneHandKeyboard"** de la lista
 
 ### Paso 5: ¡Probar el Teclado!
-- **Toca las celdas del grid 3x3** para escribir letras
-- **Desliza en 8 direcciones** para acceder a caracteres adicionales
-- **Toca la celda 03** para alternar entre ABC ↔ 123 (letras/números)
-- **Usa el botón ⌫** para borrar
-- **Usa "Space"** para espacios
+- **Toca una celda** para escribir su letra central y **desliza** hacia una etiqueta para escribirla
+  (un globo muestra lo que vas a escribir antes de soltar).
+- Las teclas de control de la columna derecha y la fila inferior se describen en la tabla de
+  [Arquitectura](#️-arquitectura).
+- **TalkBack**: cada tecla es un elemento navegable; los swipes están en el menú de acciones.
 
 ### Configuración Adicional
 - **Temas**: Abre la app "OneHandKeyboard" desde el launcher para cambiar temas
@@ -332,30 +341,3 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 ---
 
 **Construido con ❤️ para la comunidad Android**
-
-
-
-Como puedo hacer el build del apk? con que comando?
-
-¡Excelente pregunta! Para generar el APK del teclado, puedes usar los siguientes comandos de Gradle:
-
-🔨 Comandos para Build del APK
-
-1. APK de Debug (Desarrollo):
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; ./gradlew assembleDebug --no-daemon
-
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; ./gradlew assembleDebug --no-daemon -x ktlintCheck -x detekt
-
-2. APK de Release (Producción):
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; ./gradlew assembleRelease --no-daemon
-
-3. Build Completo (Debug + Release):
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; ./gradlew build --no-daemon -x ktlintCheck -x detekt
-
-
-📍 Ubicación de los APKs generados:
-Después del build exitoso, encontrarás los APKs en:
-
-Debug APK: app/build/outputs/apk/debug/app-debug.apk
-Release APK: app/build/outputs/apk/release/app-release.apk
-

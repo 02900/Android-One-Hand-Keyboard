@@ -8,6 +8,7 @@ import android.os.SystemClock
 import android.util.Log
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
+import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.input.InputCommitter
 import com.onehandkeyboard.ui.LayoutCalculator
 
@@ -25,6 +26,7 @@ class KeyboardActionProcessor(
     private val onCaseSwitch: () -> Unit,
     private val onHeightChanged: () -> Unit,
     private val onToggleOneHand: () -> Unit = {},
+    private val onSwitchInputMethod: () -> Unit = {},
     private val committer: InputCommitter = InputCommitter(),
 ) {
     private val ic get() = service.currentInputConnection
@@ -76,11 +78,11 @@ class KeyboardActionProcessor(
                 onCaseSwitch()
             }
             is KeyAction.SwitchToNumbers -> {
-                configManager.switchToSymbols()
+                configManager.setMode(LayoutMode.SYMBOLS)
                 onLayoutSwitch()
             }
             is KeyAction.SwitchToLetters -> {
-                configManager.switchToLetters()
+                configManager.setMode(LayoutMode.LETTERS)
                 onLayoutSwitch()
             }
             is KeyAction.InsertText -> committer.commitText(ic, action.text)
@@ -93,10 +95,11 @@ class KeyboardActionProcessor(
             is KeyAction.CursorRight -> committer.moveCursor(ic, 1)
             is KeyAction.DeadKey -> if (configManager.setDeadKey(action.accent)) onCaseSwitch()
             is KeyAction.SwitchLanguage -> {
-                configManager.switchLanguage()
+                configManager.setLanguage(configManager.currentLanguage.other())
                 onLayoutSwitch()
             }
             is KeyAction.ToggleOneHand -> onToggleOneHand()
+            is KeyAction.SwitchInputMethod -> onSwitchInputMethod()
             is KeyAction.IncreaseCellHeight -> if (layoutCalculator.increaseCellHeight()) onHeightChanged()
             is KeyAction.DecreaseCellHeight -> if (layoutCalculator.decreaseCellHeight()) onHeightChanged()
             is KeyAction.ResetCellHeight -> if (layoutCalculator.resetCellHeight()) onHeightChanged()
@@ -115,7 +118,7 @@ class KeyboardActionProcessor(
 
     private fun executeCopyAll() {
         val clipboard = service.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
-        val text = committer.fullText(ic)
+        val text = InputCommitter.fullText(ic)
         if (!text.isNullOrEmpty()) {
             clipboard.setPrimaryClip(ClipData.newPlainText("OneHandKeyboard", text))
         }
