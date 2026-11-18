@@ -1,0 +1,14 @@
+Autocorrect dictionaries (es.tsv, en.tsv)
+
+Derived from FrequencyWords by Hermit Dave
+https://github.com/hermitdave/FrequencyWords
+(content/2018/es/es_50k.txt and content/2018/en/en_50k.txt, word frequencies computed
+from OpenSubtitles 2018: http://opus.nlpl.eu/OpenSubtitles2018.php)
+
+The source data is licensed under Creative Commons Attribution-ShareAlike 4.0
+International (CC BY-SA 4.0): https://creativecommons.org/licenses/by-sa/4.0/
+
+Changes: non-alphabetic tokens and stray single letters removed; Spanish words without an
+accent removed when the accented spelling is far more frequent (common misspellings such as
+"tambien"); English contractions restored ("don't", "I'm"). See tools/build_dictionary.py.
+These derived files are distributed under the same CC BY-SA 4.0 license.
