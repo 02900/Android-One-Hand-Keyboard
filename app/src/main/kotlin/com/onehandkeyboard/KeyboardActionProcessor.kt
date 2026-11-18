@@ -112,10 +112,13 @@ class KeyboardActionProcessor(
             is KeyAction.CursorLeft -> committer.moveCursor(ic, -1)
             is KeyAction.CursorRight -> committer.moveCursor(ic, 1)
             is KeyAction.DeadKey -> if (configManager.setDeadKey(action.accent)) onCaseSwitch()
-            is KeyAction.SwitchLanguage -> {
-                configManager.setLanguage(configManager.currentLanguage.other())
-                onLayoutSwitch()
-            }
+            is KeyAction.SwitchLanguage ->
+                if (configManager.setLanguage(
+                        configManager.currentLanguage.other(),
+                    )
+                ) {
+                    onLayoutSwitch()
+                }
             is KeyAction.IncreaseCellHeight -> if (layoutCalculator.increaseCellHeight()) onHeightChanged()
             is KeyAction.DecreaseCellHeight -> if (layoutCalculator.decreaseCellHeight()) onHeightChanged()
             is KeyAction.ResetCellHeight -> if (layoutCalculator.resetCellHeight()) onHeightChanged()

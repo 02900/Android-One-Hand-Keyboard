@@ -9,7 +9,7 @@ Teclado Android de una mano: una cuadrícula 4×4 (bloque de letras 3×3 + colum
 - **Latencia ultra-baja**: ≤20ms desde gesto hasta texto
 - **Accesibilidad completa**: Soporte TalkBack, alto contraste, tamaños adaptativos
 - **Modular**: Arquitectura limpia con módulos independientes
-- **Multiidioma**: Soporte para español (es-MX) e inglés (en-US)
+- **Idiomas**: español (es-MX). El inglés (en-US) está desactivado hasta que su distribución de letras sea la definitiva (`Language.ENGLISH`, `res/xml/method.xml`)
 - **Layouts Dinámicos**: Intercambio entre Letters/Symbols y modos de mayúsculas
 - **Gestos Simplificados**: Tap y Swipe en 8 direcciones con detección por desplazamiento
 - **Sistema de Temas**: 5 tokens esenciales con colores diferenciados para grupos de celdas
@@ -45,7 +45,7 @@ OneHandKeyboardService (InputMethodService)
 | Capa (3) | ABC ↔ 123 | ← altura por defecto · ↓ memes · long-press + arrastrar = altura |
 | Mayúsculas (7) | una vez / doble tap = bloqueo | ↑ copiar todo · ↓ pegar |
 | Borrar (11) | borrar (mantener = repetir) | ← palabra · ↑ todo · → deshacer |
-| Espacio (12–14) | espacio (doble = ". ") | arrastrar ↔ = cursor · ↑/↓ = idioma |
+| Espacio (12–14) | espacio (doble = ". ") | arrastrar ↔ = cursor · ↑/↓ = idioma (con el inglés desactivado, escribe un espacio) |
 | Enter (15) | acción del campo (↵ 🔍 ➤ ✓) | → enviar |
 
 ## ✍️ Autocorrector

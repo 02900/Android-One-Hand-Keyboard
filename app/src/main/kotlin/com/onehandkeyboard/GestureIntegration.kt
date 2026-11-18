@@ -11,6 +11,7 @@ import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
 import com.onehandkeyboard.core.gesture.GestureTracker
+import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.gestures.GestureAction
 import com.onehandkeyboard.ui.KeyFeedback
 import kotlin.math.abs
@@ -171,7 +172,8 @@ class GestureIntegration(
             state?.mode == Mode.SPACE -> {
                 when {
                     state.trackpadMoved -> Unit
-                    state.verticalSwipe != Direction.CENTER -> onOutput(KeyboardOutput.Action(KeyAction.SwitchLanguage))
+                    state.verticalSwipe != Direction.CENTER && Language.canSwitch ->
+                        onOutput(KeyboardOutput.Action(KeyAction.SwitchLanguage))
                     else -> perform(result.cellIndex, Direction.CENTER)
                 }
             }

@@ -14,6 +14,7 @@ import com.onehandkeyboard.config.KeyboardConfigurationFactory
 import com.onehandkeyboard.core.design.theme.ThemeManager
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
+import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.prefs.KeyboardPreferences
 import com.onehandkeyboard.spell.Suggestion
 import com.onehandkeyboard.spell.Suggestions
@@ -181,6 +182,23 @@ class KeyboardViewTest {
         send(MotionEvent.ACTION_UP, listOf(0 to end))
 
         assertEquals(listOf<KeyboardOutput>(KeyboardOutput.Character("ñ")), outputs)
+    }
+
+    @Test
+    fun `vertical swipe on the space bar types a space while English is disabled`() {
+        createView()
+        val start = cellCenter(13)
+        tap(start)
+        val tapOutput = outputs.toList()
+        outputs.clear()
+
+        val end = floatArrayOf(start[0], start[1] - rowHeight * 0.45f)
+        send(MotionEvent.ACTION_DOWN, listOf(0 to start))
+        send(MotionEvent.ACTION_MOVE, listOf(0 to end))
+        send(MotionEvent.ACTION_UP, listOf(0 to end))
+
+        assertEquals(tapOutput, outputs)
+        assertEquals(Language.SPANISH, layoutManager.currentLanguage)
     }
 
     @Test
