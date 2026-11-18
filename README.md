@@ -84,6 +84,23 @@ Memes/
 - **Cómo se envía:** si la app acepta imágenes en ese campo (WhatsApp, Telegram, Signal…), el meme se inserta directo. Si no, queda copiado en el portapapeles y aparece un aviso para pegarlo.
 - Para actualizar el pack basta con cambiar los archivos de la carpeta: se vuelve a leer cada vez que abres el panel.
 
+## 🔄 Actualizaciones por la red local (build de debug)
+
+En la PC, con el teléfono en la misma Wi-Fi:
+
+```bash
+python tools/serve_updates.py   # compila, publica y sirve; Ctrl+C para parar
+```
+
+- **Sin IP fija:** el teléfono pregunta por broadcast UDP (puerto 47800) y el script responde, así que sigue funcionando aunque el router le cambie la IP a la PC. Si el script no está corriendo, el teclado simplemente no encuentra actualizaciones.
+- **Ajustes → Versión** busca al abrir y muestra **Actualizar** si hay un build más nuevo (otro commit, no más viejo). La primera vez Android pide confirmar y permitir "instalar apps de esta fuente".
+- **Actualizar sola** (Android 12+): después de la primera actualización desde la app, el teclado busca cada 10 min mientras escribes, descarga en segundo plano e instala **al ocultarse**. Si Android pide confirmar, aparece "⬆ actualización" junto a la versión del teclado.
+- El APK se verifica con el SHA-256 de `update.json`, y Android solo lo instala si tiene la misma firma que la app instalada.
+- Solo el build de debug tiene permiso de red (`src/debug/AndroidManifest.xml`); el de release sigue sin red.
+- La primera vez que corre el script, Windows puede preguntar si Python puede usar redes privadas: hay que permitirlo.
+
+**Compartir app:** Ajustes → Compartir envía el APK instalado como archivo (Telegram, WhatsApp…).
+
 ## 🛠️ Stack Tecnológico
 
 - **Lenguaje**: Kotlin
@@ -369,7 +386,7 @@ y se distribuyen bajo CC BY-SA 4.0 (ver [`assets/dict/LICENSE.txt`](app/src/main
 
 ## 🔒 Privacidad
 
-- **Sin permisos de red** por defecto
+- **Sin permisos de red** en release (el build de debug solo los usa para actualizarse desde tu PC en la red local)
 - **Memes:** solo lee la carpeta que eliges en ajustes; nada se descarga ni se sube
 - **Sin telemetría** obligatoria
 - **Datos locales** únicamente

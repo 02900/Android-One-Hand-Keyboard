@@ -241,6 +241,13 @@ da latencia y consumo mínimos, y animaciones más fáciles (todo es un valor in
 - [x] El pack vive fuera de la app, en una carpeta que el usuario elige (Storage Access Framework); sin Internet ni permiso de almacenamiento.
 - [x] Envío con `commitContent` a las apps que aceptan imágenes; portapapeles como alternativa.
 
+### Actualizaciones, ícono y ajustes
+- [x] Autoactualización desde la PC (`tools/serve_updates.py`), descubierta por broadcast UDP, sin IP fija; solo en debug.
+- [x] Instalación silenciosa al ocultar el teclado (Android 12+, después de la primera actualización confirmada).
+- [x] Compartir el APK instalado por Telegram/WhatsApp.
+- [x] Ícono propio: cuadrícula 4×4 con la tecla del pulgar resaltada (adaptativo + monocromo).
+- [x] Ajustes en lista plana: solo etiqueta y control.
+
 ---
 
 ## 6. Métricas para saber si mejoró
