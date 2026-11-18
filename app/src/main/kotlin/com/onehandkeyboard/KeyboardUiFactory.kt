@@ -1,7 +1,6 @@
 package com.onehandkeyboard
 
 import android.content.Context
-import android.util.Log
 import android.view.MotionEvent
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -110,16 +109,7 @@ class KeyboardUiFactory(
             labelFactory.createDirectionalLabelsAbsolute(this, cellConfig, cellIndex)
 
             // Configurar touch listener para gestos
-            setOnTouchListener { _, event ->
-                Log.d("OneHandKeyboard", "🎯 Touch event on cell $cellIndex: ${event.action}")
-
-                // Procesar gesto usando el callback proporcionado
-                val handled = onTouchListener(event, cellIndex)
-                Log.d("OneHandKeyboard", "🎯 Gesture processed: $handled")
-
-                // Consumir el evento para evitar propagación
-                handled
-            }
+            setOnTouchListener { _, event -> onTouchListener(event, cellIndex) }
         }
     }
 

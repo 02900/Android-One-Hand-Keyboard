@@ -37,41 +37,26 @@ class DefaultGestureDetector
             cellBounds: Array<CellBounds>,
         ): Boolean {
             return try {
-                println(
-                    "🎯 DETECTOR: onTouchEvent called - action: ${event.action}, cellBounds.size: ${cellBounds.size}",
-                )
 
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
-                        println("🎯 DETECTOR: About to call handleActionDown")
                         handleActionDown(event, cellBounds)
-                        println("🎯 DETECTOR: handleActionDown completed")
                     }
                     MotionEvent.ACTION_MOVE -> {
-                        println("🎯 DETECTOR: About to call handleActionMove")
                         handleActionMove(event, cellBounds)
-                        println("🎯 DETECTOR: handleActionMove completed")
                     }
                     MotionEvent.ACTION_UP -> {
-                        println("🎯 DETECTOR: About to call handleActionUp")
                         handleActionUp(event, cellBounds)
-                        println("🎯 DETECTOR: handleActionUp completed")
                     }
                     MotionEvent.ACTION_CANCEL -> {
-                        println("🎯 DETECTOR: About to call handleActionCancel")
                         handleActionCancel()
-                        println("🎯 DETECTOR: handleActionCancel completed")
                     }
                     else -> {
-                        println("🎯 DETECTOR: Unknown action: ${event.action}")
                     }
                 }
 
-                println("🎯 DETECTOR: onTouchEvent returning true")
                 true
             } catch (e: Exception) {
-                println("🎯 DETECTOR: EXCEPTION in onTouchEvent: ${e.message}")
-                e.printStackTrace()
                 false
             }
         }
@@ -83,12 +68,10 @@ class DefaultGestureDetector
             touchEventHandler.updateCellBounds(cellBounds)
             val touchInfo = touchEventHandler.processTouchEvent(event)
 
-            println("🎯 DETECTOR: handleActionDown - position: ${touchInfo.position}, cell: ${touchInfo.cell}")
 
             if (touchInfo.cell == -1) {
                 // Touch outside keyboard area
                 currentState = GestureState.IDLE
-                println("🎯 DETECTOR: Touch outside keyboard area, setting IDLE")
                 return
             }
 
@@ -100,7 +83,6 @@ class DefaultGestureDetector
             velocityCalculator.addVelocityPoint(touchInfo.position, touchInfo.timestamp)
             directionDetector.reset()
 
-            println("🎯 DETECTOR: handleActionDown completed - state: $currentState, startCell: ${touchInfo.cell}")
         }
 
         private fun handleActionMove(
@@ -126,10 +108,8 @@ class DefaultGestureDetector
             event: MotionEvent,
             cellBounds: Array<CellBounds>,
         ) {
-            println("🎯 DETECTOR: handleActionUp called, currentState: $currentState")
 
             if (currentState == GestureState.IDLE) {
-                println("🎯 DETECTOR: State is IDLE, returning early")
                 return
             }
 
@@ -143,7 +123,6 @@ class DefaultGestureDetector
             val startPosition = if (allPoints.isNotEmpty()) allPoints.first().position else touchInfo.position
             val distance = startPosition.distanceTo(touchInfo.position)
 
-            println("🎯 DETECTOR: duration: $duration, distance: $distance, velocity: $velocity")
 
             // Get start cell from first touch
             val startCell =
@@ -168,7 +147,6 @@ class DefaultGestureDetector
                     directionDetector.detectDirectionWithDeadZones(startPosition, touchInfo.position)
                 }
 
-            println("🎯 DETECTOR: gestureType: $gestureType, direction: $direction")
 
             val gesture =
                 Gesture(
@@ -185,7 +163,6 @@ class DefaultGestureDetector
 
             // Emit the gesture
             val result = _gestures.trySend(gesture)
-            println("🎯 GESTURE DETECTOR: Emitting gesture $gesture, result: $result")
 
             // Reset state
             currentState = GestureState.IDLE
