@@ -6,7 +6,8 @@ An Android keyboard for typing with one hand: a 4×4 grid (3×3 letter block + c
 
 - **Taps and 8-direction swipes**, with a preview bubble and a control column (123, shift, backspace, space/cursor, enter).
 - **Autocorrect that doesn't insist**: fixes accents and typos when a word is closed; `⌫` undoes it and learns the word.
-- **Meme library**: GIFs and stickers from a phone folder you choose.
+- **Meme library**: GIFs and stickers from a phone folder you choose, sent as stickers where the app supports them.
+- **Voice typing**: swipe ← on the 123 key and speak.
 - **Expert mode**: keys without labels, for typing from memory.
 - **Themes** and **TalkBack** support.
 - **Updates itself** from GitHub Releases and can be **shared** as an APK.
@@ -41,6 +42,7 @@ An Android keyboard for typing with one hand: a 4×4 grid (3×3 letter block + c
 - Everything is processed on the phone: no telemetry, and what you type is never sent anywhere.
 - The release APK has no network permission. The debug APK only uses it to look for updates on GitHub and on your PC on the local network.
 - Memes are only read from the folder you choose in the settings.
+- Voice typing uses Android's speech recognition service: on-device when the phone supports it, otherwise that service may send the audio to its provider (as with Gboard). The microphone is only used while you dictate.
 
 ## License
 

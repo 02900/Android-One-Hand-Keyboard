@@ -1,8 +1,10 @@
 package com.onehandkeyboard.ui
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -43,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.onehandkeyboard.BuildConfig
 import com.onehandkeyboard.R
 import com.onehandkeyboard.core.design.theme.KeyboardThemeWithTokens
@@ -73,11 +76,18 @@ class SettingsActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // The keyboard cannot show the permission dialog itself: it opens this screen to ask.
+        val requestMicrophone =
+            intent.getBooleanExtra(EXTRA_REQUEST_MICROPHONE, false) && savedInstanceState == null
         setContent {
             OneHandKeyboardTheme(themeManager = themeManager) {
-                SettingsScreen(preferences, spellEngines::clearLearnedWords)
+                SettingsScreen(preferences, spellEngines::clearLearnedWords, requestMicrophone)
             }
         }
+    }
+
+    companion object {
+        const val EXTRA_REQUEST_MICROPHONE = "request_microphone"
     }
 }
 
@@ -101,6 +111,7 @@ private fun OneHandKeyboardTheme(
 private fun SettingsScreen(
     preferences: KeyboardPreferences,
     onClearLearnedWords: () -> Unit,
+    requestMicrophone: Boolean = false,
 ) {
     val context = LocalContext.current
     Column(
@@ -127,9 +138,34 @@ private fun SettingsScreen(
             }) { Text("Configurar") }
         }
         WritingSettings(preferences, onClearLearnedWords)
+        VoiceSettings(requestMicrophone)
         MemeSettings(preferences)
         ShareAppRow()
         if (BuildConfig.SELF_UPDATE) UpdateSettings(preferences)
+    }
+}
+
+/** Voice typing needs the microphone permission; asked here (right away when the keyboard sent us). */
+@Composable
+private fun VoiceSettings(requestOnOpen: Boolean) {
+    val context = LocalContext.current
+
+    fun granted() =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+    var allowed by remember { mutableStateOf(granted()) }
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { result ->
+            allowed = result
+            if (result && requestOnOpen) {
+                Toast.makeText(context, "Listo: vuelve al teclado y desliza ← en 123", Toast.LENGTH_LONG).show()
+            }
+        }
+    LaunchedEffect(Unit) { if (requestOnOpen && !allowed) launcher.launch(Manifest.permission.RECORD_AUDIO) }
+    SettingRow("Dictado por voz", value = if (allowed) "Micrófono permitido" else null) {
+        if (!allowed) {
+            OutlinedButton(onClick = { launcher.launch(Manifest.permission.RECORD_AUDIO) }) { Text("Permitir") }
+        }
     }
 }
 

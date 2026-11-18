@@ -105,6 +105,11 @@ sealed class KeyAction {
     object ShowMemes : KeyAction()
 
     /**
+     * Voice typing: speak and the recognized text is typed
+     */
+    object VoiceInput : KeyAction()
+
+    /**
      * Dead key: the next vowel is combined with [accent] (e.g. ´ + e = é)
      */
     data class DeadKey(val accent: Char) : KeyAction()
