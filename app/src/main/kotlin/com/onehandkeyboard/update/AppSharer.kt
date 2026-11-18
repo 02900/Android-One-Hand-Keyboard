@@ -19,7 +19,7 @@ class AppSharer(
     @Throws(IOException::class)
     fun prepare(): File {
         val folder = File(context.cacheDir, "share").apply { mkdirs() }
-        val apk = File(folder, "OneHandKeyboard-${BuildConfig.GIT_COMMIT}.apk")
+        val apk = File(folder, "OneHandKeyboard-${BuildConfig.BUILD_TYPE}-${BuildConfig.GIT_COMMIT}.apk")
         folder.listFiles()?.filter { it != apk }?.forEach { it.delete() }
         val installed = File(context.applicationInfo.sourceDir)
         if (!apk.isFile || apk.length() != installed.length()) installed.copyTo(apk, overwrite = true)

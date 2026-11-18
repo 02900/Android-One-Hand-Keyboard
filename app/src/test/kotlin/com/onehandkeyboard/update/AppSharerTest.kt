@@ -38,7 +38,7 @@ class AppSharerTest {
 
         val apk = sharer.prepare()
 
-        assertEquals("OneHandKeyboard-${BuildConfig.GIT_COMMIT}.apk", apk.name)
+        assertEquals("OneHandKeyboard-${BuildConfig.BUILD_TYPE}-${BuildConfig.GIT_COMMIT}.apk", apk.name)
         assertArrayEquals(byteArrayOf(1, 2, 3, 4), apk.readBytes())
     }
 

@@ -94,6 +94,8 @@ android {
             buildConfigField("boolean", "SELF_UPDATE", "true")
         }
         release {
+            // Same fixed key as debug when available; otherwise Gradle leaves the release APK unsigned.
+            signingConfigs.findByName("shared")?.let { signingConfig = it }
             buildConfigField("boolean", "SELF_UPDATE", "false")
             isMinifyEnabled = true
             isShrinkResources = true

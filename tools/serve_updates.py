@@ -62,7 +62,7 @@ def publish(out):
         sys.exit(f"No APK at {APK}: build it first (run without --no-build).")
     commit = git("rev-parse", "--short", "HEAD")
     os.makedirs(out, exist_ok=True)
-    name = f"OneHandKeyboard-{commit}.apk"
+    name = f"OneHandKeyboard-debug-{commit}.apk"
     shutil.copyfile(APK, os.path.join(out, name))
     manifest = {
         "commit": commit,
