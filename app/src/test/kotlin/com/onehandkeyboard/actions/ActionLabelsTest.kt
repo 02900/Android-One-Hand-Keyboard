@@ -15,8 +15,7 @@ class ActionLabelsTest {
         listOf(
             ActionConfig.SwitchLayout, ActionConfig.SwitchCase, ActionConfig.Backspace, ActionConfig.Space,
             ActionConfig.Enter, ActionConfig.Submit, ActionConfig.ShowNumbers, ActionConfig.ShowLetters,
-            ActionConfig.Paste, ActionConfig.CopyAll, ActionConfig.DeleteAll, ActionConfig.IncreaseCellHeight,
-            ActionConfig.DecreaseCellHeight, ActionConfig.ResetCellHeight,
+            ActionConfig.Paste, ActionConfig.CopyAll, ActionConfig.DeleteAll,
         )
 
     @Test

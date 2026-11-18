@@ -89,16 +89,13 @@ class KeyboardConfigurationFactoryTest {
     }
 
     @Test
-    fun `control keys expose delete word and no 1dp height steps`() {
+    fun `backspace swipes left to delete a word`() {
         allConfigurations().forEach { config ->
             val backspace = config.cells.first { it.cellIndex == 11 }
             assertEquals(
                 ActionConfig.Action(KeyAction.DeleteWord),
                 backspace.getActionFor(GestureType.SWIPE, Direction.W),
             )
-            val layoutKey = config.cells.first { it.cellIndex == 3 }
-            assertFalse(layoutKey.actions.values.contains(ActionConfig.IncreaseCellHeight))
-            assertFalse(layoutKey.actions.values.contains(ActionConfig.DecreaseCellHeight))
         }
     }
 
@@ -110,11 +107,10 @@ class KeyboardConfigurationFactoryTest {
     }
 
     @Test
-    fun `layout key switches layer, resets the height and opens the memes`() {
+    fun `layout key switches layer and only swipes down to the memes`() {
         allConfigurations().forEach { config ->
             val layoutKey = config.cells.first { it.cellIndex == 3 }
-            assertEquals(setOf(Direction.W, Direction.S), layoutKey.getDirectionsFor(GestureType.SWIPE).toSet())
-            assertEquals(ActionConfig.ResetCellHeight, layoutKey.getActionFor(GestureType.SWIPE, Direction.W))
+            assertEquals(setOf(Direction.S), layoutKey.getDirectionsFor(GestureType.SWIPE).toSet())
             assertEquals(
                 ActionConfig.Action(KeyAction.ShowMemes),
                 layoutKey.getActionFor(GestureType.SWIPE, Direction.S),

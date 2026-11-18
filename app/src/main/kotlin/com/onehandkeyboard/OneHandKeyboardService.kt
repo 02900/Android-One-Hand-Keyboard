@@ -152,7 +152,7 @@ class OneHandKeyboardService : InputMethodService() {
      * instance, so their state survives input view re-creations.
      */
     private fun initializeComponents() {
-        layoutCalculator = LayoutCalculator(this, preferences)
+        layoutCalculator = LayoutCalculator(this)
         memeLibrary = MemeLibrary(this)
         memeSender = MemeSender(this)
         memeThumbnails = MemeThumbnails(this, ContextCompat.getMainExecutor(this))
@@ -176,13 +176,11 @@ class OneHandKeyboardService : InputMethodService() {
             KeyboardActionProcessor(
                 service = this,
                 configManager = layoutManager,
-                layoutCalculator = layoutCalculator,
                 onLayoutSwitch = {
                     spellEngines.preload(layoutManager.currentLanguage)
                     keyboardView?.showCurrentLayout()
                 },
                 onCaseSwitch = { keyboardView?.refreshLabels() },
-                onHeightChanged = { keyboardView?.applyCellHeight() },
                 corrector = autoCorrector,
                 onShowMemes = ::showMemes,
             )

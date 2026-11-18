@@ -12,7 +12,6 @@ import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.input.InputCommitter
 import com.onehandkeyboard.spell.AutoCorrector
 import com.onehandkeyboard.spell.Suggestion
-import com.onehandkeyboard.ui.LayoutCalculator
 
 /**
  * Processes keyboard outputs (characters and actions) against the current input field.
@@ -23,10 +22,8 @@ import com.onehandkeyboard.ui.LayoutCalculator
 class KeyboardActionProcessor(
     private val service: InputMethodService,
     private val configManager: KeyboardLayoutManager,
-    private val layoutCalculator: LayoutCalculator,
     private val onLayoutSwitch: () -> Unit,
     private val onCaseSwitch: () -> Unit,
-    private val onHeightChanged: () -> Unit,
     private val committer: InputCommitter = InputCommitter(),
     private val corrector: AutoCorrector? = null,
     private val onShowMemes: () -> Unit = {},
@@ -119,9 +116,6 @@ class KeyboardActionProcessor(
                 ) {
                     onLayoutSwitch()
                 }
-            is KeyAction.IncreaseCellHeight -> if (layoutCalculator.increaseCellHeight()) onHeightChanged()
-            is KeyAction.DecreaseCellHeight -> if (layoutCalculator.decreaseCellHeight()) onHeightChanged()
-            is KeyAction.ResetCellHeight -> if (layoutCalculator.resetCellHeight()) onHeightChanged()
             is KeyAction.ShowMemes -> onShowMemes()
             else -> Log.d(TAG, "Action not implemented: ${action::class.simpleName}")
         }

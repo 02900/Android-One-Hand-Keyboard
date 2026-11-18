@@ -28,7 +28,6 @@ import kotlin.math.max
  * - Holding backspace repeats with acceleration.
  * - Space bar: horizontal drag moves the cursor (trackpad), vertical swipe switches language.
  *   A hurried tap that slides a little but never moves the cursor still types the space.
- * - Long-press on the layout key starts a live height resize (vertical drag).
  *
  * Privacy: nothing that reveals what the user types is logged.
  */
@@ -48,16 +47,9 @@ class GestureIntegration(
             cellIndex: Int,
             direction: Direction,
         ) {}
-
-        fun onResizeStarted() {}
-
-        /** [totalDyPx]: vertical drag on screen since the resize started (negative = up = taller). */
-        fun onResizeDrag(totalDyPx: Float) {}
-
-        fun onResizeEnded() {}
     }
 
-    private enum class Mode { NORMAL, SPACE, LAYOUT_KEY }
+    private enum class Mode { NORMAL, SPACE }
 
     private class PointerState(
         val mode: Mode,
@@ -67,9 +59,6 @@ class GestureIntegration(
         var trackpadAnchorX = 0f
         var trackpadMoved = false
         var verticalSwipe: Direction = Direction.CENTER
-        var resizing = false
-        var resizeStartScreenY = 0f
-        var lastScreenY = 0f
     }
 
     var onOutput: (KeyboardOutput) -> Unit = {}
@@ -77,7 +66,6 @@ class GestureIntegration(
 
     private val density = context.resources.displayMetrics.density
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop.toFloat()
-    private val longPressTimeout = ViewConfiguration.getLongPressTimeout().toLong()
     private val handler = Handler(Looper.getMainLooper())
     private val pointers = HashMap<Int, PointerState>()
 
@@ -94,13 +82,7 @@ class GestureIntegration(
             }
         }
 
-    private var longPressPointerId = NO_POINTER
-    private val longPressRunnable = Runnable { startResize(longPressPointerId) }
-
-    /**
-     * A finger lands on [cellIndex]. Coordinates are in the view; [screenY] is the same point
-     * in screen coordinates (used by the resize, because the view moves while it grows).
-     */
+    /** A finger lands on [cellIndex]. Coordinates are in the view. */
     @Suppress("LongParameterList")
     fun pointerDown(
         view: View,
@@ -108,19 +90,13 @@ class GestureIntegration(
         cellIndex: Int,
         x: Float,
         y: Float,
-        screenY: Float,
         time: Long,
         cellMinSizePx: Float,
     ) {
         val cell = layoutManager.getCellConfiguration(cellIndex)
         val tapAction = cell?.getActionFor(GestureType.TAP, Direction.CENTER)
-        val mode =
-            when (tapAction) {
-                ActionConfig.Space -> Mode.SPACE
-                ActionConfig.SwitchLayout, ActionConfig.ShowNumbers, ActionConfig.ShowLetters -> Mode.LAYOUT_KEY
-                else -> Mode.NORMAL
-            }
-        pointers[pointerId] = PointerState(mode, view).apply { lastScreenY = screenY }
+        val mode = if (tapAction == ActionConfig.Space) Mode.SPACE else Mode.NORMAL
+        pointers[pointerId] = PointerState(mode, view)
         // The space bar handles its own directions (trackpad / language); other keys snap.
         val configured = if (mode == Mode.SPACE) null else cell?.getDirectionsFor(GestureType.SWIPE)?.toSet().orEmpty()
         tracker.down(
@@ -136,22 +112,15 @@ class GestureIntegration(
 
         feedback.keyDown(view, soundFor(tapAction))
         if (tapAction == ActionConfig.Backspace) startRepeat(pointerId)
-        if (mode == Mode.LAYOUT_KEY) scheduleLongPress(pointerId)
     }
 
     fun pointerMove(
         pointerId: Int,
         x: Float,
         y: Float,
-        screenY: Float,
     ) {
         val state = pointers[pointerId] ?: return
-        state.lastScreenY = screenY
-        when {
-            state.resizing -> cellListener?.onResizeDrag(screenY - state.resizeStartScreenY)
-            state.mode == Mode.SPACE -> moveOnSpace(pointerId, state, x, y)
-            else -> moveOnKey(pointerId, state, x, y)
-        }
+        if (state.mode == Mode.SPACE) moveOnSpace(pointerId, state, x, y) else moveOnKey(pointerId, state, x, y)
     }
 
     fun pointerUp(
@@ -164,11 +133,9 @@ class GestureIntegration(
         val result = tracker.up(pointerId, x, y, time) ?: return
         val consumedByRepeat = pointerId == repeatPointerId && repeatFired
         if (pointerId == repeatPointerId) stopRepeat()
-        if (pointerId == longPressPointerId) cancelLongPress()
         cellListener?.onCellReleased(result.cellIndex)
 
         when {
-            state?.resizing == true -> cellListener?.onResizeEnded()
             state?.mode == Mode.SPACE -> {
                 when {
                     state.trackpadMoved -> Unit
@@ -196,11 +163,9 @@ class GestureIntegration(
         tracker.activePointers.toList().forEach { pointerId ->
             tracker.track(pointerId)?.let { cellListener?.onCellReleased(it.cellIndex) }
         }
-        if (pointers.values.any { it.resizing }) cellListener?.onResizeEnded()
         tracker.cancelAll()
         pointers.clear()
         stopRepeat()
-        cancelLongPress()
     }
 
     /** Maps a gesture on a cell to its output using the active configuration. */
@@ -225,7 +190,6 @@ class GestureIntegration(
         val track = tracker.track(pointerId) ?: return
         if (changed != Direction.CENTER) {
             if (pointerId == repeatPointerId) stopRepeat()
-            if (pointerId == longPressPointerId) cancelLongPress()
             feedback.directionTick(state.view)
         }
         cellListener?.onDirectionChanged(track.cellIndex, changed)
@@ -277,26 +241,6 @@ class GestureIntegration(
         handler.removeCallbacks(repeatRunnable)
         repeatPointerId = NO_POINTER
         repeatFired = false
-    }
-
-    private fun scheduleLongPress(pointerId: Int) {
-        cancelLongPress()
-        longPressPointerId = pointerId
-        handler.postDelayed(longPressRunnable, longPressTimeout)
-    }
-
-    private fun cancelLongPress() {
-        handler.removeCallbacks(longPressRunnable)
-        longPressPointerId = NO_POINTER
-    }
-
-    private fun startResize(pointerId: Int) {
-        val state = pointers[pointerId] ?: return
-        longPressPointerId = NO_POINTER
-        state.resizing = true
-        state.resizeStartScreenY = state.lastScreenY
-        feedback.longPress(state.view)
-        cellListener?.onResizeStarted()
     }
 
     private fun soundFor(action: ActionConfig?): KeyFeedback.Sound =

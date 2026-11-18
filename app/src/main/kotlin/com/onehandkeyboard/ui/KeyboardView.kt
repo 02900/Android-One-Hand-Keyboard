@@ -43,7 +43,7 @@ import kotlin.math.min
  *
  * - No child views: a layer, case or theme change only updates labels/colors and redraws.
  * - Every pointer is hit-tested here and forwarded to [GestureIntegration], so roll-over
- *   typing, swipes, backspace repeat, trackpad and resize keep their per-pointer logic.
+ *   typing, swipes, backspace repeat and trackpad keep their per-pointer logic.
  * - Touch feedback (pressed color, 0.96 press scale, highlighted target label, preview
  *   bubble, layer fade) is interpolated inside [onDraw]; nothing allocates while drawing.
  * - A suggestion strip on top shows left / center / right suggestions from the autocorrector.
@@ -146,7 +146,6 @@ class KeyboardView(
     private val bubbleMetrics = bubblePaint.fontMetrics
     private val drawRect = RectF()
     private val boundsRect = Rect()
-    private val screenLocation = IntArray(2)
 
     private var animating = false
     private var lastFrameMs = 0L
@@ -157,7 +156,6 @@ class KeyboardView(
 
     private val gesturePointers = HashSet<Int>()
     private val stripPointers = HashMap<Int, Int>()
-    private var resizeStartHeightDp = 0f
 
     private val accessibilityHelper = AccessibilityHelper()
 
@@ -199,11 +197,6 @@ class KeyboardView(
         bubbleKey?.let { key -> key.target?.let { bubbleText = key.label(it) } }
         invalidate()
         accessibilityHelper.invalidateRoot()
-    }
-
-    fun applyCellHeight() {
-        requestLayout()
-        invalidate()
     }
 
     /** Shows or hides the suggestion strip after the setting changed. */
@@ -478,23 +471,6 @@ class KeyboardView(
         startAnimating()
     }
 
-    override fun onResizeStarted() {
-        resizeStartHeightDp = layoutCalculator.getCurrentCellHeightDp()
-        hideBubble()
-    }
-
-    override fun onResizeDrag(totalDyPx: Float) {
-        // Dragging up makes every row taller; the drag is spread over the rows so the top
-        // edge follows the finger.
-        layoutCalculator.setCellHeightDp(resizeStartHeightDp - totalDyPx / (GRID_ROWS * density), persist = false)
-        requestLayout()
-    }
-
-    override fun onResizeEnded() {
-        layoutCalculator.commitLiveHeight()
-        requestLayout()
-    }
-
     private fun showBubble(
         key: Key,
         direction: Direction,
@@ -571,7 +547,6 @@ class KeyboardView(
         x: Float,
         y: Float,
     ) {
-        getLocationOnScreen(screenLocation)
         gesturePointers += pointerId
         gestures.pointerDown(
             view = this,
@@ -579,7 +554,6 @@ class KeyboardView(
             cellIndex = key.index,
             x = x,
             y = y,
-            screenY = y + screenLocation[1],
             time = event.eventTime,
             cellMinSizePx = min(key.rect.width(), key.rect.height()),
         )
@@ -587,11 +561,10 @@ class KeyboardView(
 
     private fun onPointersMove(event: MotionEvent) {
         if (gesturePointers.isEmpty()) return
-        getLocationOnScreen(screenLocation)
         for (i in 0 until event.pointerCount) {
             val pointerId = event.getPointerId(i)
             if (pointerId in gesturePointers) {
-                gestures.pointerMove(pointerId, event.getX(i), event.getY(i), event.getY(i) + screenLocation[1])
+                gestures.pointerMove(pointerId, event.getX(i), event.getY(i))
             }
         }
     }

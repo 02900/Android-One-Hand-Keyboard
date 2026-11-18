@@ -21,7 +21,7 @@ import javax.inject.Singleton
  *
  * Grid (cell indexes):
  * ```
- *  0  1  2 | 3   layout / default height (long-press = resize)
+ *  0  1  2 | 3   layout / memes
  *  4  5  6 | 7   case / clipboard
  *  8  9 10 | 11  backspace / delete word / delete all / undo
  * 12 ---- 14 | 15  space (trackpad, swipe up/down = language) / enter / submit
@@ -308,14 +308,10 @@ class KeyboardConfigurationFactory
         // Control column, shared by every layout
         // ------------------------------------------------------------------
 
-        /**
-         * Layer key: tap = switch layer, left = default height, down = meme library. Long-press
-         * starts the live height resize (touch layer).
-         */
+        /** Layer key: tap = switch layer, down = meme library. */
         private fun GridBuilder.layoutCell(switchAction: ActionConfig) =
             cell(3) {
                 tap(switchAction)
-                swipe(W, ActionConfig.ResetCellHeight)
                 swipe(S, ActionConfig.Action(KeyAction.ShowMemes))
             }
 

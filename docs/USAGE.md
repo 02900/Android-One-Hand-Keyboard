@@ -14,9 +14,9 @@ Tap a cell to type its center letter, or swipe towards one of its labels (8 dire
 
 The control column:
 
-| Key | Tap | Swipe / long-press |
+| Key | Tap | Swipe |
 |---|---|---|
-| Layer (3) | ABC ↔ 123 | ← default height · ↓ memes · long-press + drag = height |
+| Layer (3) | ABC ↔ 123 | ↓ memes |
 | Shift (7) | once / double tap = caps lock | ↑ copy all · ↓ paste |
 | Backspace (11) | delete (hold = repeat) | ← word · ↑ everything · → undo |
 | Space (12–14) | space (double = ". ") | drag ↔ = cursor · ↑/↓ = language (types a space while English is disabled) |

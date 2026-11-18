@@ -25,9 +25,6 @@ fun ActionConfig.label(ctx: LabelContext): String =
         ActionConfig.Paste -> "📋"
         ActionConfig.CopyAll -> "📄"
         ActionConfig.DeleteAll -> "🗑️"
-        ActionConfig.IncreaseCellHeight -> "⬆️"
-        ActionConfig.DecreaseCellHeight -> "⬇️"
-        ActionConfig.ResetCellHeight -> "🔄"
     }
 
 fun KeyAction.label(ctx: LabelContext): String =
@@ -51,9 +48,6 @@ fun KeyAction.label(ctx: LabelContext): String =
         KeyAction.SwitchLanguage -> ctx.languageLabel
         KeyAction.ShowMemes -> "🖼️"
         is KeyAction.DeadKey -> accent.toString()
-        KeyAction.IncreaseCellHeight -> "⬆️"
-        KeyAction.DecreaseCellHeight -> "⬇️"
-        KeyAction.ResetCellHeight -> "🔄"
         is KeyAction.Custom -> "?"
         is KeyAction.InsertText -> text.take(2)
     }
@@ -75,9 +69,6 @@ fun ActionConfig.spokenName(ctx: LabelContext): String =
         ActionConfig.Paste -> "pegar"
         ActionConfig.CopyAll -> "copiar todo"
         ActionConfig.DeleteAll -> "borrar todo"
-        ActionConfig.IncreaseCellHeight -> "teclado más alto"
-        ActionConfig.DecreaseCellHeight -> "teclado más bajo"
-        ActionConfig.ResetCellHeight -> "altura por defecto"
     }
 
 private fun KeyAction.spokenName(ctx: LabelContext): String =
@@ -125,9 +116,6 @@ fun ActionConfig.toKeyboardOutput(transform: (String) -> String = { it }): Keybo
         ActionConfig.Paste -> KeyboardOutput.Action(KeyAction.Paste)
         ActionConfig.CopyAll -> KeyboardOutput.Action(KeyAction.CopyAll)
         ActionConfig.DeleteAll -> KeyboardOutput.Action(KeyAction.DeleteAll)
-        ActionConfig.IncreaseCellHeight -> KeyboardOutput.Action(KeyAction.IncreaseCellHeight)
-        ActionConfig.DecreaseCellHeight -> KeyboardOutput.Action(KeyAction.DecreaseCellHeight)
-        ActionConfig.ResetCellHeight -> KeyboardOutput.Action(KeyAction.ResetCellHeight)
     }
 
 private fun caseLabel(mode: CaseMode) =
