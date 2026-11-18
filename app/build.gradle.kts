@@ -8,6 +8,18 @@ plugins {
     id("io.gitlab.arturbosch.detekt")
 }
 
+// Short hash of the commit being built, shown on the keyboard to tell installed builds apart.
+val gitCommit: String =
+    runCatching {
+        providers
+            .exec {
+                commandLine("git", "rev-parse", "--short", "HEAD")
+                isIgnoreExitValue = true
+            }.standardOutput.asText
+            .get()
+            .trim()
+    }.getOrNull().orEmpty().ifEmpty { "dev" }
+
 android {
     namespace = "com.onehandkeyboard"
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -18,6 +30,7 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0.0"
+        buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

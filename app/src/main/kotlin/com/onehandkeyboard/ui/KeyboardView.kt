@@ -20,6 +20,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat
 import androidx.customview.widget.ExploreByTouchHelper
+import com.onehandkeyboard.BuildConfig
 import com.onehandkeyboard.GestureIntegration
 import com.onehandkeyboard.KeyboardLayoutManager
 import com.onehandkeyboard.R
@@ -46,6 +47,8 @@ import kotlin.math.min
  * - Touch feedback (pressed color, 0.96 press scale, highlighted target label, preview
  *   bubble, layer fade) is interpolated inside [onDraw]; nothing allocates while drawing.
  * - A suggestion strip on top shows left / center / right suggestions from the autocorrector.
+ * - The installed version (name + commit) is drawn small in the bottom-left corner, so a
+ *   reinstalled build can be told apart at a glance.
  * - Accessibility: [ExploreByTouchHelper] exposes one virtual node per key with its tap
  *   action and one custom action per swipe, so TalkBack users can reach every character.
  */
@@ -113,6 +116,8 @@ class KeyboardView(
     private val centerPaint = textPaint(CENTER_TEXT_SP)
     private val labelPaint = textPaint(LABEL_TEXT_SP)
     private val bubblePaint = textPaint(BUBBLE_TEXT_SP)
+    private val versionPaint = textPaint(VERSION_TEXT_SP).apply { textAlign = Paint.Align.LEFT }
+    private val versionText = "v${BuildConfig.VERSION_NAME} · ${BuildConfig.GIT_COMMIT}"
     private val centerMetrics = centerPaint.fontMetrics
     private val labelMetrics = labelPaint.fontMetrics
     private val bubbleMetrics = bubblePaint.fontMetrics
@@ -250,6 +255,7 @@ class KeyboardView(
         if (fading) canvas.saveLayerAlpha(gridRect, (layerAlpha * OPAQUE).toInt())
         keys.forEach { drawKey(canvas, it, border) }
         if (fading) canvas.restore()
+        drawVersion(canvas)
         strip.draw(canvas, palette, border)
         drawBubble(canvas)
         if (animating) postInvalidateOnAnimation()
@@ -330,6 +336,21 @@ class KeyboardView(
         }
         canvas.drawText(text, x, baseline, paint)
         if (scale != 1f) canvas.restore()
+    }
+
+    /** Version label in the bottom-left corner, over the key that sits there. */
+    private fun drawVersion(canvas: Canvas) {
+        if (gridRect.isEmpty) return
+        val corner = keys.firstOrNull { it.config.col == 0 && it.config.row + it.config.rowSpan == GRID_ROWS }
+        val color = palette.text(corner?.primary ?: false)
+        versionPaint.color = ColorUtils.setAlphaComponent(color, (Color.alpha(color) * VERSION_ALPHA).toInt())
+        val margin = LABEL_MARGIN_DP * density
+        canvas.drawText(
+            versionText,
+            gridRect.left + margin,
+            gridRect.bottom - margin - versionPaint.descent(),
+            versionPaint,
+        )
     }
 
     private fun drawBubble(canvas: Canvas) {
@@ -715,6 +736,8 @@ class KeyboardView(
         const val CENTER_TEXT_SP = 16f
         const val LABEL_TEXT_SP = 11f
         const val LABEL_ALPHA = 0.85f
+        const val VERSION_TEXT_SP = 9f
+        const val VERSION_ALPHA = 0.5f
         const val PRESS_SCALE = 0.96f
         const val PRESS_INSTANT = 0.6f
         const val TARGET_SCALE = 1.4f
