@@ -24,7 +24,7 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             layoutMode = layoutManager.currentMode,
             pendingDeadKey = layoutManager.pendingDeadKey,
             enterLabel = enterLabel,
-            languageLabel = layoutManager.getCurrentLanguageText(),
+            languageLabel = layoutManager.currentLanguage.label,
         )
 
     fun getCenterLabel(

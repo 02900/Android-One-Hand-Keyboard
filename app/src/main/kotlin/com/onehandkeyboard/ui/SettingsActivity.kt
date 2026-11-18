@@ -46,7 +46,7 @@ class SettingsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             OneHandKeyboardTheme(themeManager = themeManager) {
-                SettingsScreen(themeManager = themeManager)
+                SettingsScreen()
             }
         }
     }
@@ -69,7 +69,7 @@ private fun OneHandKeyboardTheme(
 }
 
 @Composable
-private fun SettingsScreen(themeManager: ThemeManager) {
+private fun SettingsScreen() {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     LazyColumn(

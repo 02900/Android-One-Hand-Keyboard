@@ -48,6 +48,7 @@ import kotlin.math.min
  *   action and one custom action per swipe, so TalkBack users can reach every character.
  */
 @SuppressLint("ViewConstructor") // created in code by the service, never inflated
+@Suppress("LongParameterList") // explicit wiring of the service components (views are not injected)
 class KeyboardView(
     context: Context,
     private val layoutManager: KeyboardLayoutManager,
@@ -690,20 +691,21 @@ class KeyboardView(
             action: Int,
             arguments: Bundle?,
         ): Boolean {
-            panelButtonFor(virtualViewId)?.let { button ->
-                if (action != AccessibilityNodeInfoCompat.ACTION_CLICK) return false
-                onPanelButton(button)
-                return true
-            }
-            if (keysByIndex[virtualViewId] == null) return false
+            val button = panelButtonFor(virtualViewId)
+            val isClick = action == AccessibilityNodeInfoCompat.ACTION_CLICK
             val direction =
-                if (action == AccessibilityNodeInfoCompat.ACTION_CLICK) {
-                    Direction.CENTER
-                } else {
-                    SWIPE_ACTIONS.entries.firstOrNull { it.value == action }?.key ?: return false
+                if (isClick) Direction.CENTER else SWIPE_ACTIONS.entries.firstOrNull { it.value == action }?.key
+            return when {
+                button != null && isClick -> {
+                    onPanelButton(button)
+                    true
                 }
-            gestures.perform(virtualViewId, direction)
-            return true
+                button == null && direction != null && keysByIndex.containsKey(virtualViewId) -> {
+                    gestures.perform(virtualViewId, direction)
+                    true
+                }
+                else -> false
+            }
         }
 
         private fun panelButtonFor(virtualViewId: Int) =

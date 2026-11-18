@@ -42,7 +42,11 @@ class KeyboardPalette(
                 secondaryText = tokens.colors.contentSecondary.toArgb(),
             )
 
+        private const val GRID_SIZE = 4
+        private const val LETTER_BLOCK_SIZE = 3
+
         /** Letter block: rows 0–2, columns 0–2. */
-        fun isPrimaryCell(cellIndex: Int): Boolean = cellIndex / 4 < 3 && cellIndex % 4 < 3
+        fun isPrimaryCell(cellIndex: Int): Boolean =
+            cellIndex / GRID_SIZE < LETTER_BLOCK_SIZE && cellIndex % GRID_SIZE < LETTER_BLOCK_SIZE
     }
 }

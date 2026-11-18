@@ -9,3 +9,12 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint") version "12.1.0" apply false
     id("io.gitlab.arturbosch.detekt") version "1.23.4" apply false
 }
+// Every module with detekt uses the default rules plus the overrides in config/detekt/detekt.yml.
+subprojects {
+    plugins.withId("io.gitlab.arturbosch.detekt") {
+        extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+            buildUponDefaultConfig = true
+            config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+        }
+    }
+}

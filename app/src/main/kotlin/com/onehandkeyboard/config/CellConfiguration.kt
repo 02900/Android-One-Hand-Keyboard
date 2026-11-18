@@ -11,8 +11,8 @@ import com.onehandkeyboard.gestures.GestureAction
 data class CellConfiguration(
     val cellIndex: Int,
     val actions: Map<GestureAction, ActionConfig>,
-    val row: Int = cellIndex / 4,
-    val col: Int = cellIndex % 4,
+    val row: Int = cellIndex / GRID_SIZE,
+    val col: Int = cellIndex % GRID_SIZE,
     // Cuántas columnas ocupa esta celda
     val colSpan: Int = 1,
     // Cuántas filas ocupa esta celda
@@ -20,17 +20,15 @@ data class CellConfiguration(
 ) {
     init {
         // Validar que el índice de celda esté en el rango válido (0-15 para grid 4x4)
-        if (cellIndex !in 0..15) {
-            throw IllegalArgumentException("Cell index must be between 0 and 15, got: $cellIndex")
+        require(cellIndex in 0 until GRID_SIZE * GRID_SIZE) {
+            "Cell index must be between 0 and ${GRID_SIZE * GRID_SIZE - 1}, got: $cellIndex"
         }
 
         // Validar que no haya más de un TAP para CENTER
         val centerActions = actions.keys.filter { it.direction == Direction.CENTER }
         val tapActions = centerActions.filter { it.gestureType == GestureType.TAP }
 
-        if (tapActions.size > 1) {
-            throw IllegalArgumentException("Cell $cellIndex has multiple TAP actions for CENTER direction")
-        }
+        require(tapActions.size <= 1) { "Cell $cellIndex has multiple TAP actions for CENTER direction" }
 
         // Validar que no haya múltiples SWIPE para la misma dirección
         val swipeDirections =
@@ -39,9 +37,7 @@ data class CellConfiguration(
                 .groupBy { it.direction }
 
         swipeDirections.forEach { (direction, gestureActions) ->
-            if (gestureActions.size > 1) {
-                throw IllegalArgumentException("Cell $cellIndex has multiple SWIPE actions for direction $direction")
-            }
+            require(gestureActions.size <= 1) { "Cell $cellIndex has multiple SWIPE actions for direction $direction" }
         }
     }
 
@@ -65,5 +61,10 @@ data class CellConfiguration(
      */
     fun getDirectionsFor(gestureType: GestureType): List<Direction> {
         return actions.keys.filter { it.gestureType == gestureType }.map { it.direction }
+    }
+
+    companion object {
+        /** The keyboard is a 4×4 grid. */
+        const val GRID_SIZE = 4
     }
 }

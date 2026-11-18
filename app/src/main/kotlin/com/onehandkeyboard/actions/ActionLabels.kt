@@ -7,30 +7,6 @@ import com.onehandkeyboard.core.domain.model.KeyboardOutput
 import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.input.DeadKeys
 
-/**
- * Keyboard state that affects how keys are labelled.
- */
-data class LabelContext(
-    val caseMode: CaseMode = CaseMode.LOWERCASE,
-    val layoutMode: LayoutMode = LayoutMode.LETTERS,
-    val pendingDeadKey: Char? = null,
-    val enterLabel: String = "↵",
-    val languageLabel: String = "ES",
-) {
-    /** Applies the case mode and, with a pending dead key, previews the accented vowel. */
-    fun letter(text: String): String {
-        val cased =
-            when (caseMode) {
-                CaseMode.UPPERCASE -> text.uppercase()
-                CaseMode.LOWERCASE -> text.lowercase()
-                CaseMode.CAPITALIZE -> text.lowercase().replaceFirstChar { it.uppercase() }
-            }
-        val accent = pendingDeadKey ?: return cased
-        val char = cased.singleOrNull() ?: return cased
-        return if (DeadKeys.canCompose(accent, char)) DeadKeys.compose(accent, cased) else cased
-    }
-}
-
 /** Visible label of an action (single source for every key label). */
 fun ActionConfig.label(ctx: LabelContext): String =
     when (this) {

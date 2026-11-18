@@ -28,11 +28,11 @@ class KeyboardLayoutManagerTest {
     fun `single shift tap capitalizes only the next letter`() {
         tapShift()
         assertEquals(CaseMode.CAPITALIZE, manager.currentCaseMode)
-        assertEquals("A", manager.applyCase("a"))
+        assertEquals("A", manager.transformChar("a"))
 
         assertTrue("label refresh needed", manager.onCharacterWritten())
         assertEquals(CaseMode.LOWERCASE, manager.currentCaseMode)
-        assertEquals("b", manager.applyCase("b"))
+        assertEquals("b", manager.transformChar("b"))
     }
 
     @Test
@@ -42,7 +42,7 @@ class KeyboardLayoutManagerTest {
         assertEquals(CaseMode.UPPERCASE, manager.currentCaseMode)
 
         assertFalse(manager.onCharacterWritten())
-        assertEquals("C", manager.applyCase("c"))
+        assertEquals("C", manager.transformChar("c"))
 
         tapShift()
         assertEquals(CaseMode.LOWERCASE, manager.currentCaseMode)
@@ -59,7 +59,7 @@ class KeyboardLayoutManagerTest {
     fun `auto shift capitalizes at sentence start and is consumed by a letter`() {
         assertTrue(manager.updateAutoShift(shouldCapitalize = true))
         assertTrue(manager.isAutoShifted)
-        assertEquals("H", manager.applyCase("h"))
+        assertEquals("H", manager.transformChar("h"))
 
         manager.onCharacterWritten()
         assertFalse(manager.updateAutoShift(shouldCapitalize = false))
@@ -118,7 +118,7 @@ class KeyboardLayoutManagerTest {
 
     @Test
     fun `new input resets layer and case`() {
-        manager.switchToSymbols()
+        manager.setMode(LayoutMode.SYMBOLS)
         tapShift()
         manager.resetForNewInput()
         assertEquals(LayoutMode.LETTERS, manager.currentMode)

@@ -47,30 +47,12 @@ class KeyboardLayoutManager
             )
             private set
 
-        /**
-         * Switches between LETTERS and SYMBOLS modes for the current language
-         */
-        fun switchLayout(): Boolean {
-            val previousMode = currentMode
-            currentMode =
-                when (currentMode) {
-                    LayoutMode.LETTERS -> LayoutMode.SYMBOLS
-                    LayoutMode.SYMBOLS -> LayoutMode.LETTERS
-                }
-
-            // Actualizar configuración del teclado
-            keyboardConfiguration = configFactory.getConfiguration(currentLanguage, currentMode)
-
-            Log.d("KeyboardLayoutManager", "Layout switched from $previousMode to $currentMode")
-            return previousMode != currentMode
-        }
-
         /** True when the one-shot capital was set automatically (sentence start), not by the user. */
         var isAutoShifted = false
             private set
 
         /** Time source for double-tap detection; replaceable in tests. */
-        var clock: () -> Long = { System.nanoTime() / 1_000_000 }
+        var clock: () -> Long = { System.nanoTime() / NANOS_PER_MILLI }
 
         private var lastShiftTapTime = Long.MIN_VALUE / 2
 
@@ -154,10 +136,7 @@ class KeyboardLayoutManager
          * (numbers/phone/date fields open on the symbols layer).
          */
         fun resetForNewInput(inputType: Int = InputType.TYPE_CLASS_TEXT) {
-            when (initialModeFor(inputType)) {
-                LayoutMode.LETTERS -> if (currentMode != LayoutMode.LETTERS) switchToLetters()
-                LayoutMode.SYMBOLS -> if (currentMode != LayoutMode.SYMBOLS) switchToSymbols()
-            }
+            setMode(initialModeFor(inputType))
             currentCaseMode = CaseMode.LOWERCASE
             isCapitalizeNext = false
             isAutoShifted = false
@@ -173,27 +152,9 @@ class KeyboardLayoutManager
         }
 
         /**
-         * Switches the keyboard language and updates configuration
-         */
-        fun switchLanguage(): Boolean {
-            val previousLanguage = currentLanguage
-            currentLanguage =
-                when (currentLanguage) {
-                    Language.SPANISH -> Language.ENGLISH
-                    Language.ENGLISH -> Language.SPANISH
-                }
-
-            // Actualizar configuración del teclado
-            keyboardConfiguration = configFactory.getConfiguration(currentLanguage, currentMode)
-
-            Log.d("KeyboardLayoutManager", "Language switched from $previousLanguage to $currentLanguage")
-            return true
-        }
-
-        /**
          * Aplica el modo de mayúsculas/minúsculas al carácter
          */
-        fun applyCase(char: String): String {
+        private fun applyCase(char: String): String {
             return when (currentCaseMode) {
                 CaseMode.LOWERCASE -> char.lowercase()
                 CaseMode.UPPERCASE -> char.uppercase()
@@ -223,99 +184,12 @@ class KeyboardLayoutManager
             return hadDeadKey
         }
 
-        /**
-         * Switches to symbols mode
-         */
-        fun switchToSymbols(): Boolean {
-            if (currentMode != LayoutMode.SYMBOLS) {
-                currentMode = LayoutMode.SYMBOLS
-                keyboardConfiguration = configFactory.getConfiguration(currentLanguage, currentMode)
-                Log.d("KeyboardLayoutManager", "Switched to symbols mode")
-                return true
-            }
-            return false
-        }
-
-        /**
-         * Switches to letters mode
-         */
-        fun switchToLetters(): Boolean {
-            if (currentMode != LayoutMode.LETTERS) {
-                currentMode = LayoutMode.LETTERS
-                keyboardConfiguration = configFactory.getConfiguration(currentLanguage, currentMode)
-                Log.d("KeyboardLayoutManager", "Switched to letters mode")
-                return true
-            }
-            return false
-        }
-
-        /**
-         * Toggles caps lock (permanent uppercase)
-         */
-        fun toggleCapsLock(): Boolean {
-            currentCaseMode =
-                if (currentCaseMode == CaseMode.UPPERCASE) {
-                    CaseMode.LOWERCASE
-                } else {
-                    CaseMode.UPPERCASE
-                }
-            isCapitalizeNext = false
-            Log.d("KeyboardLayoutManager", "Caps lock toggled to: $currentCaseMode")
+        /** Switches the layer (letters / numbers & symbols). @return true if it changed. */
+        fun setMode(mode: LayoutMode): Boolean {
+            if (currentMode == mode) return false
+            currentMode = mode
+            keyboardConfiguration = configFactory.getConfiguration(currentLanguage, currentMode)
             return true
-        }
-
-        /**
-         * Obtiene el título del teclado con información de estado
-         */
-        fun getKeyboardTitle(): String {
-            return "OneHand Keyboard - ${currentLanguage.name} ${currentMode.name} (${currentCaseMode.name})"
-        }
-
-        /**
-         * Gets the current layout mode display text for UI
-         */
-        fun getCurrentLayoutModeText(): String {
-            return when (currentMode) {
-                LayoutMode.LETTERS -> "ABC"
-                LayoutMode.SYMBOLS -> "123"
-            }
-        }
-
-        /**
-         * Gets the current case mode display text for UI
-         */
-        fun getCurrentCaseModeText(): String {
-            return when (currentCaseMode) {
-                CaseMode.LOWERCASE -> "aa"
-                CaseMode.UPPERCASE -> "AA"
-                CaseMode.CAPITALIZE -> "Aa"
-            }
-        }
-
-        /**
-         * Gets the current language display text for UI
-         */
-        fun getCurrentLanguageText(): String {
-            return when (currentLanguage) {
-                Language.SPANISH -> "ES"
-                Language.ENGLISH -> "EN"
-            }
-        }
-
-        /**
-         * Checks if current mode is LETTERS (affects case mode visibility)
-         */
-        fun isLettersMode(): Boolean {
-            return currentMode == LayoutMode.LETTERS
-        }
-
-        /**
-         * Gets current configuration state for debugging/logging
-         */
-        fun getCurrentConfigurationState(): String {
-            return "Language: $currentLanguage, " +
-                "Mode: $currentMode, " +
-                "Case: $currentCaseMode"
         }
 
         /**
@@ -327,6 +201,7 @@ class KeyboardLayoutManager
 
         companion object {
             const val DOUBLE_TAP_MS = 300L
+            private const val NANOS_PER_MILLI = 1_000_000L
 
             /** Numeric, phone and date/time fields start on the symbols (numbers) layer. */
             fun initialModeFor(inputType: Int): LayoutMode =

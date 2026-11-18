@@ -26,8 +26,8 @@ class LayoutCalculator(
     private var liveHeightDp: Float? = null
 
     // Límites para la altura de celda
-    private val minCellHeightDp = 40f
-    private val maxCellHeightDp = 80f
+    private val minCellHeightDp = MIN_CELL_HEIGHT_DP
+    private val maxCellHeightDp = MAX_CELL_HEIGHT_DP
 
     /**
      * Calcula la altura de celda en pixels basada en la configuración
@@ -105,5 +105,10 @@ class LayoutCalculator(
         } else {
             false
         }
+    }
+
+    private companion object {
+        const val MIN_CELL_HEIGHT_DP = 40f
+        const val MAX_CELL_HEIGHT_DP = 80f
     }
 }

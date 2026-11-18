@@ -27,6 +27,7 @@ import javax.inject.Singleton
  * 12 ---- 14 | 15  space (trackpad, swipe up/down = language) / enter / submit
  * ```
  */
+@Suppress("MagicNumber") // cell indexes are the layout itself (see the grid above)
 @Singleton
 class KeyboardConfigurationFactory
     @Inject
@@ -95,6 +96,7 @@ class KeyboardConfigurationFactory
                 language = Language.ENGLISH,
             )
 
+        @Suppress("LongMethod") // layout data: one block per cell
         private fun spanishLettersGrid() =
             keyboardGrid {
                 cell(0) {
@@ -165,6 +167,7 @@ class KeyboardConfigurationFactory
                 enterCell()
             }
 
+        @Suppress("LongMethod") // layout data: one block per cell
         private fun symbolsGrid() =
             keyboardGrid {
                 cell(0) {

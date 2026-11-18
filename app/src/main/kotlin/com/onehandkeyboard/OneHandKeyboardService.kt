@@ -15,6 +15,7 @@ import android.view.inputmethod.InputMethodSubtype
 import android.widget.LinearLayout
 import com.onehandkeyboard.core.design.theme.ThemeManager
 import com.onehandkeyboard.enums.Language
+import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.input.InputCommitter
 import com.onehandkeyboard.prefs.KeyboardPreferences
 import com.onehandkeyboard.ui.GestureHintProvider
@@ -60,6 +61,7 @@ class OneHandKeyboardService : InputMethodService() {
         registerThemeChangeReceiver()
     }
 
+    @Suppress("TooGenericExceptionCaught") // any failure must still leave the user a usable view
     override fun onCreateInputView(): View {
         return try {
             themeManager.refreshTheme()
@@ -173,7 +175,7 @@ class OneHandKeyboardService : InputMethodService() {
     private fun updateAutoShift() {
         val ic = currentInputConnection ?: return
         val info = currentInputEditorInfo ?: return
-        if (!layoutManager.isLettersMode() || info.inputType == InputType.TYPE_NULL) return
+        if (layoutManager.currentMode != LayoutMode.LETTERS || info.inputType == InputType.TYPE_NULL) return
         val shouldCapitalize = ic.getCursorCapsMode(info.inputType) != 0
         if (layoutManager.updateAutoShift(shouldCapitalize)) keyboardView?.refreshLabels()
     }
@@ -203,11 +205,12 @@ class OneHandKeyboardService : InputMethodService() {
     private fun createFallbackView(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(16, 16, 16, 16)
+            val padding = (FALLBACK_PADDING_DP * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
             addView(
                 android.widget.TextView(this@OneHandKeyboardService).apply {
                     text = "Keyboard Error - Please restart"
-                    textSize = 16f
+                    textSize = FALLBACK_TEXT_SP
                     setTextColor(android.graphics.Color.RED)
                 },
             )
@@ -219,7 +222,7 @@ class OneHandKeyboardService : InputMethodService() {
             try {
                 unregisterReceiver(receiver)
             } catch (e: IllegalArgumentException) {
-                Log.w(TAG, "Theme change receiver was not registered")
+                Log.w(TAG, "Theme change receiver was not registered", e)
             }
         }
         themeChangeReceiver = null
@@ -232,5 +235,7 @@ class OneHandKeyboardService : InputMethodService() {
 
     private companion object {
         const val TAG = "OneHandKeyboard"
+        const val FALLBACK_PADDING_DP = 16f
+        const val FALLBACK_TEXT_SP = 16f
     }
 }

@@ -89,7 +89,7 @@ class InputCommitter {
         lastSpaceTime = now
         if (isDoubleSpace) {
             val before = ic.getTextBeforeCursor(2, 0)
-            if (before != null && before.length == 2 && before[1] == ' ' && before[0].isLetterOrDigit()) {
+            if (endsWithWordAndSpace(before)) {
                 ic.beginBatchEdit()
                 ic.deleteSurroundingText(1, 0)
                 ic.commitText(". ", 1)
@@ -133,15 +133,6 @@ class InputCommitter {
         ic ?: return
         val keyCode = if (steps < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT
         repeat(kotlin.math.abs(steps)) { sendKey(ic, keyCode) }
-    }
-
-    /** Returns the full text of the field, or null if the app does not expose it. */
-    fun fullText(ic: InputConnection?): CharSequence? {
-        ic ?: return null
-        ic.getExtractedText(ExtractedTextRequest(), 0)?.text?.let { return it }
-        val before = ic.getTextBeforeCursor(MAX_FALLBACK_CHARS, 0) ?: ""
-        val after = ic.getTextAfterCursor(MAX_FALLBACK_CHARS, 0) ?: ""
-        return before.toString() + after.toString()
     }
 
     /** Deletes every character of the field and remembers it for [undoDelete]. */
@@ -224,6 +215,19 @@ class InputCommitter {
                 variation != InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS &&
                 variation != InputType.TYPE_TEXT_VARIATION_FILTER
         }
+
+        /** Returns the full text of the field, or null if the app does not expose it. */
+        fun fullText(ic: InputConnection?): CharSequence? {
+            ic ?: return null
+            ic.getExtractedText(ExtractedTextRequest(), 0)?.text?.let { return it }
+            val before = ic.getTextBeforeCursor(MAX_FALLBACK_CHARS, 0) ?: ""
+            val after = ic.getTextAfterCursor(MAX_FALLBACK_CHARS, 0) ?: ""
+            return before.toString() + after.toString()
+        }
+
+        /** "word " — a letter or digit followed by a single space. */
+        internal fun endsWithWordAndSpace(before: CharSequence?): Boolean =
+            before != null && before.length == 2 && before[1] == ' ' && before[0].isLetterOrDigit()
 
         fun wantsNewline(info: EditorInfo?): Boolean {
             info ?: return true

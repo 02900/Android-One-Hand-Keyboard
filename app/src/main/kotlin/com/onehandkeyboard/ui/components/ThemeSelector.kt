@@ -259,7 +259,6 @@ private fun ThemePreviewMiniKeyboard(
                 repeat(3) {
                     MiniKey(
                         backgroundColor = themePreview.keyBackground,
-                        textColor = themePreview.keyText,
                         modifier = Modifier.size(18.dp, 14.dp),
                     )
                 }
@@ -272,13 +271,11 @@ private fun ThemePreviewMiniKeyboard(
                 repeat(2) {
                     MiniKey(
                         backgroundColor = themePreview.keyBackground,
-                        textColor = themePreview.keyText,
                         modifier = Modifier.size(18.dp, 14.dp),
                     )
                 }
                 MiniKey(
                     backgroundColor = themePreview.actionKeyBackground,
-                    textColor = themePreview.actionKeyText,
                     modifier = Modifier.size(18.dp, 14.dp),
                 )
             }
@@ -286,7 +283,6 @@ private fun ThemePreviewMiniKeyboard(
             // Spacebar
             MiniKey(
                 backgroundColor = themePreview.actionKeyBackground,
-                textColor = themePreview.actionKeyText,
                 modifier = Modifier.fillMaxWidth().height(10.dp),
             )
         }
@@ -299,7 +295,6 @@ private fun ThemePreviewMiniKeyboard(
 @Composable
 private fun MiniKey(
     backgroundColor: Color,
-    textColor: Color,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -325,23 +320,6 @@ private fun getThemeDescription(themeName: String): String =
         themeName.contains("Gruvbox") -> "Retro groove"
         else -> "Custom theme"
     }
-
-/**
- * Calculate contrasting text color based on background luminance
- * Uses simplified luminance calculation for better contrast
- */
-private fun getContrastingTextColor(backgroundColor: Color): Color {
-    // Simplified luminance calculation using perceived brightness
-    val r = backgroundColor.red
-    val g = backgroundColor.green
-    val b = backgroundColor.blue
-
-    // Calculate perceived brightness (0.299*R + 0.587*G + 0.114*B)
-    val brightness = (0.299f * r + 0.587f * g + 0.114f * b)
-
-    // Return white for dark backgrounds, black for light backgrounds
-    return if (brightness > 0.5f) Color.Black else Color.White
-}
 
 @Preview(showBackground = true)
 @Composable
