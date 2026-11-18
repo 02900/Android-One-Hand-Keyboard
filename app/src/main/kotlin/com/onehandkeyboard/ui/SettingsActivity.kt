@@ -1,7 +1,10 @@
 package com.onehandkeyboard.ui
 
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,7 +19,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -145,50 +147,29 @@ private fun SettingsScreen(
             WritingSettings(preferences, onClearLearnedWords)
         }
 
-        // Divider
+        // Opens the system list of keyboards, where this one is enabled
         item {
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 16.dp),
-                color = MaterialTheme.colorScheme.outlineVariant,
-            )
-        }
-
-        // Keyboard Setup Instructions
-        item {
-            Card(
+            OutlinedButton(
+                onClick = { openKeyboardSettings(context) },
                 modifier = Modifier.fillMaxWidth(),
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    ),
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                ) {
-                    Text(
-                        text = "🚀 Setup Instructions",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp),
-                    )
-
-                    Text(
-                        text = "To use OneHandKeyboard, enable it in your device settings:",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp),
-                    )
-
-                    Text(
-                        text = "Settings → System → Languages & input → On-screen keyboard → OneHandKeyboard",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Text(
+                    text = "⌨️ Activar el teclado",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
             }
         }
+    }
+}
+
+/** Opens the system screen that enables keyboards (falls back to the main settings). */
+private fun openKeyboardSettings(context: Context) {
+    val flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    try {
+        context.startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS).addFlags(flags))
+    } catch (_: ActivityNotFoundException) {
+        context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(flags))
     }
 }
 
