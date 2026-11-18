@@ -101,7 +101,6 @@ enum class GestureType {
      */
     TAP,
 
-
     /**
      * Swipe - press, move, and release
      */

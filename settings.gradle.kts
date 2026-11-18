@@ -25,15 +25,8 @@ rootProject.name = "One Hand Keyboard"
 include(":app-ime")
 project(":app-ime").projectDir = file("app")
 
-// Feature modules
-include(":feature:settings")
-
 // Core modules
 include(":core:gesture")
 include(":core:mapping")
-include(":core:text")
 include(":core:design")
-include(":core:analytics")
-include(":core:data")
 include(":core:domain")
-include(":core:testkit")

@@ -11,22 +11,35 @@ sealed class ActionConfig {
     data class Action(val keyAction: KeyAction) : ActionConfig()
 
     data class Text(val text: String) : ActionConfig() // Para texto múltiple
-    
+
     data class CustomFunction(val functionId: String, val parameters: Map<String, Any> = emptyMap()) : ActionConfig()
-    
+
     // Acciones específicas del grid 4x4
     object SwitchLayout : ActionConfig()
+
     object SwitchCase : ActionConfig()
+
     object Backspace : ActionConfig()
+
     object Space : ActionConfig()
+
     object Enter : ActionConfig()
+
     object Submit : ActionConfig()
+
     object ShowNumbers : ActionConfig()
+
     object ShowLetters : ActionConfig()
+
     object Paste : ActionConfig()
+
     object CopyAll : ActionConfig()
+
     object DeleteAll : ActionConfig()
+
     object IncreaseCellHeight : ActionConfig()
+
     object DecreaseCellHeight : ActionConfig()
+
     object ResetCellHeight : ActionConfig()
 }

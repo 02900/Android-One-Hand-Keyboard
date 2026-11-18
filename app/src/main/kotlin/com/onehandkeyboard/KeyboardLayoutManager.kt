@@ -5,7 +5,6 @@ import android.util.Log
 import com.onehandkeyboard.config.KeyboardConfiguration
 import com.onehandkeyboard.config.KeyboardConfigurationFactory
 import com.onehandkeyboard.core.domain.model.CaseMode
-import com.onehandkeyboard.core.domain.model.KeyData
 import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.input.DeadKeys
@@ -28,32 +27,30 @@ import javax.inject.Singleton
 class KeyboardLayoutManager
     @Inject
     constructor(
-        private val configFactory: KeyboardConfigurationFactory
+        private val configFactory: KeyboardConfigurationFactory,
     ) {
-    
-    // Estado del teclado
-    var currentLanguage = Language.SPANISH
-        private set
-    var currentMode = LayoutMode.LETTERS
-        private set
-    var currentCaseMode = CaseMode.LOWERCASE
-        private set
-    var isCapitalizeNext = false
-        private set
+        // Estado del teclado
+        var currentLanguage = Language.SPANISH
+            private set
+        var currentMode = LayoutMode.LETTERS
+            private set
+        var currentCaseMode = CaseMode.LOWERCASE
+            private set
+        var isCapitalizeNext = false
+            private set
 
-    // Sistema de configuración externa
-    var keyboardConfiguration: KeyboardConfiguration =
-        configFactory.getConfiguration(
-            Language.SPANISH,
-            LayoutMode.LETTERS,
-        )
-        private set
+        // Sistema de configuración externa
+        var keyboardConfiguration: KeyboardConfiguration =
+            configFactory.getConfiguration(
+                Language.SPANISH,
+                LayoutMode.LETTERS,
+            )
+            private set
 
-
-    /**
-     * Switches between LETTERS and SYMBOLS modes for the current language
-     */
-    fun switchLayout(): Boolean {
+        /**
+         * Switches between LETTERS and SYMBOLS modes for the current language
+         */
+        fun switchLayout(): Boolean {
             val previousMode = currentMode
             currentMode =
                 when (currentMode) {
@@ -194,24 +191,6 @@ class KeyboardLayoutManager
         }
 
         /**
-         * Gets the current key data array based on active language and layout mode
-         */
-        fun getCurrentKeyData(): Array<Array<KeyData>> {
-            return when (currentLanguage) {
-                Language.SPANISH ->
-                    when (currentMode) {
-                        LayoutMode.LETTERS -> getSpanishLettersData()
-                        LayoutMode.SYMBOLS -> getNumbersSymbolsData()
-                    }
-                Language.ENGLISH ->
-                    when (currentMode) {
-                        LayoutMode.LETTERS -> getEnglishLettersData()
-                        LayoutMode.SYMBOLS -> getNumbersSymbolsData()
-                    }
-            }
-        }
-
-        /**
          * Aplica el modo de mayúsculas/minúsculas al carácter
          */
         fun applyCase(char: String): String {
@@ -274,11 +253,12 @@ class KeyboardLayoutManager
          * Toggles caps lock (permanent uppercase)
          */
         fun toggleCapsLock(): Boolean {
-            currentCaseMode = if (currentCaseMode == CaseMode.UPPERCASE) {
-                CaseMode.LOWERCASE
-            } else {
-                CaseMode.UPPERCASE
-            }
+            currentCaseMode =
+                if (currentCaseMode == CaseMode.UPPERCASE) {
+                    CaseMode.LOWERCASE
+                } else {
+                    CaseMode.UPPERCASE
+                }
             isCapitalizeNext = false
             Log.d("KeyboardLayoutManager", "Caps lock toggled to: $currentCaseMode")
             return true
@@ -345,79 +325,6 @@ class KeyboardLayoutManager
             return keyboardConfiguration.cells.find { it.cellIndex == cellIndex }
         }
 
-        // ============================================================================
-        // PRIVATE: Data providers for different layouts
-        // ============================================================================
-
-        /**
-         * Datos para layout español
-         */
-        private fun getSpanishLettersData(): Array<Array<KeyData>> {
-            return arrayOf(
-                arrayOf(
-                    KeyData("ABC", "a", "áàâä"),
-                    KeyData("DEF", "d", ""),
-                    KeyData("GHI", "g", ""),
-                ),
-                arrayOf(
-                    KeyData("JKL", "j", ""),
-                    KeyData("MNÑ", "m", ""),
-                    KeyData("OPQ", "o", "óòôö"),
-                ),
-                arrayOf(
-                    KeyData("RST", "r", ""),
-                    KeyData("UVW", "u", "úùûü"),
-                    KeyData("XYZ", "x", ""),
-                ),
-            )
-        }
-
-        /**
-         * Datos para layout inglés
-         */
-        private fun getEnglishLettersData(): Array<Array<KeyData>> {
-            return arrayOf(
-                arrayOf(
-                    KeyData("ABC", "a", "àáâäã"),
-                    KeyData("DEF", "d", ""),
-                    KeyData("GHI", "g", ""),
-                ),
-                arrayOf(
-                    KeyData("JKL", "j", ""),
-                    KeyData("MNO", "m", ""),
-                    KeyData("PQR", "p", ""),
-                ),
-                arrayOf(
-                    KeyData("STU", "s", ""),
-                    KeyData("VWX", "v", ""),
-                    KeyData("YZ", "y", ""),
-                ),
-            )
-        }
-
-        /**
-         * Datos para layout números y símbolos
-         */
-        private fun getNumbersSymbolsData(): Array<Array<KeyData>> {
-            return arrayOf(
-                arrayOf(
-                    KeyData("123", "1", ""),
-                    KeyData("456", "4", ""),
-                    KeyData("789", "7", ""),
-                ),
-                arrayOf(
-                    KeyData("*0#", "*", ""),
-                    KeyData(".,?", ".", ""),
-                    KeyData("!@$", "!", ""),
-                ),
-                arrayOf(
-                    KeyData("()[]", "(", ""),
-                    KeyData("+-=", "+", ""),
-                    KeyData("\"';", "\"", ""),
-                ),
-            )
-        }
-    
         companion object {
             const val DOUBLE_TAP_MS = 300L
 

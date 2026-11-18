@@ -63,16 +63,11 @@ android {
 dependencies {
     // Feature modules
 
-    implementation(project(":feature:settings"))
-
     // Core modules
     implementation(project(":core:domain"))
     implementation(project(":core:gesture"))
     implementation(project(":core:mapping"))
-    implementation(project(":core:text"))
     implementation(project(":core:design"))
-    implementation(project(":core:data"))
-    implementation(project(":core:analytics"))
 
     // Compose BOM
     implementation(platform(libs.androidx.compose.bom))
@@ -102,7 +97,6 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.robolectric)
-    testImplementation(project(":core:testkit"))
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

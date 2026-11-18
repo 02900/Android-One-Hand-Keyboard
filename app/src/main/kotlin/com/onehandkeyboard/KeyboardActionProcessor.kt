@@ -25,6 +25,7 @@ class KeyboardActionProcessor(
     private val onCaseSwitch: () -> Unit,
     private val onHeightChanged: () -> Unit,
     private val onToggleOneHand: () -> Unit = {},
+    private val onSwitchInputMethod: () -> Unit = {},
     private val committer: InputCommitter = InputCommitter(),
 ) {
     private val ic get() = service.currentInputConnection
@@ -97,6 +98,7 @@ class KeyboardActionProcessor(
                 onLayoutSwitch()
             }
             is KeyAction.ToggleOneHand -> onToggleOneHand()
+            is KeyAction.SwitchInputMethod -> onSwitchInputMethod()
             is KeyAction.IncreaseCellHeight -> if (layoutCalculator.increaseCellHeight()) onHeightChanged()
             is KeyAction.DecreaseCellHeight -> if (layoutCalculator.decreaseCellHeight()) onHeightChanged()
             is KeyAction.ResetCellHeight -> if (layoutCalculator.resetCellHeight()) onHeightChanged()

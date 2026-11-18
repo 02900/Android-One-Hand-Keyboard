@@ -10,6 +10,7 @@ import android.text.InputType
 import android.util.Log
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.view.inputmethod.InputMethodSubtype
 import android.widget.LinearLayout
 import com.onehandkeyboard.core.design.theme.ThemeManager
@@ -18,7 +19,8 @@ import com.onehandkeyboard.input.InputCommitter
 import com.onehandkeyboard.prefs.KeyboardPreferences
 import com.onehandkeyboard.ui.GestureHintProvider
 import com.onehandkeyboard.ui.KeyFeedback
-import com.onehandkeyboard.ui.KeyboardViewController
+import com.onehandkeyboard.ui.KeyboardView
+import com.onehandkeyboard.ui.LayoutCalculator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -44,10 +46,13 @@ class OneHandKeyboardService : InputMethodService() {
 
     private var themeChangeReceiver: BroadcastReceiver? = null
 
-    private lateinit var uiFactory: KeyboardUiFactory
+    private lateinit var layoutCalculator: LayoutCalculator
+    private lateinit var labels: GestureHintProvider
     private lateinit var gestureIntegration: GestureIntegration
     private lateinit var actionProcessor: KeyboardActionProcessor
-    private lateinit var viewController: KeyboardViewController
+
+    /** Current input view; recreated by the system on rotation/config changes. */
+    private var keyboardView: KeyboardView? = null
 
     override fun onCreate() {
         super.onCreate() // Hilt injects here
@@ -58,7 +63,16 @@ class OneHandKeyboardService : InputMethodService() {
     override fun onCreateInputView(): View {
         return try {
             themeManager.refreshTheme()
-            viewController.createView()
+            gestureIntegration.cancelAll()
+            KeyboardView(
+                context = this,
+                layoutManager = layoutManager,
+                themeManager = themeManager,
+                labels = labels,
+                layoutCalculator = layoutCalculator,
+                gestures = gestureIntegration,
+                prefs = preferences,
+            ).also { keyboardView = it }
         } catch (e: Exception) {
             Log.e(TAG, "Error creating input view", e)
             createFallbackView()
@@ -70,33 +84,37 @@ class OneHandKeyboardService : InputMethodService() {
      * instance, so their state survives input view re-creations.
      */
     private fun initializeComponents() {
-        uiFactory = KeyboardUiFactory(this, layoutManager, themeManager, preferences)
+        layoutCalculator = LayoutCalculator(this, preferences)
+        labels = GestureHintProvider(layoutManager)
         gestureIntegration = GestureIntegration(this, layoutManager, KeyFeedback(this, preferences))
-
-        viewController =
-            KeyboardViewController(
-                context = this,
-                layoutManager = layoutManager,
-                themeManager = themeManager,
-                styleProvider = uiFactory.styleProvider,
-                hintProvider = uiFactory.hintProvider,
-                layoutCalculator = uiFactory.layoutCalculator,
-                gestureIntegration = gestureIntegration,
-                prefs = preferences,
-            )
 
         actionProcessor =
             KeyboardActionProcessor(
                 service = this,
                 configManager = layoutManager,
-                layoutCalculator = uiFactory.layoutCalculator,
-                onLayoutSwitch = { viewController.showCurrentLayout() },
-                onCaseSwitch = { viewController.refreshLabels() },
-                onHeightChanged = { viewController.applyCellHeight() },
-                onToggleOneHand = { viewController.toggleOneHand() },
+                layoutCalculator = layoutCalculator,
+                onLayoutSwitch = { keyboardView?.showCurrentLayout() },
+                onCaseSwitch = { keyboardView?.refreshLabels() },
+                onHeightChanged = { keyboardView?.applyCellHeight() },
+                onToggleOneHand = { keyboardView?.toggleOneHand() },
+                onSwitchInputMethod = ::switchToNextKeyboard,
             )
 
         gestureIntegration.onOutput = actionProcessor::processKeyboardOutput
+    }
+
+    /** Next enabled IME; falls back to the system picker when there is no "next" one. */
+    @Suppress("DEPRECATION") // InputMethodManager.switchToNextInputMethod is the only option before API 28
+    private fun switchToNextKeyboard() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        val switched =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                switchToNextInputMethod(false)
+            } else {
+                val token = window?.window?.attributes?.token
+                token != null && imm?.switchToNextInputMethod(token, false) == true
+            }
+        if (!switched) imm?.showInputMethodPicker()
     }
 
     override fun onStartInputView(
@@ -106,11 +124,11 @@ class OneHandKeyboardService : InputMethodService() {
         super.onStartInputView(info, restarting)
         if (!restarting) {
             layoutManager.resetForNewInput(info?.inputType ?: InputType.TYPE_CLASS_TEXT)
-            viewController.showCurrentLayout(animate = false)
+            keyboardView?.showCurrentLayout(animate = false)
         }
-        viewController.previewEnabled = !InputCommitter.isPassword(info)
-        uiFactory.hintProvider.enterLabel = GestureHintProvider.enterLabelFor(info)
-        viewController.refreshLabels()
+        keyboardView?.previewEnabled = !InputCommitter.isPassword(info)
+        labels.enterLabel = GestureHintProvider.enterLabelFor(info)
+        keyboardView?.refreshLabels()
         updateAutoShift()
     }
 
@@ -118,7 +136,7 @@ class OneHandKeyboardService : InputMethodService() {
         super.onCurrentInputMethodSubtypeChanged(newSubtype)
         val tag = subtypeLanguageTag(newSubtype) ?: return
         val language = if (tag.startsWith("en")) Language.ENGLISH else Language.SPANISH
-        if (layoutManager.setLanguage(language)) viewController.showCurrentLayout()
+        if (layoutManager.setLanguage(language)) keyboardView?.showCurrentLayout()
     }
 
     override fun onUpdateSelection(
@@ -157,7 +175,7 @@ class OneHandKeyboardService : InputMethodService() {
         val info = currentInputEditorInfo ?: return
         if (!layoutManager.isLettersMode() || info.inputType == InputType.TYPE_NULL) return
         val shouldCapitalize = ic.getCursorCapsMode(info.inputType) != 0
-        if (layoutManager.updateAutoShift(shouldCapitalize)) viewController.refreshLabels()
+        if (layoutManager.updateAutoShift(shouldCapitalize)) keyboardView?.refreshLabels()
     }
 
     private fun registerThemeChangeReceiver() {
@@ -169,7 +187,7 @@ class OneHandKeyboardService : InputMethodService() {
                 ) {
                     if (intent?.action == ThemeManager.ACTION_THEME_CHANGED) {
                         themeManager.refreshTheme()
-                        viewController.applyTheme()
+                        keyboardView?.applyTheme()
                     }
                 }
             }

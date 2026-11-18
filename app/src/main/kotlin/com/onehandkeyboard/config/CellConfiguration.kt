@@ -13,8 +13,10 @@ data class CellConfiguration(
     val actions: Map<GestureAction, ActionConfig>,
     val row: Int = cellIndex / 4,
     val col: Int = cellIndex % 4,
-    val colSpan: Int = 1, // Cuántas columnas ocupa esta celda
-    val rowSpan: Int = 1, // Cuántas filas ocupa esta celda
+    // Cuántas columnas ocupa esta celda
+    val colSpan: Int = 1,
+    // Cuántas filas ocupa esta celda
+    val rowSpan: Int = 1,
 ) {
     init {
         // Validar que el índice de celda esté en el rango válido (0-15 para grid 4x4)

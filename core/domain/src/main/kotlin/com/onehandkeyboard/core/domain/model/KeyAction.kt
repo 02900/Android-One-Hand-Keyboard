@@ -105,6 +105,11 @@ sealed class KeyAction {
     object ToggleOneHand : KeyAction()
 
     /**
+     * Switch to the next input method (system keyboard switcher)
+     */
+    object SwitchInputMethod : KeyAction()
+
+    /**
      * Dead key: the next vowel is combined with [accent] (e.g. ´ + e = é)
      */
     data class DeadKey(val accent: Char) : KeyAction()
