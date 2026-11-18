@@ -3,6 +3,7 @@ package com.onehandkeyboard
 import android.text.InputType
 import com.onehandkeyboard.config.KeyboardConfigurationFactory
 import com.onehandkeyboard.core.domain.model.CaseMode
+import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.input.DeadKeys
 import org.junit.Assert.assertEquals
@@ -18,6 +19,14 @@ import org.robolectric.annotation.Config
 class KeyboardLayoutManagerTest {
     private var now = 1_000L
     private val manager = KeyboardLayoutManager(KeyboardConfigurationFactory()).apply { clock = { now } }
+
+    @Test
+    fun `English stays disabled until its layout is final`() {
+        assertFalse(manager.setLanguage(Language.ENGLISH))
+        assertEquals(Language.SPANISH, manager.currentLanguage)
+        assertEquals(Language.SPANISH, manager.currentLanguage.other())
+        assertFalse(Language.canSwitch)
+    }
 
     private fun tapShift(afterMs: Long = 1_000L) {
         now += afterMs

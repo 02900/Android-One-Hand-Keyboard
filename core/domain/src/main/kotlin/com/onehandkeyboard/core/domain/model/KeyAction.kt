@@ -100,6 +100,11 @@ sealed class KeyAction {
     object SwitchLanguage : KeyAction()
 
     /**
+     * Open the meme library panel (GIFs and stickers from the user's folder)
+     */
+    object ShowMemes : KeyAction()
+
+    /**
      * Dead key: the next vowel is combined with [accent] (e.g. ´ + e = é)
      */
     data class DeadKey(val accent: Char) : KeyAction()

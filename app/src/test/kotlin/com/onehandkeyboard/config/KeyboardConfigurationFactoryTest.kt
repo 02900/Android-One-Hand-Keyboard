@@ -110,11 +110,15 @@ class KeyboardConfigurationFactoryTest {
     }
 
     @Test
-    fun `layout key only switches layer and resets the height`() {
+    fun `layout key switches layer, resets the height and opens the memes`() {
         allConfigurations().forEach { config ->
             val layoutKey = config.cells.first { it.cellIndex == 3 }
-            assertEquals(listOf(Direction.W), layoutKey.getDirectionsFor(GestureType.SWIPE))
+            assertEquals(setOf(Direction.W, Direction.S), layoutKey.getDirectionsFor(GestureType.SWIPE).toSet())
             assertEquals(ActionConfig.ResetCellHeight, layoutKey.getActionFor(GestureType.SWIPE, Direction.W))
+            assertEquals(
+                ActionConfig.Action(KeyAction.ShowMemes),
+                layoutKey.getActionFor(GestureType.SWIPE, Direction.S),
+            )
         }
     }
 

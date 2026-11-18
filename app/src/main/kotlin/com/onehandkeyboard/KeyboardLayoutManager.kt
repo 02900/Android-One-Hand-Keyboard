@@ -145,7 +145,7 @@ class KeyboardLayoutManager
 
         /** Selects a language explicitly (e.g. from the system IME subtype). */
         fun setLanguage(language: Language): Boolean {
-            if (language == currentLanguage) return false
+            if (language == currentLanguage || !language.enabled) return false
             currentLanguage = language
             keyboardConfiguration = configFactory.getConfiguration(currentLanguage, currentMode)
             return true

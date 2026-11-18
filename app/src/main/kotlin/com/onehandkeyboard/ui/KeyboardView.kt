@@ -91,6 +91,29 @@ class KeyboardView(
     /** Show the preview bubble (disabled for password fields). */
     var previewEnabled = true
 
+    /**
+     * Expert mode: no labels on any key and no preview bubble. Fills, borders, press feedback,
+     * the version and the suggestion strip stay. Touches work exactly the same.
+     */
+    var expertMode = false
+        set(value) {
+            if (field == value) return
+            field = value
+            hideBubble()
+            invalidate()
+        }
+
+    /** The preview bubble is showing (tests). */
+    internal val previewShowing get() = bubbleKey != null
+
+    /** A newer build is waiting in settings: marked next to the version label. */
+    var updateWaiting = false
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
+
     /** Called when the user taps a suggestion in the strip. */
     var onSuggestionPicked: (Suggestion) -> Unit = {}
 
@@ -278,6 +301,10 @@ class KeyboardView(
         fillPaint.color = ColorUtils.blendARGB(palette.fill(key.primary), palette.pressed(key.primary), key.press)
         canvas.drawRect(r, fillPaint)
 
+        if (expertMode) {
+            canvas.restore()
+            return
+        }
         val textColor = palette.text(key.primary)
         val margin = LABEL_MARGIN_DP * density
         drawLabel(
@@ -346,7 +373,7 @@ class KeyboardView(
         versionPaint.color = ColorUtils.setAlphaComponent(color, (Color.alpha(color) * VERSION_ALPHA).toInt())
         val margin = LABEL_MARGIN_DP * density
         canvas.drawText(
-            versionText,
+            if (updateWaiting) "$versionText  ⬆ actualización" else versionText,
             gridRect.left + margin,
             gridRect.bottom - margin - versionPaint.descent(),
             versionPaint,
@@ -475,7 +502,8 @@ class KeyboardView(
         val gestureType = if (direction == Direction.CENTER) GestureType.TAP else GestureType.SWIPE
         val action = key.config.getActionFor(gestureType, direction)
         val text = key.label(direction)
-        if (!previewEnabled || !isPreviewable(action) || text.isNullOrEmpty()) {
+        val shown = previewEnabled && !expertMode && isPreviewable(action)
+        if (!shown || text.isNullOrEmpty()) {
             if (bubbleKey === key || bubbleKey == null) hideBubble()
             return
         }

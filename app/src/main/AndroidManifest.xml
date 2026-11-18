@@ -50,6 +50,17 @@
             android:theme="@style/Theme.OneHandKeyboard">
         </activity>
 
+        <!-- Shares the meme being sent with the app it is sent to (read-only, per grant) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.memes"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/meme_paths" />
+        </provider>
+
     </application>
 
 </manifest>
