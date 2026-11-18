@@ -1,41 +1,41 @@
 # One Hand Keyboard
 
-Teclado Android para escribir con una mano: una cuadrícula 4×4 (bloque de letras 3×3 + columna de control) donde cada tecla escribe con un toque o con un deslizamiento en 8 direcciones.
+An Android keyboard for typing with one hand: a 4×4 grid (3×3 letter block + control column) where every key types with a tap or with a swipe in one of 8 directions.
 
-## Características
+## Features
 
-- **Toques y swipes en 8 direcciones**, con globo de vista previa y columna de control (123, mayúsculas, borrar, espacio/cursor, enter).
-- **Autocorrector que no se impone**: corrige tildes y errores al cerrar la palabra, `⌫` lo deshace y aprende la palabra.
-- **Biblioteca de memes**: GIFs y stickers desde una carpeta del teléfono que tú eliges.
-- **Modo experto**: teclas sin etiquetas, para escribir de memoria.
-- **Temas** y soporte de **TalkBack**.
-- **Se actualiza solo** desde GitHub Releases y se puede **compartir** como APK.
-- Español. El inglés está desactivado hasta que su distribución de letras sea la definitiva.
+- **Taps and 8-direction swipes**, with a preview bubble and a control column (123, shift, backspace, space/cursor, enter).
+- **Autocorrect that doesn't insist**: fixes accents and typos when a word is closed; `⌫` undoes it and learns the word.
+- **Meme library**: GIFs and stickers from a phone folder you choose.
+- **Expert mode**: keys without labels, for typing from memory.
+- **Themes** and **TalkBack** support.
+- **Updates itself** from GitHub Releases and can be **shared** as an APK.
+- Spanish. English is disabled until its letter layout is final. The app's screens are in Spanish.
 
-## Instalar
+## Install
 
-1. En el teléfono, descarga el APK de la [última release](https://github.com/02900/Android-One-Hand-Keyboard/releases/latest) e instálalo.
-2. Abre la app → **Teclado → Activar**, y actívalo en la lista de teclados.
-3. En cualquier campo de texto, toca el ícono de teclado y elige **OneHandKeyboard**.
+1. On the phone, download the APK from the [latest release](https://github.com/02900/Android-One-Hand-Keyboard/releases/latest) and install it.
+2. Open the app → **Teclado → Activar** (Keyboard → Enable), and enable it in the list of keyboards.
+3. In any text field, tap the keyboard icon and choose **OneHandKeyboard**.
 
-## Documentación
+## Documentation
 
-| Documento | Contenido |
+| Document | Contents |
 |---|---|
-| [Uso](docs/USO.md) | Gestos, autocorrector, memes, modo experto, actualizar y compartir |
-| [Desarrollo](docs/DESARROLLO.md) | Preparar una PC desde cero, compilar, tests, problemas comunes y flujo de trabajo |
-| [Actualizaciones y releases](docs/ACTUALIZACIONES.md) | Cómo se actualiza la app, publicar una versión, clave de firma y servidor local |
-| [Arquitectura](docs/ARQUITECTURA.md) | Componentes, módulos y stack |
-| [MEJORAS.md](MEJORAS.md) | Hoja de ruta y cambios hechos |
+| [Usage](docs/USAGE.md) | Gestures, autocorrect, memes, expert mode, updating and sharing |
+| [Development](docs/DEVELOPMENT.md) | Setting up a fresh PC, building, tests, troubleshooting and workflow |
+| [Updates and releases](docs/UPDATES.md) | How the app updates, publishing a version, signing key and local server |
+| [Architecture](docs/ARCHITECTURE.md) | Components, modules and stack |
+| [Improvements](docs/IMPROVEMENTS.md) | Audit, roadmap and completed work |
 
-## Privacidad
+## Privacy
 
-- Todo se procesa en el teléfono: sin telemetría y sin enviar lo que escribes.
-- El build de release no tiene permiso de red. El de debug (el que se publica) solo lo usa para buscar actualizaciones en GitHub y en tu PC de la red local.
-- Los memes se leen solo de la carpeta que eliges en Ajustes.
+- Everything is processed on the phone: no telemetry, and what you type is never sent anywhere.
+- The release build has no network permission. The debug build (the published one) only uses it to look for updates on GitHub and on your PC on the local network.
+- Memes are only read from the folder you choose in the settings.
 
-## Licencia
+## License
 
-MIT. Los diccionarios del autocorrector (`app/src/main/assets/dict/*.tsv`) derivan de [FrequencyWords](https://github.com/hermitdave/FrequencyWords) y se distribuyen bajo CC BY-SA 4.0 (ver [LICENSE.txt](app/src/main/assets/dict/LICENSE.txt)).
+MIT. The autocorrect dictionaries (`app/src/main/assets/dict/*.tsv`) are derived from [FrequencyWords](https://github.com/hermitdave/FrequencyWords) and distributed under CC BY-SA 4.0 (see [LICENSE.txt](app/src/main/assets/dict/LICENSE.txt)).
 
-¿Un bug o una idea? Abre un [issue](../../issues).
+Found a bug or have an idea? Open an [issue](../../issues).
