@@ -6,6 +6,8 @@ import com.onehandkeyboard.config.CellConfiguration
 import com.onehandkeyboard.core.domain.model.CaseMode
 import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.gestures.GestureAction
+import com.onehandkeyboard.input.DeadKeys
+import com.onehandkeyboard.input.InputCommitter
 import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
 
@@ -18,6 +20,9 @@ import com.onehandkeyboard.core.domain.model.KeyAction
  * - Gestionar la representación visual de configuraciones
  */
 class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
+    /** Label of the Enter key, set from the field's IME action (↵, 🔍, →, ✓, ➤). */
+    var enterLabel: String = "↵"
+
     /**
      * Obtiene hints visuales de los gestos configurados para una celda
      */
@@ -40,7 +45,7 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
                     is com.onehandkeyboard.actions.ActionConfig.SwitchCase -> getCaseModeLabel()
                     is com.onehandkeyboard.actions.ActionConfig.Backspace -> "⌫"
                     is com.onehandkeyboard.actions.ActionConfig.Space -> "␣"
-                    is com.onehandkeyboard.actions.ActionConfig.Enter -> "↵"
+                    is com.onehandkeyboard.actions.ActionConfig.Enter -> enterLabel
                     is com.onehandkeyboard.actions.ActionConfig.Submit -> "📤"
                     is com.onehandkeyboard.actions.ActionConfig.ShowNumbers -> "123"
                     is com.onehandkeyboard.actions.ActionConfig.ShowLetters -> "ABC"
@@ -95,6 +100,10 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             is KeyAction.SwitchToLetters -> "ABC"
             is KeyAction.InsertText -> action.text.take(2)
             is KeyAction.UndoDelete -> "↶"
+            is KeyAction.DeleteWord -> "⇤"
+            is KeyAction.ToggleOneHand -> "◧"
+            is KeyAction.SwitchLanguage -> layoutManager.getCurrentLanguageText()
+            is KeyAction.DeadKey -> action.accent.toString()
             else -> "?"
         }
     }
@@ -139,7 +148,7 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             is com.onehandkeyboard.actions.ActionConfig.SwitchCase -> getCaseModeLabel()
             is com.onehandkeyboard.actions.ActionConfig.Backspace -> "⌫"
             is com.onehandkeyboard.actions.ActionConfig.Space -> "␣"
-            is com.onehandkeyboard.actions.ActionConfig.Enter -> "↵"
+            is com.onehandkeyboard.actions.ActionConfig.Enter -> enterLabel
             is com.onehandkeyboard.actions.ActionConfig.Submit -> "📤"
             is com.onehandkeyboard.actions.ActionConfig.ShowNumbers -> "123"
             is com.onehandkeyboard.actions.ActionConfig.ShowLetters -> "ABC"
@@ -170,7 +179,7 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
             is com.onehandkeyboard.actions.ActionConfig.SwitchCase -> getCaseModeLabel()
             is com.onehandkeyboard.actions.ActionConfig.Backspace -> "⌫"
             is com.onehandkeyboard.actions.ActionConfig.Space -> "␣"
-            is com.onehandkeyboard.actions.ActionConfig.Enter -> "↵"
+            is com.onehandkeyboard.actions.ActionConfig.Enter -> enterLabel
             is com.onehandkeyboard.actions.ActionConfig.Submit -> "📤"
             is com.onehandkeyboard.actions.ActionConfig.ShowNumbers -> "123"
             is com.onehandkeyboard.actions.ActionConfig.ShowLetters -> "ABC"
@@ -189,11 +198,16 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
      * Apply case transformation based on current case mode
      */
     private fun applyCaseTransformation(text: String): String {
-        return when (layoutManager.currentCaseMode) {
-            CaseMode.UPPERCASE -> text.uppercase()
-            CaseMode.LOWERCASE -> text.lowercase()
-            CaseMode.CAPITALIZE -> text.lowercase().replaceFirstChar { it.uppercase() }
-        }
+        val cased =
+            when (layoutManager.currentCaseMode) {
+                CaseMode.UPPERCASE -> text.uppercase()
+                CaseMode.LOWERCASE -> text.lowercase()
+                CaseMode.CAPITALIZE -> text.lowercase().replaceFirstChar { it.uppercase() }
+            }
+        // With a pending dead key, vowels preview their accented form (´ + e shows é).
+        val accent = layoutManager.pendingDeadKey ?: return cased
+        val char = cased.singleOrNull() ?: return cased
+        return if (DeadKeys.canCompose(accent, char)) DeadKeys.compose(accent, cased) else cased
     }
 
     /**
@@ -214,6 +228,22 @@ class GestureHintProvider(private val layoutManager: KeyboardLayoutManager) {
         return when (layoutManager.currentMode) {
             com.onehandkeyboard.enums.LayoutMode.LETTERS -> "123"  // Show numbers when in letters
             com.onehandkeyboard.enums.LayoutMode.SYMBOLS -> "ABC"  // Show letters when in symbols
+        }
+    }
+
+    companion object {
+        /** Enter key label for the field's IME action. */
+        fun enterLabelFor(info: android.view.inputmethod.EditorInfo?): String {
+            if (InputCommitter.wantsNewline(info) || !InputCommitter.hasEditorAction(info)) return "↵"
+            return when (InputCommitter.editorAction(info)) {
+                android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH -> "🔍"
+                android.view.inputmethod.EditorInfo.IME_ACTION_GO -> "→"
+                android.view.inputmethod.EditorInfo.IME_ACTION_NEXT -> "⇥"
+                android.view.inputmethod.EditorInfo.IME_ACTION_PREVIOUS -> "⇤"
+                android.view.inputmethod.EditorInfo.IME_ACTION_DONE -> "✓"
+                android.view.inputmethod.EditorInfo.IME_ACTION_SEND -> "➤"
+                else -> "↵"
+            }
         }
     }
 }

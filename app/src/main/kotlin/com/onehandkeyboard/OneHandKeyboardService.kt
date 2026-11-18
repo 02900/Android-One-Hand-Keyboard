@@ -10,9 +10,13 @@ import android.text.InputType
 import android.util.Log
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodSubtype
 import android.widget.LinearLayout
 import com.onehandkeyboard.core.design.theme.ThemeManager
+import com.onehandkeyboard.enums.Language
+import com.onehandkeyboard.input.InputCommitter
 import com.onehandkeyboard.prefs.KeyboardPreferences
+import com.onehandkeyboard.ui.GestureHintProvider
 import com.onehandkeyboard.ui.KeyFeedback
 import com.onehandkeyboard.ui.KeyboardViewController
 import dagger.hilt.android.AndroidEntryPoint
@@ -78,6 +82,7 @@ class OneHandKeyboardService : InputMethodService() {
                 hintProvider = uiFactory.hintProvider,
                 layoutCalculator = uiFactory.layoutCalculator,
                 gestureIntegration = gestureIntegration,
+                prefs = preferences,
             )
 
         actionProcessor =
@@ -88,6 +93,7 @@ class OneHandKeyboardService : InputMethodService() {
                 onLayoutSwitch = { viewController.showCurrentLayout() },
                 onCaseSwitch = { viewController.refreshLabels() },
                 onHeightChanged = { viewController.applyCellHeight() },
+                onToggleOneHand = { viewController.toggleOneHand() },
             )
 
         gestureIntegration.onOutput = actionProcessor::processKeyboardOutput
@@ -99,10 +105,20 @@ class OneHandKeyboardService : InputMethodService() {
     ) {
         super.onStartInputView(info, restarting)
         if (!restarting) {
-            layoutManager.resetForNewInput()
-            viewController.showCurrentLayout()
+            layoutManager.resetForNewInput(info?.inputType ?: InputType.TYPE_CLASS_TEXT)
+            viewController.showCurrentLayout(animate = false)
         }
+        viewController.previewEnabled = !InputCommitter.isPassword(info)
+        uiFactory.hintProvider.enterLabel = GestureHintProvider.enterLabelFor(info)
+        viewController.refreshLabels()
         updateAutoShift()
+    }
+
+    override fun onCurrentInputMethodSubtypeChanged(newSubtype: InputMethodSubtype?) {
+        super.onCurrentInputMethodSubtypeChanged(newSubtype)
+        val tag = subtypeLanguageTag(newSubtype) ?: return
+        val language = if (tag.startsWith("en")) Language.ENGLISH else Language.SPANISH
+        if (layoutManager.setLanguage(language)) viewController.showCurrentLayout()
     }
 
     override fun onUpdateSelection(
@@ -115,6 +131,15 @@ class OneHandKeyboardService : InputMethodService() {
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
         if (newSelStart == newSelEnd) updateAutoShift()
+    }
+
+    @Suppress("DEPRECATION") // InputMethodSubtype.locale is the only option before API 24
+    private fun subtypeLanguageTag(subtype: InputMethodSubtype?): String? {
+        subtype ?: return null
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            subtype.languageTag.takeIf { it.isNotEmpty() }?.let { return it }
+        }
+        return subtype.locale.takeIf { it.isNotEmpty() }
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
