@@ -10,7 +10,6 @@ import android.text.InputType
 import android.util.Log
 import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
 import android.view.inputmethod.InputMethodSubtype
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
@@ -122,26 +121,10 @@ class OneHandKeyboardService : InputMethodService() {
                 },
                 onCaseSwitch = { keyboardView?.refreshLabels() },
                 onHeightChanged = { keyboardView?.applyCellHeight() },
-                onToggleOneHand = { keyboardView?.toggleOneHand() },
-                onSwitchInputMethod = ::switchToNextKeyboard,
                 corrector = autoCorrector,
             )
 
         gestureIntegration.onOutput = actionProcessor::processKeyboardOutput
-    }
-
-    /** Next enabled IME; falls back to the system picker when there is no "next" one. */
-    @Suppress("DEPRECATION") // InputMethodManager.switchToNextInputMethod is the only option before API 28
-    private fun switchToNextKeyboard() {
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-        val switched =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                switchToNextInputMethod(false)
-            } else {
-                val token = window?.window?.attributes?.token
-                token != null && imm?.switchToNextInputMethod(token, false) == true
-            }
-        if (!switched) imm?.showInputMethodPicker()
     }
 
     override fun onStartInputView(

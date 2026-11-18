@@ -21,7 +21,7 @@ import javax.inject.Singleton
  *
  * Grid (cell indexes):
  * ```
- *  0  1  2 | 3   layout / next IME / height (long-press) / one-hand
+ *  0  1  2 | 3   layout / default height (long-press = resize)
  *  4  5  6 | 7   case / clipboard
  *  8  9 10 | 11  backspace / delete word / delete all / undo
  * 12 ---- 14 | 15  space (trackpad, swipe up/down = language) / enter / submit
@@ -309,15 +309,13 @@ class KeyboardConfigurationFactory
         // ------------------------------------------------------------------
 
         /**
-         * Layer key: tap = switch layer, up = next keyboard (IME), left = default height,
-         * down = one-hand mode. Long-press starts the live height resize (touch layer).
+         * Layer key: tap = switch layer, left = default height. Long-press starts the live
+         * height resize (touch layer).
          */
         private fun GridBuilder.layoutCell(switchAction: ActionConfig) =
             cell(3) {
                 tap(switchAction)
-                swipe(N, ActionConfig.Action(KeyAction.SwitchInputMethod))
                 swipe(W, ActionConfig.ResetCellHeight)
-                swipe(S, ActionConfig.Action(KeyAction.ToggleOneHand))
             }
 
         /** Shift has no meaning on the symbols layer, so there it only keeps the clipboard swipes. */

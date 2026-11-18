@@ -18,7 +18,6 @@ import com.onehandkeyboard.prefs.KeyboardPreferences
 import com.onehandkeyboard.spell.Suggestion
 import com.onehandkeyboard.spell.Suggestions
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -177,28 +176,6 @@ class KeyboardViewTest {
     }
 
     @Test
-    fun `one hand mode narrows the grid and its panel moves it to the other side`() {
-        prefs.oneHandEnabled = true
-        prefs.oneHandRight = true
-        createView()
-        val panelWidth = view.width * 0.2f
-        val gridColumn = view.width * 0.8f / 4
-
-        // Grid starts after the left panel: its first key is at panel + half a column.
-        tap(floatArrayOf(panelWidth + gridColumn / 2, stripHeight + rowHeight / 2))
-        assertEquals(listOf<KeyboardOutput>(KeyboardOutput.Character("a")), outputs)
-
-        // Upper half of the panel = switch side.
-        tap(floatArrayOf(panelWidth / 2, stripHeight + gridHeight / 4f))
-        assertFalse(prefs.oneHandRight)
-        assertEquals("panel taps never type", 1, outputs.size)
-
-        // Lower half = back to full width.
-        tap(floatArrayOf(view.width - panelWidth / 2, view.height * 0.75f))
-        assertFalse(prefs.oneHandEnabled)
-    }
-
-    @Test
     fun `accessibility exposes keys with tap and swipe actions`() {
         createView()
         val provider = view.accessibilityNodeProvider!!
@@ -213,15 +190,15 @@ class KeyboardViewTest {
     }
 
     @Test
-    fun `layout key swipe up switches the input method`() {
+    fun `delete key swipe left deletes a word`() {
         createView()
-        val start = cellCenter(3)
-        val end = floatArrayOf(start[0], start[1] - rowHeight * 0.45f)
+        val start = cellCenter(11)
+        val end = floatArrayOf(start[0] - columnWidth * 0.45f, start[1])
         send(MotionEvent.ACTION_DOWN, listOf(0 to start))
         send(MotionEvent.ACTION_MOVE, listOf(0 to end))
         send(MotionEvent.ACTION_UP, listOf(0 to end))
 
-        assertEquals(listOf<KeyboardOutput>(KeyboardOutput.Action(KeyAction.SwitchInputMethod)), outputs)
+        assertEquals(listOf<KeyboardOutput>(KeyboardOutput.Action(KeyAction.DeleteWord)), outputs)
     }
 
     @Test
