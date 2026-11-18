@@ -15,6 +15,8 @@ import com.onehandkeyboard.core.design.theme.ThemeManager
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
 import com.onehandkeyboard.prefs.KeyboardPreferences
+import com.onehandkeyboard.spell.Suggestion
+import com.onehandkeyboard.spell.Suggestions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -54,12 +56,16 @@ class KeyboardViewTest {
         }.also { view = it }
     }
 
+    private val gridHeight get() = LayoutCalculator(context, prefs).calculateCellHeight() * 4
+
+    /** Height of the suggestion strip above the grid. */
+    private val stripHeight get() = view.height - gridHeight
     private val columnWidth get() = view.width / 4f
-    private val rowHeight get() = view.height / 4f
+    private val rowHeight get() = gridHeight / 4f
 
     /** Center of a grid cell (full-width keyboard). */
     private fun cellCenter(cellIndex: Int) =
-        floatArrayOf(columnWidth * (cellIndex % 4 + 0.5f), rowHeight * (cellIndex / 4 + 0.5f))
+        floatArrayOf(columnWidth * (cellIndex % 4 + 0.5f), stripHeight + rowHeight * (cellIndex / 4 + 0.5f))
 
     private fun send(
         action: Int,
@@ -110,10 +116,30 @@ class KeyboardViewTest {
     }
 
     @Test
-    fun `measured height follows the configured cell height`() {
+    fun `measured height follows the configured cell height plus the strip`() {
+        prefs.suggestionsEnabled = true
         createView()
-        val expected = LayoutCalculator(context, prefs).calculateCellHeight() * 4
-        assertEquals(expected, view.measuredHeight)
+        assertTrue(stripHeight > 0)
+        prefs.suggestionsEnabled = false
+        createView()
+        assertEquals(gridHeight, view.measuredHeight)
+        prefs.suggestionsEnabled = true
+    }
+
+    @Test
+    fun `tapping a suggestion picks it and does not type a key`() {
+        createView()
+        val picked = mutableListOf<Suggestion>()
+        view.onSuggestionPicked = { picked += it }
+        val auto = Suggestion("canción", Suggestion.Kind.AUTO)
+        val typed = Suggestion("cancion", Suggestion.Kind.TYPED)
+        view.suggestions = Suggestions("cancion", "canción", listOf(typed, auto, null))
+
+        tap(floatArrayOf(view.width / 2f, stripHeight / 2f))
+        tap(floatArrayOf(view.width * 5f / 6f, stripHeight / 2f)) // empty slot: nothing
+
+        assertEquals(listOf(auto), picked)
+        assertTrue(outputs.isEmpty())
     }
 
     @Test
@@ -159,11 +185,11 @@ class KeyboardViewTest {
         val gridColumn = view.width * 0.8f / 4
 
         // Grid starts after the left panel: its first key is at panel + half a column.
-        tap(floatArrayOf(panelWidth + gridColumn / 2, view.height / 8f))
+        tap(floatArrayOf(panelWidth + gridColumn / 2, stripHeight + rowHeight / 2))
         assertEquals(listOf<KeyboardOutput>(KeyboardOutput.Character("a")), outputs)
 
         // Upper half of the panel = switch side.
-        tap(floatArrayOf(panelWidth / 2, view.height / 4f))
+        tap(floatArrayOf(panelWidth / 2, stripHeight + gridHeight / 4f))
         assertFalse(prefs.oneHandRight)
         assertEquals("panel taps never type", 1, outputs.size)
 

@@ -31,6 +31,8 @@ import com.onehandkeyboard.core.domain.model.Direction
 import com.onehandkeyboard.core.domain.model.GestureType
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.prefs.KeyboardPreferences
+import com.onehandkeyboard.spell.Suggestion
+import com.onehandkeyboard.spell.Suggestions
 import java.util.EnumMap
 import kotlin.math.max
 import kotlin.math.min
@@ -44,6 +46,7 @@ import kotlin.math.min
  * - Touch feedback (pressed color, 0.96 press scale, highlighted target label, preview
  *   bubble, layer fade) is interpolated inside [onDraw]; nothing allocates while drawing.
  * - One-hand mode narrows the grid to 80 % and draws a side panel (⇆ switch side, ⤢ exit).
+ * - A suggestion strip on top shows left / center / right suggestions from the autocorrector.
  * - Accessibility: [ExploreByTouchHelper] exposes one virtual node per key with its tap
  *   action and one custom action per swipe, so TalkBack users can reach every character.
  */
@@ -95,6 +98,19 @@ class KeyboardView(
     /** Show the preview bubble (disabled for password fields). */
     var previewEnabled = true
 
+    /** Called when the user taps a suggestion in the strip. */
+    var onSuggestionPicked: (Suggestion) -> Unit = {}
+
+    /** Contents of the suggestion strip. */
+    var suggestions: Suggestions
+        get() = strip.suggestions
+        set(value) {
+            if (strip.suggestions == value) return
+            strip.suggestions = value
+            invalidate()
+            accessibilityHelper.invalidateRoot()
+        }
+
     private val density = resources.displayMetrics.density
     private var palette = KeyboardPalette.from(themeManager.currentTheme.value)
     private var configuration: KeyboardConfiguration? = null
@@ -102,6 +118,7 @@ class KeyboardView(
     private val keysByIndex = HashMap<Int, Key>()
     private val gridRect = RectF()
     private val panelRect = RectF()
+    private val strip = SuggestionStrip(resources)
 
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val centerPaint = textPaint(CENTER_TEXT_SP)
@@ -125,6 +142,7 @@ class KeyboardView(
 
     private val gesturePointers = HashSet<Int>()
     private val panelPointers = HashMap<Int, PanelButton>()
+    private val stripPointers = HashMap<Int, Int>()
     private var resizeStartHeightDp = 0f
 
     private val accessibilityHelper = AccessibilityHelper()
@@ -174,6 +192,12 @@ class KeyboardView(
         invalidate()
     }
 
+    /** Shows or hides the suggestion strip after the setting changed. */
+    fun applySuggestionsSetting() {
+        requestLayout()
+        invalidate()
+    }
+
     fun applyTheme() {
         palette = KeyboardPalette.from(themeManager.currentTheme.value)
         invalidate()
@@ -199,7 +223,7 @@ class KeyboardView(
             } else {
                 MeasureSpec.getSize(widthMeasureSpec)
             }
-        setMeasuredDimension(width, layoutCalculator.calculateCellHeight() * GRID_ROWS)
+        setMeasuredDimension(width, layoutCalculator.calculateCellHeight() * GRID_ROWS + stripHeightPx().toInt())
     }
 
     override fun onSizeChanged(
@@ -222,27 +246,31 @@ class KeyboardView(
         val w = width.toFloat()
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
+        val top = min(stripHeightPx(), h / 2)
+        strip.layout(w, top)
         val oneHand = prefs.oneHandEnabled
         val gridWidth = if (oneHand) w * ONE_HAND_WIDTH else w
         val gridLeft = if (oneHand && prefs.oneHandRight) w - gridWidth else 0f
-        gridRect.set(gridLeft, 0f, gridLeft + gridWidth, h)
+        gridRect.set(gridLeft, top, gridLeft + gridWidth, h)
         when {
             !oneHand -> panelRect.setEmpty()
-            prefs.oneHandRight -> panelRect.set(0f, 0f, gridLeft, h)
-            else -> panelRect.set(gridWidth, 0f, w, h)
+            prefs.oneHandRight -> panelRect.set(0f, top, gridLeft, h)
+            else -> panelRect.set(gridWidth, top, w, h)
         }
         val columnWidth = gridWidth / GRID_COLUMNS
-        val rowHeight = h / GRID_ROWS
+        val rowHeight = (h - top) / GRID_ROWS
         keys.forEach { key ->
             val c = key.config
             key.rect.set(
                 gridLeft + c.col * columnWidth,
-                c.row * rowHeight,
+                top + c.row * rowHeight,
                 gridLeft + (c.col + c.colSpan) * columnWidth,
-                (c.row + c.rowSpan) * rowHeight,
+                top + (c.row + c.rowSpan) * rowHeight,
             )
         }
     }
+
+    private fun stripHeightPx(): Float = strip.heightPx(prefs.suggestionsEnabled)
 
     // ------------------------------------------------------------------
     // Drawing
@@ -257,6 +285,7 @@ class KeyboardView(
         keys.forEach { drawKey(canvas, it, border) }
         if (fading) canvas.restore()
         if (!panelRect.isEmpty) drawPanel(canvas, border)
+        strip.draw(canvas, palette, border)
         drawBubble(canvas)
         if (animating) postInvalidateOnAnimation()
     }
@@ -522,12 +551,34 @@ class KeyboardView(
         val pointerId = event.getPointerId(index)
         val x = event.getX(index)
         val y = event.getY(index)
-        panelButtonAt(x, y)?.let { button ->
-            panelPointers[pointerId] = button
-            if (prefs.hapticsEnabled) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-            return
+        val inStrip = strip.contains(y)
+        val slot = if (inStrip) strip.slotAt(x, y) else null
+        val button = if (inStrip) null else panelButtonAt(x, y)
+        val key = if (inStrip || button != null) null else keyAt(x, y)
+        when {
+            slot != null -> {
+                stripPointers[pointerId] = slot
+                tapHaptic()
+            }
+            button != null -> {
+                panelPointers[pointerId] = button
+                tapHaptic()
+            }
+            key != null -> startGesture(event, pointerId, key, x, y)
         }
-        val key = keyAt(x, y) ?: return
+    }
+
+    private fun tapHaptic() {
+        if (prefs.hapticsEnabled) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+    }
+
+    private fun startGesture(
+        event: MotionEvent,
+        pointerId: Int,
+        key: Key,
+        x: Float,
+        y: Float,
+    ) {
         getLocationOnScreen(screenLocation)
         gesturePointers += pointerId
         gestures.pointerDown(
@@ -564,12 +615,21 @@ class KeyboardView(
             if (panelButtonAt(x, y) == button) onPanelButton(button)
             return
         }
+        stripPointers.remove(pointerId)?.let { slot ->
+            if (strip.slotAt(x, y) == slot) pickSlot(slot)
+            return
+        }
         if (gesturePointers.remove(pointerId)) gestures.pointerUp(pointerId, x, y, event.eventTime)
+    }
+
+    private fun pickSlot(index: Int) {
+        suggestions.slots.getOrNull(index)?.let(onSuggestionPicked)
     }
 
     private fun cancelTouches() {
         gesturePointers.clear()
         panelPointers.clear()
+        stripPointers.clear()
         gestures.cancelAll()
     }
 
@@ -589,7 +649,8 @@ class KeyboardView(
         x: Float,
         y: Float,
     ): Key? {
-        if (gridRect.isEmpty || x < gridRect.left || x > gridRect.right) return null
+        val outside = x < gridRect.left || x > gridRect.right || y < gridRect.top
+        if (gridRect.isEmpty || outside) return null
         val cx = x.coerceIn(gridRect.left, gridRect.right - EDGE_EPSILON)
         val cy = y.coerceIn(gridRect.top, gridRect.bottom - EDGE_EPSILON)
         return keys.firstOrNull { it.rect.contains(cx, cy) }
@@ -599,7 +660,7 @@ class KeyboardView(
         x: Float,
         y: Float,
     ): PanelButton? {
-        if (panelRect.isEmpty || !panelRect.contains(x, y.coerceIn(0f, height - EDGE_EPSILON))) return null
+        if (panelRect.isEmpty || !panelRect.contains(x, y.coerceAtMost(height - EDGE_EPSILON))) return null
         return if (y < panelRect.centerY()) PanelButton.SWAP_SIDE else PanelButton.FULL_WIDTH
     }
 
@@ -643,9 +704,19 @@ class KeyboardView(
         override fun getVirtualViewAt(
             x: Float,
             y: Float,
-        ): Int = panelButtonAt(x, y)?.virtualId ?: keyAt(x, y)?.index ?: INVALID_ID
+        ): Int =
+            strip.slotAt(x, y)?.let { STRIP_VIRTUAL_ID_BASE + it }
+                ?: panelButtonAt(x, y)?.virtualId
+                ?: keyAt(x, y)?.index
+                ?: INVALID_ID
 
         override fun getVisibleVirtualViews(virtualViewIds: MutableList<Int>) {
+            suggestions.slots.forEachIndexed {
+                    index,
+                    slot,
+                ->
+                if (slot != null) virtualViewIds += STRIP_VIRTUAL_ID_BASE + index
+            }
             keys.forEach { virtualViewIds += it.index }
             if (!panelRect.isEmpty) PanelButton.values().forEach { virtualViewIds += it.virtualId }
         }
@@ -657,7 +728,13 @@ class KeyboardView(
         ) {
             val key = keysByIndex[virtualViewId]
             val button = panelButtonFor(virtualViewId)
+            val slot = slotFor(virtualViewId)
             when {
+                slot != null -> {
+                    node.contentDescription = GestureHintProvider.describeSuggestion(slot)
+                    strip.slotRect(virtualViewId - STRIP_VIRTUAL_ID_BASE, drawRect)
+                    drawRect.roundOut(boundsRect)
+                }
                 key != null -> {
                     node.contentDescription = labels.describe(key.config)
                     key.rect.roundOut(boundsRect)
@@ -696,6 +773,10 @@ class KeyboardView(
             val direction =
                 if (isClick) Direction.CENTER else SWIPE_ACTIONS.entries.firstOrNull { it.value == action }?.key
             return when {
+                slotFor(virtualViewId) != null && isClick -> {
+                    pickSlot(virtualViewId - STRIP_VIRTUAL_ID_BASE)
+                    true
+                }
                 button != null && isClick -> {
                     onPanelButton(button)
                     true
@@ -707,6 +788,15 @@ class KeyboardView(
                 else -> false
             }
         }
+
+        private fun slotFor(virtualViewId: Int): Suggestion? =
+            if (virtualViewId < STRIP_VIRTUAL_ID_BASE) {
+                null
+            } else {
+                suggestions.slots.getOrNull(
+                    virtualViewId - STRIP_VIRTUAL_ID_BASE,
+                )
+            }
 
         private fun panelButtonFor(virtualViewId: Int) =
             if (panelRect.isEmpty) null else PanelButton.values().firstOrNull { it.virtualId == virtualViewId }
@@ -745,6 +835,7 @@ class KeyboardView(
         const val PANEL_TEXT_SP = 22f
         const val PANEL_VIRTUAL_ID_BASE = 100
         const val EDGE_EPSILON = 0.5f
+        const val STRIP_VIRTUAL_ID_BASE = 200
 
         val SWIPE_ACTIONS =
             mapOf(

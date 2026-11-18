@@ -2,10 +2,12 @@ package com.onehandkeyboard.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,9 +18,16 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +37,8 @@ import androidx.compose.ui.unit.sp
 import com.onehandkeyboard.R
 import com.onehandkeyboard.core.design.theme.KeyboardThemeWithTokens
 import com.onehandkeyboard.core.design.theme.ThemeManager
+import com.onehandkeyboard.prefs.KeyboardPreferences
+import com.onehandkeyboard.spell.SpellEngines
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -42,11 +53,17 @@ class SettingsActivity : ComponentActivity() {
     @Inject
     lateinit var themeManager: ThemeManager
 
+    @Inject
+    lateinit var preferences: KeyboardPreferences
+
+    @Inject
+    lateinit var spellEngines: SpellEngines
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             OneHandKeyboardTheme(themeManager = themeManager) {
-                SettingsScreen()
+                SettingsScreen(preferences, spellEngines::clearLearnedWords)
             }
         }
     }
@@ -69,7 +86,10 @@ private fun OneHandKeyboardTheme(
 }
 
 @Composable
-private fun SettingsScreen() {
+private fun SettingsScreen(
+    preferences: KeyboardPreferences,
+    onClearLearnedWords: () -> Unit,
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     LazyColumn(
@@ -120,6 +140,11 @@ private fun SettingsScreen() {
             }
         }
 
+        // Writing: autocorrect and suggestions
+        item {
+            WritingSettings(preferences, onClearLearnedWords)
+        }
+
         // Divider
         item {
             HorizontalDivider(
@@ -164,6 +189,73 @@ private fun SettingsScreen() {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun WritingSettings(
+    preferences: KeyboardPreferences,
+    onClearLearnedWords: () -> Unit,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var autocorrect by remember { mutableStateOf(preferences.autocorrectEnabled) }
+    var suggestions by remember { mutableStateOf(preferences.suggestionsEnabled) }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "✍️ Escritura",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            SettingSwitch(
+                title = "Corrección automática",
+                subtitle = "Corrige palabras y tildes al poner espacio. Borrar justo después la deshace.",
+                checked = autocorrect,
+            ) {
+                autocorrect = it
+                preferences.autocorrectEnabled = it
+            }
+            SettingSwitch(
+                title = "Barra de sugerencias",
+                subtitle = "Muestra alternativas encima del teclado mientras escribes.",
+                checked = suggestions,
+            ) {
+                suggestions = it
+                preferences.suggestionsEnabled = it
+            }
+            OutlinedButton(
+                onClick = {
+                    onClearLearnedWords()
+                    Toast.makeText(context, "Palabras aprendidas borradas", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                Text("Borrar palabras aprendidas")
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingSwitch(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = subtitle, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

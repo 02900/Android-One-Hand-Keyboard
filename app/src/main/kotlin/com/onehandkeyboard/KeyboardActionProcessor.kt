@@ -10,6 +10,8 @@ import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
 import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.input.InputCommitter
+import com.onehandkeyboard.spell.AutoCorrector
+import com.onehandkeyboard.spell.Suggestion
 import com.onehandkeyboard.ui.LayoutCalculator
 
 /**
@@ -28,6 +30,7 @@ class KeyboardActionProcessor(
     private val onToggleOneHand: () -> Unit = {},
     private val onSwitchInputMethod: () -> Unit = {},
     private val committer: InputCommitter = InputCommitter(),
+    private val corrector: AutoCorrector? = null,
 ) {
     private val ic get() = service.currentInputConnection
     private val editorInfo get() = service.currentInputEditorInfo
@@ -36,11 +39,13 @@ class KeyboardActionProcessor(
         when (output) {
             is KeyboardOutput.Character -> {
                 committer.resetSpaceShortcut()
+                if (output.char in SEPARATORS) corrector?.beforeSeparator(ic, output.char) else corrector?.invalidate()
                 committer.commitText(ic, output.char)
                 if (configManager.onCharacterWritten()) onCaseSwitch()
             }
             is KeyboardOutput.Action -> {
                 if (output.action != KeyAction.Space) committer.resetSpaceShortcut()
+                if (output.action != KeyAction.Space && output.action != KeyAction.Backspace) corrector?.invalidate()
                 executeKeyAction(output.action)
             }
         }
@@ -55,7 +60,18 @@ class KeyboardActionProcessor(
             onCaseSwitch()
             return
         }
-        committer.space(ic, SystemClock.uptimeMillis(), InputCommitter.allowsPeriodShortcut(editorInfo))
+        val connection = ic
+        connection?.beginBatchEdit()
+        corrector?.beforeSeparator(connection, " ")
+        committer.space(connection, SystemClock.uptimeMillis(), InputCommitter.allowsPeriodShortcut(editorInfo))
+        connection?.endBatchEdit()
+    }
+
+    /** A word picked in the suggestion strip. */
+    fun pickSuggestion(suggestion: Suggestion) {
+        committer.resetSpaceShortcut()
+        corrector?.pick(ic, suggestion)
+        if (configManager.onCharacterWritten()) onCaseSwitch()
     }
 
     private fun executeBackspace() {
@@ -64,6 +80,9 @@ class KeyboardActionProcessor(
             onCaseSwitch()
             return
         }
+        // Right after an autocorrection, backspace gives back what the user typed.
+        if (corrector?.onBackspace(ic) == true) return
+        corrector?.invalidate()
         committer.backspace(ic)
     }
 
@@ -126,5 +145,8 @@ class KeyboardActionProcessor(
 
     private companion object {
         const val TAG = "OneHandKeyboard"
+
+        /** Characters that close a word and trigger autocorrection (besides space). */
+        val SEPARATORS = setOf(".", ",", ";", ":", "?", "!")
     }
 }

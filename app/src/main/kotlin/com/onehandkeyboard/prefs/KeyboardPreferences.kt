@@ -39,8 +39,20 @@ class KeyboardPreferences
             get() = prefs.getBoolean(KEY_ONE_HAND_RIGHT, true)
             set(value) = prefs.edit().putBoolean(KEY_ONE_HAND_RIGHT, value).apply()
 
+        /** Replace unknown words with a confident correction on space / punctuation. */
+        var autocorrectEnabled: Boolean
+            get() = prefs.getBoolean(KEY_AUTOCORRECT, true)
+            set(value) = prefs.edit().putBoolean(KEY_AUTOCORRECT, value).apply()
+
+        /** Suggestion strip above the keys. */
+        var suggestionsEnabled: Boolean
+            get() = prefs.getBoolean(KEY_SUGGESTIONS, true)
+            set(value) = prefs.edit().putBoolean(KEY_SUGGESTIONS, value).apply()
+
         companion object {
             const val DEFAULT_CELL_HEIGHT_DP = 60f
+            private const val KEY_AUTOCORRECT = "autocorrect_enabled"
+            private const val KEY_SUGGESTIONS = "suggestions_enabled"
             private const val KEY_ONE_HAND = "one_hand_enabled"
             private const val KEY_ONE_HAND_RIGHT = "one_hand_right"
             private const val PREFS_NAME = "keyboard_prefs"

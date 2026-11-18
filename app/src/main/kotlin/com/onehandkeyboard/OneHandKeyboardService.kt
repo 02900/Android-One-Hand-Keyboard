@@ -13,11 +13,15 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.view.inputmethod.InputMethodSubtype
 import android.widget.LinearLayout
+import androidx.core.content.ContextCompat
 import com.onehandkeyboard.core.design.theme.ThemeManager
 import com.onehandkeyboard.enums.Language
 import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.input.InputCommitter
 import com.onehandkeyboard.prefs.KeyboardPreferences
+import com.onehandkeyboard.spell.AutoCorrector
+import com.onehandkeyboard.spell.FieldPolicy
+import com.onehandkeyboard.spell.SpellEngines
 import com.onehandkeyboard.ui.GestureHintProvider
 import com.onehandkeyboard.ui.KeyFeedback
 import com.onehandkeyboard.ui.KeyboardView
@@ -45,12 +49,16 @@ class OneHandKeyboardService : InputMethodService() {
     @Inject
     lateinit var preferences: KeyboardPreferences
 
+    @Inject
+    lateinit var spellEngines: SpellEngines
+
     private var themeChangeReceiver: BroadcastReceiver? = null
 
     private lateinit var layoutCalculator: LayoutCalculator
     private lateinit var labels: GestureHintProvider
     private lateinit var gestureIntegration: GestureIntegration
     private lateinit var actionProcessor: KeyboardActionProcessor
+    private lateinit var autoCorrector: AutoCorrector
 
     /** Current input view; recreated by the system on rotation/config changes. */
     private var keyboardView: KeyboardView? = null
@@ -74,7 +82,10 @@ class OneHandKeyboardService : InputMethodService() {
                 layoutCalculator = layoutCalculator,
                 gestures = gestureIntegration,
                 prefs = preferences,
-            ).also { keyboardView = it }
+            ).also { view ->
+                view.onSuggestionPicked = actionProcessor::pickSuggestion
+                keyboardView = view
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error creating input view", e)
             createFallbackView()
@@ -90,16 +101,30 @@ class OneHandKeyboardService : InputMethodService() {
         labels = GestureHintProvider(layoutManager)
         gestureIntegration = GestureIntegration(this, layoutManager, KeyFeedback(this, preferences))
 
+        autoCorrector =
+            AutoCorrector(
+                suggester = { spellEngines.suggester(layoutManager.currentLanguage) },
+                userDictionary = { spellEngines.userDictionary(layoutManager.currentLanguage) },
+                background = spellEngines.executor,
+                main = ContextCompat.getMainExecutor(this),
+            )
+        autoCorrector.onSuggestions = { keyboardView?.suggestions = it }
+        spellEngines.preload(layoutManager.currentLanguage)
+
         actionProcessor =
             KeyboardActionProcessor(
                 service = this,
                 configManager = layoutManager,
                 layoutCalculator = layoutCalculator,
-                onLayoutSwitch = { keyboardView?.showCurrentLayout() },
+                onLayoutSwitch = {
+                    spellEngines.preload(layoutManager.currentLanguage)
+                    keyboardView?.showCurrentLayout()
+                },
                 onCaseSwitch = { keyboardView?.refreshLabels() },
                 onHeightChanged = { keyboardView?.applyCellHeight() },
                 onToggleOneHand = { keyboardView?.toggleOneHand() },
                 onSwitchInputMethod = ::switchToNextKeyboard,
+                corrector = autoCorrector,
             )
 
         gestureIntegration.onOutput = actionProcessor::processKeyboardOutput
@@ -131,6 +156,10 @@ class OneHandKeyboardService : InputMethodService() {
         keyboardView?.previewEnabled = !InputCommitter.isPassword(info)
         labels.enterLabel = GestureHintProvider.enterLabelFor(info)
         keyboardView?.refreshLabels()
+        keyboardView?.applySuggestionsSetting()
+        spellEngines.preload(layoutManager.currentLanguage)
+        autoCorrector.startInput(FieldPolicy.from(info, preferences.suggestionsEnabled, preferences.autocorrectEnabled))
+        autoCorrector.refresh(currentInputConnection)
         updateAutoShift()
     }
 
@@ -138,7 +167,10 @@ class OneHandKeyboardService : InputMethodService() {
         super.onCurrentInputMethodSubtypeChanged(newSubtype)
         val tag = subtypeLanguageTag(newSubtype) ?: return
         val language = if (tag.startsWith("en")) Language.ENGLISH else Language.SPANISH
-        if (layoutManager.setLanguage(language)) keyboardView?.showCurrentLayout()
+        if (layoutManager.setLanguage(language)) {
+            spellEngines.preload(language)
+            keyboardView?.showCurrentLayout()
+        }
     }
 
     override fun onUpdateSelection(
@@ -150,7 +182,10 @@ class OneHandKeyboardService : InputMethodService() {
         candidatesEnd: Int,
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
-        if (newSelStart == newSelEnd) updateAutoShift()
+        if (newSelStart == newSelEnd) {
+            updateAutoShift()
+            autoCorrector.refresh(currentInputConnection)
+        }
     }
 
     @Suppress("DEPRECATION") // InputMethodSubtype.locale is the only option before API 24
@@ -165,6 +200,7 @@ class OneHandKeyboardService : InputMethodService() {
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
         gestureIntegration.cancelAll()
+        autoCorrector.startInput(FieldPolicy.NONE)
     }
 
     /**
