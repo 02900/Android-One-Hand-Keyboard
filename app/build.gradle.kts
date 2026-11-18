@@ -115,6 +115,11 @@ android {
         jvmTarget = "11"
     }
 
+    // Robolectric loads the real resources (e.g. the key icons drawn by KeyboardView).
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true

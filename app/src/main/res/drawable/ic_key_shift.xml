@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Key icon, tinted at draw time with the key's text color (see KeyIcons). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,3.5L3,13h5v7.5h8V13h5L12,3.5zM12,6.4L16.4,11H14v7.5h-4V11H7.6L12,6.4z" />
+</vector>
