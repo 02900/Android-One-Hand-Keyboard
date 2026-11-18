@@ -27,6 +27,5 @@ project(":app-ime").projectDir = file("app")
 
 // Core modules
 include(":core:gesture")
-include(":core:mapping")
 include(":core:design")
 include(":core:domain")

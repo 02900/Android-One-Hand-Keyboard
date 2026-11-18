@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber") // color palette definitions (ARGB literals)
+
 package com.onehandkeyboard.core.design.tokens
 
 import androidx.compose.ui.graphics.Color

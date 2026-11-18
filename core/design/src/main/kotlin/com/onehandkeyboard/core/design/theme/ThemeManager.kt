@@ -182,31 +182,6 @@ class ThemeManager
         fun getAvailableThemes(): List<String> = ThemePresets.getThemeNames()
 
         /**
-         * Get current theme tokens
-         */
-        fun getCurrentTokens(): DesignTokens = _currentTheme.value
-
-        /**
-         * Check if current theme is dark
-         */
-        fun isCurrentThemeDark(): Boolean = _isDarkMode.value
-
-        /**
-         * Switch to system default theme based on dark mode preference
-         */
-        fun setSystemDefaultTheme(isDark: Boolean) {
-            val themeName = if (isDark) "Default Dark" else "Default Light"
-            setTheme(themeName)
-        }
-
-        /**
-         * Reset to default light theme
-         */
-        fun resetToDefault() {
-            setTheme("Default Light")
-        }
-
-        /**
          * Determine if a theme name represents a dark theme
          */
         private fun isDarkTheme(themeName: String): Boolean {
@@ -228,13 +203,6 @@ class ThemeManager
                 keyText = theme.colors.contentPrimary,
                 actionKeyText = theme.colors.contentSecondary,
             )
-        }
-
-        /**
-         * Get all theme previews for theme selection UI
-         */
-        fun getAllThemePreviews(): List<ThemePreview> {
-            return getAvailableThemes().mapNotNull { getThemePreview(it) }
         }
     }
 

@@ -66,7 +66,6 @@ dependencies {
     // Core modules
     implementation(project(":core:domain"))
     implementation(project(":core:gesture"))
-    implementation(project(":core:mapping"))
     implementation(project(":core:design"))
 
     // Compose BOM
