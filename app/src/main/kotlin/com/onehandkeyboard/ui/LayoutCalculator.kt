@@ -22,6 +22,9 @@ class LayoutCalculator(
             prefs?.cellHeightDp = value
         }
     
+    // Height while the user is dragging the resize handle (not persisted yet)
+    private var liveHeightDp: Float? = null
+
     // Límites para la altura de celda
     private val minCellHeightDp = 40f
     private val maxCellHeightDp = 80f
@@ -31,7 +34,7 @@ class LayoutCalculator(
      */
     fun calculateCellHeight(): Int {
         val displayMetrics = context.resources.displayMetrics
-        return (cellHeightDp * displayMetrics.density).toInt()
+        return (getCurrentCellHeightDp() * displayMetrics.density).toInt()
     }
     
     /**
@@ -107,10 +110,35 @@ class LayoutCalculator(
         }
     }
     
+    val minHeightDp: Float get() = minCellHeightDp
+    val maxHeightDp: Float get() = maxCellHeightDp
+
+    /**
+     * Sets the cell height (clamped). During a live resize drag pass `persist = false` and
+     * persist once at the end to avoid a disk write per frame.
+     */
+    fun setCellHeightDp(
+        value: Float,
+        persist: Boolean = true,
+    ) {
+        val clamped = value.coerceIn(minCellHeightDp, maxCellHeightDp)
+        if (persist) {
+            cellHeightDp = clamped
+        } else {
+            liveHeightDp = clamped
+        }
+    }
+
+    /** Persists the height reached during a live resize. */
+    fun commitLiveHeight() {
+        liveHeightDp?.let { cellHeightDp = it }
+        liveHeightDp = null
+    }
+
     /**
      * Obtiene la altura actual de celda en dp
      */
-    fun getCurrentCellHeightDp(): Float = cellHeightDp
+    fun getCurrentCellHeightDp(): Float = liveHeightDp ?: cellHeightDp
     
     /**
      * Resetea la altura de celda al valor por defecto (60dp)
