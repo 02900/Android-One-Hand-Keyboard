@@ -4,7 +4,7 @@ The app's screens are in Spanish, so on-screen labels are quoted in Spanish belo
 
 ## Install and enable
 
-1. On the phone, open the [latest release](https://github.com/02900/Android-One-Hand-Keyboard/releases/latest) and install one of the APKs: **debug** updates itself but needs internet permission, **release** has no network access and is updated by hand (see [UPDATES.md](UPDATES.md)). If you had a build signed with a different key, uninstall it first.
+1. On the phone, open the [latest release](https://github.com/02900/Android-One-Hand-Keyboard/releases/latest) and install one of the APKs: **debug** updates itself but needs internet permission, **release** has no network access and is updated by hand, **online** is like release plus the trending memes tab (see [UPDATES.md](UPDATES.md)). If you had a build signed with a different key, uninstall it first.
 2. In the app, tap **Teclado → Activar** (Keyboard → Enable), or go to **Settings → System → Languages & input → On-screen keyboard**, and enable **OneHandKeyboard**.
 3. In any text field, tap the keyboard icon and choose **OneHandKeyboard**.
 
@@ -61,6 +61,15 @@ Memes/
 - **How it's sent:** if the app accepts images in that field (WhatsApp, Telegram, Signal…), the meme is inserted directly. Otherwise it is copied to the clipboard and a message asks you to paste it.
 - **Stickers:** still images (png, jpg, webp) are made square with black bars on the short side and sent in the format the app takes: a 512 px WebP sticker in WhatsApp (and Telegram, which receives a WebP), a square JPEG in Instagram. GIFs and animated WebP are sent as they are.
 - To update the pack, just change the files in the folder: it is read again every time you open the panel.
+
+### 🔥 Tendencias (online and debug APKs)
+
+The **🔥 Tendencias** tab shows the photos trending on [Know Your Meme](https://knowyourmeme.com/photos/trending) right now. It appears a moment after the panel opens (it's downloaded), after **🕘 Recientes**; it works even without a meme folder.
+
+- The list is refreshed at most every 15 minutes; the previews are small (~15 KB each).
+- The full image is downloaded only when you send it, and goes out like any other meme (sticker, square JPEG or GIF).
+- Photos the site marks as sensitive, NSFW or spoilers are skipped. The rest is whatever is trending, unfiltered.
+- Without a connection the tab just doesn't appear. If Know Your Meme changes its page, the tab may stop showing until the app is updated.
 
 ## Voice typing
 

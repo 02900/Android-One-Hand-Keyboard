@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Online builds only: the meme panel's "Tendencias" tab reads knowyourmeme.com/photos/trending.
+     The release build keeps no network permission at all. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+</manifest>

@@ -1,6 +1,6 @@
 name: Release
 
-# Builds both APKs signed with the fixed key and publishes them as the latest GitHub release:
+# Builds the three APKs signed with the fixed key and publishes them as the latest GitHub release:
 # - debug: updates itself (needs internet); update.json describes it (see docs/UPDATES.md).
 # - release: no network permission, updated by installing a newer release by hand.
 on:
@@ -58,12 +58,13 @@ jobs:
         OHK_KEY_PASSWORD: ${{ secrets.OHK_KEY_PASSWORD }}
       run: |
         chmod +x gradlew
-        ./gradlew --console=plain assembleDebug assembleRelease
+        ./gradlew --console=plain assembleDebug assembleRelease assembleOnline
 
     - name: Collect the APKs and write update.json
       run: |
         python3 tools/serve_updates.py --no-build --no-serve --dir dist
         cp app/build/outputs/apk/release/app-ime-release.apk "dist/OneHandKeyboard-release-$(git rev-parse --short HEAD).apk"
+        cp app/build/outputs/apk/online/app-ime-online.apk "dist/OneHandKeyboard-online-$(git rev-parse --short HEAD).apk"
         ls -l dist
 
     - name: Publish the release
@@ -79,8 +80,9 @@ jobs:
           echo "|---|---|---|"
           echo "| \`OneHandKeyboard-debug-$commit.apk\` | Automatic, from GitHub or a PC on the local network | Required |"
           echo "| \`OneHandKeyboard-release-$commit.apk\` | Manual: install a newer release by hand | Not used |"
+          echo "| \`OneHandKeyboard-online-$commit.apk\` | Manual, like release | Only for the trending memes tab (Know Your Meme) |"
           echo
-          echo "They are separate apps (\`com.onehandkeyboard.debug\` and \`com.onehandkeyboard\`) and can be installed side by side."
+          echo "They are separate apps (\`com.onehandkeyboard.debug\`, \`com.onehandkeyboard\` and \`com.onehandkeyboard.online\`) and can be installed side by side."
         } > "$RUNNER_TEMP/notes.md"
         if gh release view "$tag" > /dev/null 2>&1; then
           gh release upload "$tag" dist/* --clobber

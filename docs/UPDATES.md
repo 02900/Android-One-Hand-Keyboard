@@ -1,13 +1,14 @@
 # Updates and releases
 
-Every release publishes two APKs:
+Every release publishes three APKs:
 
 | APK | Package | Updates | Internet permission |
 |---|---|---|---|
 | `OneHandKeyboard-debug-<commit>.apk` | `com.onehandkeyboard.debug` | Automatic (this page) | Required |
 | `OneHandKeyboard-release-<commit>.apk` | `com.onehandkeyboard` | Manual: install a newer release by hand | Not used |
+| `OneHandKeyboard-online-<commit>.apk` | `com.onehandkeyboard.online` | Manual, like release | Required, only for the trending memes tab |
 
-Only the debug build updates itself; the release build is minified and has no network permission. Both are signed with the same key, so a newer release APK also installs over an older one.
+Only the debug build updates itself; the release build is minified and has no network permission. The online build is the release build plus Internet for the **🔥 Tendencias** meme tab (`app/src/online/AndroidManifest.xml`, `BuildConfig.TRENDING_MEMES`). Both are signed with the same key, so a newer release APK also installs over an older one.
 
 ## How the app updates
 
@@ -37,7 +38,7 @@ Every published build is signed with the same key, so each update installs over 
 
 ## Publishing a version (GitHub Actions)
 
-The [`.github/workflows/release.yml`](../.github/workflows/release.yml) workflow builds both APKs, signs them with the fixed key and publishes a **GitHub Release** with the two APKs and the debug one's `update.json`. Phones pick it up on their own (see [How the app updates](#how-the-app-updates)).
+The [`.github/workflows/release.yml`](../.github/workflows/release.yml) workflow builds the three APKs, signs them with the fixed key and publishes a **GitHub Release** with the APKs and the debug one's `update.json`. Phones pick it up on their own (see [How the app updates](#how-the-app-updates)).
 
 **When it runs**
 
@@ -58,7 +59,7 @@ gh release list                    # the new one shows up as "Latest"
 
 An annotated tag needs a git identity; if the machine has none, pass it per command: `git -c user.name=... -c user.email=... tag -a ...`.
 
-**What it does, step by step:** restores the key from the secrets, builds with `assembleDebug assembleRelease`, writes `update.json` (`python3 tools/serve_updates.py --no-build --no-serve --dir dist`), copies the release APK next to it, creates the release with notes explaining the two APKs and marks it as *Latest*. If the release already exists (e.g. on a re-run), it replaces the files and the notes. Finally it deletes the key from the runner.
+**What it does, step by step:** restores the key from the secrets, builds with `assembleDebug assembleRelease assembleOnline`, writes `update.json` (`python3 tools/serve_updates.py --no-build --no-serve --dir dist`), copies the release and online APKs next to it, creates the release with notes explaining the three APKs and marks it as *Latest*. If the release already exists (e.g. on a re-run), it replaces the files and the notes. Finally it deletes the key from the runner.
 
 **Repository secrets** (Settings → Secrets and variables → Actions)
 

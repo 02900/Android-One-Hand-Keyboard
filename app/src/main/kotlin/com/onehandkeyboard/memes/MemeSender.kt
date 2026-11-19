@@ -24,6 +24,8 @@ import java.io.IOException
  */
 class MemeSender(
     private val context: Context,
+    /** Downloads a trending meme ([Meme.isRemote]) to a file; null in builds without Internet. */
+    private val download: ((String, File) -> Boolean)? = null,
     /** Shareable URI of a cached copy (the app's FileProvider). */
     private val shareUri: (File) -> Uri = { FileProvider.getUriForFile(context, authority(context), it) },
 ) {
@@ -47,9 +49,45 @@ class MemeSender(
     ): Prepared? {
         cleanCache()
         val folder = File(cacheRoot, Integer.toHexString(meme.uri.hashCode()))
+        val local = if (meme.isRemote) fetch(meme, folder) else copyLocal(meme, folder)
+        return local?.let { (actual, file) -> convert(actual, Prepared(file, actual.mimeType), fieldTypes) }
+    }
+
+    private fun copyLocal(
+        meme: Meme,
+        folder: File,
+    ): Pair<Meme, File>? {
         val file = File(folder, safeFileName(meme.fileName))
-        val copied = isCached(file) || copy(meme, file)
-        return if (copied) convert(meme, Prepared(file, meme.mimeType), fieldTypes) else null
+        return if (isCached(file) || copy(meme, file)) meme to file else null
+    }
+
+    /**
+     * Downloads a trending meme, named after its real type (apps reading the file from the
+     * clipboard guess the type from the extension).
+     */
+    private fun fetch(
+        meme: Meme,
+        folder: File,
+    ): Pair<Meme, File>? {
+        val base = safeFileName(meme.title)
+        val cached = EXTENSIONS.keys.map { File(folder, "$base.$it") }.firstOrNull(::isCached)
+        val file = cached ?: downloadTo(meme, folder, base)
+        return file?.let { meme.copy(fileName = it.name, mimeType = EXTENSIONS.getValue(it.extension)) to it }
+    }
+
+    private fun downloadTo(
+        meme: Meme,
+        folder: File,
+        base: String,
+    ): File? {
+        val partial = File(folder, "$base.part")
+        val type = if (download?.invoke(meme.uri, partial) == true) MemeFormat.sniffMimeType(partial) else null
+        val named = EXTENSIONS.entries.firstOrNull { it.value == type }?.let { File(folder, "$base.${it.key}") }
+        if (named == null || !partial.renameTo(named)) {
+            partial.delete()
+            return null
+        }
+        return named
     }
 
     /** The [original] in the field's [MemeFormat], or the original if it stays as it is. */
@@ -139,6 +177,8 @@ class MemeSender(
     companion object {
         private const val CACHE_DIR = "memes"
         private const val CACHE_TTL_MS = 24L * 60 * 60 * 1000
+        private val EXTENSIONS =
+            mapOf("gif" to "image/gif", "webp" to "image/webp", "png" to "image/png", "jpg" to "image/jpeg")
 
         fun authority(context: Context) = "${context.packageName}.memes"
 

@@ -84,6 +84,36 @@ enum class MemeFormat(
                 header[VP8X_FLAGS_OFFSET].toInt() and ANIMATION_FLAG != 0
         }
 
+        /** MIME type from the file's first bytes (GIF, PNG, JPEG or WebP), or null. */
+        fun sniffMimeType(file: File): String? {
+            val header = ByteArray(WEBP_HEADER_BYTES)
+            val read =
+                try {
+                    file.inputStream().use { it.read(header) }
+                } catch (_: IOException) {
+                    0
+                }
+            val start = header.copyOf(read.coerceAtLeast(0))
+            return SIGNATURES.entries.firstOrNull { (signature, _) -> signature.matches(start) }?.value
+        }
+
+        /** Leading bytes of each format; `null` bytes may be anything (the RIFF size of a WebP). */
+        private class Signature(
+            vararg val bytes: Int?,
+        ) {
+            fun matches(start: ByteArray) =
+                start.size >= bytes.size && bytes.withIndex().all { (i, b) -> b == null || start[i] == b.toByte() }
+        }
+
+        @Suppress("MagicNumber") // the formats' published magic numbers
+        private val SIGNATURES =
+            mapOf(
+                Signature(0x47, 0x49, 0x46) to "image/gif",
+                Signature(0x89, 0x50, 0x4E, 0x47) to "image/png",
+                Signature(0xFF, 0xD8, 0xFF) to "image/jpeg",
+                Signature(0x52, 0x49, 0x46, 0x46, null, null, null, null, 0x57, 0x45, 0x42, 0x50) to "image/webp",
+            )
+
         private val STATIC_TYPES = setOf("image/png", "image/jpeg", "image/webp")
         private const val WEBP_HEADER_BYTES = 21
         private const val FOURCC = 4
