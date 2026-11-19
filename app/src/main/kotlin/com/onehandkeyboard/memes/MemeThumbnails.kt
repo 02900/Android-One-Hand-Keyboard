@@ -46,7 +46,7 @@ class MemeThumbnails(
         }
         val started = generation
         workers.execute {
-            val drawable = decode(Uri.parse(meme.uri), sizePx) ?: return@execute
+            val drawable = decode(Uri.parse(meme.previewUri), sizePx) ?: return@execute
             main.execute {
                 if (started != generation) return@execute
                 cache.put(meme.uri, drawable)

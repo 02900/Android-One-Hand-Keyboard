@@ -24,9 +24,11 @@ import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.input.InputCommitter
 import com.onehandkeyboard.memes.Meme
 import com.onehandkeyboard.memes.MemeCatalog
+import com.onehandkeyboard.memes.MemeCategory
 import com.onehandkeyboard.memes.MemeLibrary
 import com.onehandkeyboard.memes.MemeSender
 import com.onehandkeyboard.memes.MemeThumbnails
+import com.onehandkeyboard.memes.TrendingMemes
 import com.onehandkeyboard.prefs.KeyboardPreferences
 import com.onehandkeyboard.spell.AutoCorrector
 import com.onehandkeyboard.spell.FieldPolicy
@@ -87,8 +89,16 @@ class OneHandKeyboardService : InputMethodService() {
     private lateinit var voiceTyping: VoiceTyping
     private val memeExecutor = Executors.newSingleThreadExecutor()
 
+    /** Know Your Meme's trending tab: only in builds with Internet (debug and online). */
+    private var trendingMemes: TrendingMemes? = null
+    private val trendingExecutor = Executors.newSingleThreadExecutor()
+
     /** Bumped each time the panel opens or closes, so a late scan does not reopen it. */
     private var memeRequest = 0
+
+    /** What the open panel shows: the folder's scan and the trending tab, as each arrives. */
+    private var memeFolderResult: MemeLibrary.Result? = null
+    private var memeTrending: MemeCategory? = null
 
     override fun onCreate() {
         super.onCreate() // Hilt injects here
@@ -159,7 +169,13 @@ class OneHandKeyboardService : InputMethodService() {
     private fun initializeComponents() {
         layoutCalculator = LayoutCalculator(this)
         memeLibrary = MemeLibrary(this)
-        memeSender = MemeSender(this)
+        trendingMemes =
+            if (BuildConfig.TRENDING_MEMES) {
+                TrendingMemes(cacheDir, "OneHandKeyboard/${BuildConfig.VERSION_NAME} (Android)")
+            } else {
+                null
+            }
+        memeSender = MemeSender(this, download = trendingMemes?.let { it::download })
         memeThumbnails = MemeThumbnails(this, ContextCompat.getMainExecutor(this))
         keyboardUpdates =
             KeyboardUpdates(SelfUpdater(this, preferences), preferences, ContextCompat.getMainExecutor(this))
@@ -291,24 +307,52 @@ class OneHandKeyboardService : InputMethodService() {
         panel.visibility = View.VISIBLE
         panel.showLoading()
         val request = ++memeRequest
+        memeFolderResult = null
+        memeTrending = null
+        val main = ContextCompat.getMainExecutor(this)
         val folder = preferences.memeFolderUri
-        val recents = preferences.recentMemes
         memeExecutor.execute {
-            val loaded = memeLibrary.load(folder)
-            val result =
-                if (loaded is MemeLibrary.Result.Loaded) {
-                    MemeLibrary.Result.Loaded(MemeCatalog.withRecents(loaded.categories, recents))
-                } else {
-                    loaded
-                }
-            ContextCompat.getMainExecutor(this).execute { if (request == memeRequest) memePanel?.show(result) }
+            val result = memeLibrary.load(folder)
+            main.execute {
+                if (request != memeRequest) return@execute
+                memeFolderResult = result
+                showMemeTabs()
+            }
         }
+        trendingMemes?.let { trending ->
+            trendingExecutor.execute {
+                val tab = trending.load() ?: return@execute
+                main.execute {
+                    if (request != memeRequest) return@execute
+                    memeTrending = tab
+                    showMemeTabs()
+                }
+            }
+        }
+    }
+
+    /** Recents, trending and the folder's tabs; with no usable folder, the trending tab alone. */
+    private fun showMemeTabs() {
+        val folder = memeFolderResult ?: return // still scanning: the trending tab waits for it
+        val trending = memeTrending
+        val result =
+            when {
+                folder is MemeLibrary.Result.Loaded -> {
+                    val tabs = MemeCatalog.withTrending(folder.categories, trending)
+                    MemeLibrary.Result.Loaded(MemeCatalog.withRecents(tabs, preferences.recentMemes))
+                }
+                trending != null -> MemeLibrary.Result.Loaded(listOf(trending))
+                else -> folder
+            }
+        memePanel?.show(result)
     }
 
     private fun hideMemes() {
         val panel = memePanel ?: return
         if (panel.visibility == View.GONE) return
         memeRequest++
+        memeFolderResult = null
+        memeTrending = null
         panel.visibility = View.GONE
         panel.clear()
         keyboardView?.visibility = View.VISIBLE
@@ -419,6 +463,7 @@ class OneHandKeyboardService : InputMethodService() {
         if (::keyboardUpdates.isInitialized) keyboardUpdates.shutdown()
         if (::voiceTyping.isInitialized) voiceTyping.cancel()
         memeExecutor.shutdownNow()
+        trendingExecutor.shutdownNow()
         super.onDestroy()
     }
 
