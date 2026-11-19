@@ -33,8 +33,10 @@ import kotlin.math.min
  *
  * - Top edge: a grab bar; drag it up or down and release to change the panel's height
  *   ([onHeightChosen]).
- * - Bar: back to the keys and one tab per category. Tapping a tab jumps to that category; the
- *   tab of the category being browsed is highlighted.
+ * - Bar: back to the keys, search (in builds with Internet) and one tab per category. Tapping a
+ *   tab jumps to that category; the tab of the category being browsed is highlighted.
+ * - Search results replace the categories: the bar shows the query (tap it to go back to the
+ *   library) and more results load as the list nears its end ([onLoadMore]).
  * - One vertical list with every category: its title, then its memes in a grid. A fast-scroll
  *   thumb on the right edge jumps through it.
  * - Tap a meme to send it. Hold it to see it big; slide to see others; lifting just closes it.
@@ -55,6 +57,22 @@ class MemePanelView(
     /** The grab bar was released: the height the panel should take (within [setHeightRange]). */
     var onHeightChosen: (heightPx: Int) -> Unit = {}
 
+    /** The search button: type a query. */
+    var onSearchTapped: () -> Unit = {}
+
+    /** Leave the search results, back to the library. */
+    var onSearchClosed: () -> Unit = {}
+
+    /** The search results are near their end: load the next page (answered with [showSearchResults]). */
+    var onLoadMore: () -> Unit = {}
+
+    /** Shows the search button (builds with Internet). */
+    var searchEnabled: Boolean
+        get() = searchButton.visibility == VISIBLE
+        set(value) {
+            searchButton.visibility = if (value) VISIBLE else GONE
+        }
+
     private val density = resources.displayMetrics.density
     private var palette: KeyboardPalette? = null
     private var sections = MemeSections(emptyList())
@@ -62,6 +80,7 @@ class MemePanelView(
     private val handle = MemeResizeHandle(context) { height }
     private val bar = LinearLayout(context)
     private val backButton = barButton("ABC") { onBack() }
+    private val searchButton = barButton("🔍") { onSearchTapped() }.apply { contentDescription = "Buscar memes" }
     private val tabs = LinearLayout(context)
     private val tabScroll = HorizontalScrollView(context)
     private var tabViews: List<TextView> = emptyList()
@@ -80,6 +99,11 @@ class MemePanelView(
     /** The meme shown big while a finger holds the list, or null. */
     private var previewing: Meme? = null
 
+    /** The query whose results are shown, or null while showing the library. */
+    private var searchQuery: String? = null
+    private var moreResults = false
+    private var loadingMore = false
+
     init {
         orientation = VERTICAL
         handle.onHeightChosen = { onHeightChosen(it) }
@@ -87,6 +111,8 @@ class MemePanelView(
         bar.orientation = HORIZONTAL
         bar.gravity = Gravity.CENTER_VERTICAL
         bar.addView(backButton, LayoutParams(dp(BACK_WIDTH_DP), LayoutParams.MATCH_PARENT))
+        searchButton.visibility = GONE
+        bar.addView(searchButton, LayoutParams(dp(SEARCH_WIDTH_DP), LayoutParams.MATCH_PARENT))
         tabs.orientation = HORIZONTAL
         tabScroll.isHorizontalScrollBarEnabled = false
         tabScroll.addView(tabs, ViewGroup.LayoutParams(WRAP_CONTENT, MATCH_PARENT))
@@ -110,7 +136,10 @@ class MemePanelView(
                     recyclerView: RecyclerView,
                     dx: Int,
                     dy: Int,
-                ) = updateActiveTab()
+                ) {
+                    updateActiveTab()
+                    loadMoreIfNearEnd()
+                }
             },
         )
         scroller.sectionNameAt = { position -> sections.sectionNames.getOrNull(sections.sectionAt(position)) }
@@ -151,6 +180,7 @@ class MemePanelView(
         handle.setColor(palette.secondaryText)
         bar.setBackgroundColor(palette.secondaryFill)
         backButton.setTextColor(palette.secondaryText)
+        searchButton.setTextColor(palette.secondaryText)
         message.setTextColor(palette.secondaryText)
         messageAction.setTextColor(palette.secondaryText)
         messageAction.background = rounded(palette.secondaryFill)
@@ -167,10 +197,12 @@ class MemePanelView(
     }
 
     fun showLoading() {
+        searchQuery = null
         showMessage("Cargando memes…", withAction = false)
     }
 
     fun show(result: MemeLibrary.Result) {
+        searchQuery = null
         when (result) {
             MemeLibrary.Result.NotConfigured ->
                 showMessage("Elige la carpeta de tus memes en los ajustes del teclado.", withAction = true)
@@ -188,9 +220,72 @@ class MemePanelView(
         }
     }
 
+    // ------------------------------------------------------------------
+    // Search results
+    // ------------------------------------------------------------------
+
+    /** The first page of results for [query] is on its way. */
+    fun showSearching(query: String) {
+        searchQuery = query
+        moreResults = false
+        loadingMore = false
+        showMessage("Buscando «$query»…", withAction = false)
+    }
+
+    /**
+     * Shows every result found so far for [query]. When they extend the ones shown, the new ones
+     * are added at the end and the list stays where it was.
+     */
+    fun showSearchResults(
+        query: String,
+        memes: List<Meme>,
+        hasMore: Boolean,
+    ) {
+        val shown = sections.rows.mapNotNull { (it as? MemeRow.Item)?.meme }
+        val appending = searchQuery == query && shown.isNotEmpty() && memes.take(shown.size) == shown
+        searchQuery = query
+        moreResults = hasMore
+        loadingMore = false
+        when {
+            memes.isEmpty() -> showMessage("No hay resultados para «$query».", withAction = false)
+            appending -> {
+                val before = sections.size
+                sections = MemeSections(listOf(MemeCategory(searchTitle(query), memes)))
+                adapter.notifyItemRangeInserted(before, sections.size - before)
+            }
+            else -> showCategories(listOf(MemeCategory(searchTitle(query), memes)))
+        }
+        // A short page may not fill the list: ask for more without waiting for a scroll.
+        grid.post { loadMoreIfNearEnd() }
+    }
+
+    /** The search failed (no connection, the site changed…). */
+    fun showSearchFailed(query: String) {
+        loadingMore = false
+        moreResults = false
+        if (sections.isEmpty()) {
+            searchQuery = query
+            showMessage("No se pudo buscar. Revisa tu conexión e inténtalo de nuevo.", withAction = false)
+        }
+    }
+
+    /** Showing search results with more pages to come, none on its way. */
+    private val canLoadMore get() = searchQuery != null && moreResults && !loadingMore
+
+    private fun loadMoreIfNearEnd() {
+        if (!canLoadMore || sections.isEmpty()) return
+        val last = layoutManager.findLastVisibleItemPosition()
+        if (last < 0 || last < sections.size - 1 - layoutManager.spanCount * LOAD_AHEAD_ROWS) return
+        loadingMore = true
+        onLoadMore()
+    }
+
+    private fun searchTitle(query: String) = "🔍 $query"
+
     /** Releases the previews (the panel is being hidden). */
     fun clear() {
         endPreview()
+        searchQuery = null
         sections = MemeSections(emptyList())
         adapter.refresh()
         rebuildTabs()
@@ -198,7 +293,7 @@ class MemePanelView(
     }
 
     /**
-     * Shows the categories. When the list is already showing (e.g. the trending category arrives
+     * Shows the categories. When the list is already showing (e.g. the recents arrive
      * later), the row at the top stays where it was instead of jumping.
      */
     private fun showCategories(list: List<MemeCategory>) {
@@ -238,6 +333,20 @@ class MemePanelView(
 
     private fun rebuildTabs() {
         tabs.removeAllViews()
+        val query = searchQuery
+        if (query != null) {
+            // Searching: one tab with the query, which leaves the results.
+            tabViews =
+                listOf(
+                    barButton("✕  $query") { onSearchClosed() }.also {
+                        it.contentDescription = "Cerrar la búsqueda de $query"
+                        tabs.addView(it, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT))
+                    },
+                )
+            activeSection = -1
+            setActive(0)
+            return
+        }
         tabViews =
             sections.sectionNames.mapIndexed { index, name ->
                 barButton(name) { jumpTo(index) }.also {
@@ -459,6 +568,8 @@ class MemePanelView(
         const val ITEM = 1
         const val BAR_HEIGHT_DP = 44f
         const val BACK_WIDTH_DP = 64f
+        const val SEARCH_WIDTH_DP = 48f
+        const val LOAD_AHEAD_ROWS = 3
         const val BAR_TEXT_SP = 15f
         const val TAB_PADDING_DP = 14f
         const val CORNER_DP = 10f

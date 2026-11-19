@@ -8,6 +8,7 @@ import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.text.InputType
 import android.util.Log
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
@@ -24,11 +25,10 @@ import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.input.InputCommitter
 import com.onehandkeyboard.memes.Meme
 import com.onehandkeyboard.memes.MemeCatalog
-import com.onehandkeyboard.memes.MemeCategory
 import com.onehandkeyboard.memes.MemeLibrary
+import com.onehandkeyboard.memes.MemeSearch
 import com.onehandkeyboard.memes.MemeSender
 import com.onehandkeyboard.memes.MemeThumbnails
-import com.onehandkeyboard.memes.TrendingMemes
 import com.onehandkeyboard.prefs.KeyboardPreferences
 import com.onehandkeyboard.spell.AutoCorrector
 import com.onehandkeyboard.spell.FieldPolicy
@@ -39,6 +39,7 @@ import com.onehandkeyboard.ui.KeyboardPalette
 import com.onehandkeyboard.ui.KeyboardView
 import com.onehandkeyboard.ui.LayoutCalculator
 import com.onehandkeyboard.ui.MemePanelView
+import com.onehandkeyboard.ui.MemeSearchBar
 import com.onehandkeyboard.ui.SettingsActivity
 import com.onehandkeyboard.update.KeyboardUpdates
 import com.onehandkeyboard.update.SelfUpdater
@@ -81,6 +82,13 @@ class OneHandKeyboardService : InputMethodService() {
     /** Current input view; recreated by the system on rotation/config changes. */
     private var keyboardView: KeyboardView? = null
     private var memePanel: MemePanelView? = null
+    private var searchBar: MemeSearchBar? = null
+
+    /** The input view built by [onCreateInputView] (null when the fallback view is shown). */
+    private var inputRoot: FrameLayout? = null
+
+    /** What sits on screen: the panel, or the keys (with the search box while it is open). */
+    private var keysColumn: View? = null
 
     private lateinit var memeLibrary: MemeLibrary
     private lateinit var memeSender: MemeSender
@@ -89,16 +97,20 @@ class OneHandKeyboardService : InputMethodService() {
     private lateinit var voiceTyping: VoiceTyping
     private val memeExecutor = Executors.newSingleThreadExecutor()
 
-    /** Know Your Meme's trending tab: only in builds with Internet (debug and online). */
-    private var trendingMemes: TrendingMemes? = null
-    private val trendingExecutor = Executors.newSingleThreadExecutor()
+    /** Know Your Meme's image search: only in builds with Internet (debug and online). */
+    private var memeSearch: MemeSearch? = null
+    private val searchExecutor = Executors.newSingleThreadExecutor()
 
-    /** Bumped each time the panel opens or closes, so a late scan does not reopen it. */
+    /** Bumped each time the panel opens, closes or searches, so a late answer does not show up. */
     private var memeRequest = 0
 
-    /** What the open panel shows: the folder's scan and the trending tab, as each arrives. */
-    private var memeFolderResult: MemeLibrary.Result? = null
-    private var memeTrending: MemeCategory? = null
+    /** The search whose results the panel shows: its query, results so far and next page. */
+    private var searchQuery: String? = null
+    private var searchResults: List<Meme> = emptyList()
+    private var searchNext: Int? = null
+
+    /** True while the keys type into the meme search box instead of the app. */
+    private val typingSearch get() = searchBar?.visibility == View.VISIBLE
 
     override fun onCreate() {
         super.onCreate() // Hilt injects here
@@ -148,19 +160,98 @@ class OneHandKeyboardService : InputMethodService() {
                     panel.onMemePicked = ::sendMeme
                     panel.onOpenSettings = ::openSettings
                     panel.onHeightChosen = ::resizeMemes
+                    panel.searchEnabled = memeSearch != null
+                    panel.onSearchTapped = ::openSearchBox
+                    panel.onSearchClosed = ::showMemes
+                    panel.onLoadMore = ::loadSearchPage
                     panel.applyPalette(KeyboardPalette.from(themeManager.currentTheme.value))
                     panel.visibility = View.GONE
                     memePanel = panel
                 }
-            // The panel goes over the keys, which stay laid out (INVISIBLE) while it shows.
+            val search =
+                MemeSearchBar(this).also { bar ->
+                    bar.onSearch = ::runSearch
+                    bar.onCancel = ::cancelSearchBox
+                    bar.applyPalette(KeyboardPalette.from(themeManager.currentTheme.value))
+                    bar.visibility = View.GONE
+                    searchBar = bar
+                }
+            val column =
+                LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    addView(search, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                    addView(keys, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                    keysColumn = this
+                }
+            // The panel goes over the keys, which stay laid out (INVISIBLE) while it shows. Both sit
+            // at the bottom of a view as tall as the screen (see updateWindowHeight).
             FrameLayout(this).apply {
-                addView(keys, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-                addView(panel, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                addView(column, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT, Gravity.BOTTOM))
+                addView(panel, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT, Gravity.BOTTOM))
+                inputRoot = this
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error creating input view", e)
+            inputRoot = null
             createFallbackView()
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Window: as tall as the screen, touchable only where the keyboard is
+    // ------------------------------------------------------------------
+
+    override fun setInputView(view: View) {
+        super.setInputView(view)
+        updateWindowHeight()
+    }
+
+    override fun updateFullscreenMode() {
+        super.updateFullscreenMode()
+        updateWindowHeight()
+    }
+
+    /**
+     * Makes the keyboard's window reach the top of the screen; the part above the keyboard is
+     * transparent and lets touches through to the app ([onComputeInsets]). Android stops tracking
+     * a finger at the edge of the window that got it, so without this the meme panel's grab bar
+     * could only be dragged a little upwards at a time.
+     */
+    private fun updateWindowHeight() {
+        val root = inputRoot ?: return
+        val height = if (isFullscreenMode) WRAP_CONTENT else MATCH_PARENT
+        window.window?.let { window ->
+            val attributes = window.attributes
+            if (attributes.height != MATCH_PARENT) {
+                attributes.height = MATCH_PARENT
+                window.attributes = attributes
+            }
+            window.findViewById<View>(android.R.id.inputArea)?.let { area ->
+                area.layoutParams =
+                    area.layoutParams?.also { params ->
+                        params.height = height
+                        (params as? LinearLayout.LayoutParams)?.gravity = Gravity.BOTTOM
+                        (params as? FrameLayout.LayoutParams)?.gravity = Gravity.BOTTOM
+                    }
+            }
+        }
+        root.layoutParams = root.layoutParams?.also { it.height = height }
+    }
+
+    override fun onComputeInsets(outInsets: Insets) {
+        super.onComputeInsets(outInsets)
+        val root = inputRoot ?: return
+        if (isFullscreenMode || !root.isShown || root.height == 0) return
+        val panel = memePanel?.takeIf { it.visibility == View.VISIBLE }
+        val visibleHeight = (panel ?: keysColumn)?.height ?: return
+        val location = IntArray(2)
+        root.getLocationInWindow(location)
+        val bottom = location[1] + root.height
+        val top = (bottom - visibleHeight).coerceAtLeast(0)
+        outInsets.contentTopInsets = top
+        outInsets.visibleTopInsets = top
+        outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_REGION
+        outInsets.touchableRegion.set(0, top, root.width, bottom)
     }
 
     /**
@@ -170,14 +261,11 @@ class OneHandKeyboardService : InputMethodService() {
     private fun initializeComponents() {
         layoutCalculator = LayoutCalculator(this)
         memeLibrary = MemeLibrary(this)
-        trendingMemes =
-            if (BuildConfig.TRENDING_MEMES) {
-                TrendingMemes(cacheDir, "OneHandKeyboard/${BuildConfig.VERSION_NAME} (Android)")
-            } else {
-                null
-            }
-        memeSender = MemeSender(this, download = trendingMemes?.let { it::download })
-        memeThumbnails = MemeThumbnails(this, ContextCompat.getMainExecutor(this))
+        memeSearch =
+            if (BuildConfig.MEME_SEARCH) MemeSearch("OneHandKeyboard/${BuildConfig.VERSION_NAME} (Android)") else null
+        memeSender = MemeSender(this, download = memeSearch?.let { it::download })
+        memeThumbnails =
+            MemeThumbnails(this, ContextCompat.getMainExecutor(this), fetch = memeSearch?.let { it::fetch })
         keyboardUpdates =
             KeyboardUpdates(SelfUpdater(this, preferences), preferences, ContextCompat.getMainExecutor(this))
         keyboardUpdates.onWaitingChanged = { keyboardView?.updateWaiting = it }
@@ -206,9 +294,14 @@ class OneHandKeyboardService : InputMethodService() {
                 corrector = autoCorrector,
                 onShowMemes = ::showMemes,
                 onVoiceInput = {
-                    autoCorrector.invalidate()
-                    voiceTyping.start()
+                    // Dictation writes into the app, not into the search box.
+                    if (!typingSearch) {
+                        autoCorrector.invalidate()
+                        voiceTyping.start()
+                    }
                 },
+                connection = { if (typingSearch) searchBar?.connection else currentInputConnection },
+                editor = { if (typingSearch) searchBar?.editorInfo else currentInputEditorInfo },
             )
 
         voiceTyping =
@@ -298,41 +391,43 @@ class OneHandKeyboardService : InputMethodService() {
     // Meme library
     // ------------------------------------------------------------------
 
+    /** Opens the panel with the library (recents and the folder's categories). */
     private fun showMemes() {
         val panel = memePanel ?: return
-        val keys = keyboardView ?: return
+        if (keyboardView == null) return
         gestureIntegration.cancelAll()
-        // An exact height (the keys', or taller with the grab bar): MATCH_PARENT would fill the screen.
-        val tallest = memePanelTallest(keys.height)
-        val height = keys.height + ((tallest - keys.height) * preferences.memePanelSize).toInt()
-        panel.setHeightRange(keys.height..tallest)
-        panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, height)
-        keys.visibility = View.INVISIBLE
-        panel.visibility = View.VISIBLE
+        closeSearchBox()
+        clearSearch()
+        showPanel(panel)
         panel.showLoading()
         val request = ++memeRequest
-        memeFolderResult = null
-        memeTrending = null
         val main = ContextCompat.getMainExecutor(this)
         val folder = preferences.memeFolderUri
         memeExecutor.execute {
             val result = memeLibrary.load(folder)
             main.execute {
                 if (request != memeRequest) return@execute
-                memeFolderResult = result
-                showMemeTabs()
+                panel.show(
+                    if (result is MemeLibrary.Result.Loaded) {
+                        MemeLibrary.Result.Loaded(MemeCatalog.withRecents(result.categories, preferences.recentMemes))
+                    } else {
+                        result
+                    },
+                )
             }
         }
-        trendingMemes?.let { trending ->
-            trendingExecutor.execute {
-                val tab = trending.load() ?: return@execute
-                main.execute {
-                    if (request != memeRequest) return@execute
-                    memeTrending = tab
-                    showMemeTabs()
-                }
-            }
-        }
+    }
+
+    /** Puts the panel over the keys, at its remembered height. */
+    private fun showPanel(panel: MemePanelView) {
+        val keys = keyboardView ?: return
+        // An exact height (the keys', or taller with the grab bar): MATCH_PARENT would fill the screen.
+        val tallest = memePanelTallest(keys.height)
+        val height = keys.height + ((tallest - keys.height) * preferences.memePanelSize).toInt()
+        panel.setHeightRange(keys.height..tallest)
+        panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, height, Gravity.BOTTOM)
+        keys.visibility = View.INVISIBLE
+        panel.visibility = View.VISIBLE
     }
 
     /** The panel grows upwards from the keys' height up to [MEME_PANEL_MAX_SCREEN] of the screen. */
@@ -345,36 +440,101 @@ class OneHandKeyboardService : InputMethodService() {
         val keys = keyboardView ?: return
         val tallest = memePanelTallest(keys.height)
         val height = requested.coerceIn(keys.height, tallest)
-        panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, height)
+        panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, height, Gravity.BOTTOM)
         preferences.memePanelSize =
             if (tallest > keys.height) (height - keys.height).toFloat() / (tallest - keys.height) else 0f
     }
 
-    /** Recents, trending and the folder's tabs; with no usable folder, the trending tab alone. */
-    private fun showMemeTabs() {
-        val folder = memeFolderResult ?: return // still scanning: the trending tab waits for it
-        val trending = memeTrending
-        val result =
-            when {
-                folder is MemeLibrary.Result.Loaded -> {
-                    val tabs = MemeCatalog.withTrending(folder.categories, trending)
-                    MemeLibrary.Result.Loaded(MemeCatalog.withRecents(tabs, preferences.recentMemes))
-                }
-                trending != null -> MemeLibrary.Result.Loaded(listOf(trending))
-                else -> folder
-            }
-        memePanel?.show(result)
-    }
-
     private fun hideMemes() {
+        val searching = typingSearch
+        closeSearchBox()
         val panel = memePanel ?: return
-        if (panel.visibility == View.GONE) return
+        if (panel.visibility == View.GONE && !searching) return
         memeRequest++
-        memeFolderResult = null
-        memeTrending = null
+        clearSearch()
         panel.visibility = View.GONE
         panel.clear()
         keyboardView?.visibility = View.VISIBLE
+    }
+
+    // ------------------------------------------------------------------
+    // Meme search (Know Your Meme)
+    // ------------------------------------------------------------------
+
+    /** Shows the keys with the search box above them; the keys type the query. */
+    private fun openSearchBox() {
+        val bar = searchBar ?: return
+        gestureIntegration.cancelAll()
+        memePanel?.visibility = View.GONE // keeps what it shows, for ✕
+        keyboardView?.visibility = View.VISIBLE
+        bar.start(searchQuery.orEmpty())
+        bar.visibility = View.VISIBLE
+        autoCorrector.startInput(FieldPolicy.NONE)
+        if (layoutManager.updateAutoShift(false)) keyboardView?.refreshLabels()
+    }
+
+    /** Hides the search box; the keys write into the app again. */
+    private fun closeSearchBox() {
+        val bar = searchBar ?: return
+        if (bar.visibility == View.GONE) return
+        bar.visibility = View.GONE
+        gestureIntegration.cancelAll()
+        val info = currentInputEditorInfo
+        autoCorrector.startInput(FieldPolicy.from(info, preferences.suggestionsEnabled, preferences.autocorrectEnabled))
+        autoCorrector.refresh(currentInputConnection)
+        updateAutoShift()
+    }
+
+    /** ✕ in the search box: back to the panel as it was. */
+    private fun cancelSearchBox() {
+        closeSearchBox()
+        val panel = memePanel ?: return
+        keyboardView?.visibility = View.INVISIBLE
+        panel.visibility = View.VISIBLE
+    }
+
+    private fun runSearch(query: String) {
+        val panel = memePanel ?: return
+        closeSearchBox()
+        showPanel(panel)
+        searchQuery = query
+        searchResults = emptyList()
+        searchNext = 0
+        panel.showSearching(query)
+        loadSearchPage()
+    }
+
+    /** Loads the next page of the current search (the panel asks for it near the end of the list). */
+    private fun loadSearchPage() {
+        val search = memeSearch ?: return
+        val query = searchQuery ?: return
+        val offset = searchNext ?: return
+        val request = ++memeRequest
+        val main = ContextCompat.getMainExecutor(this)
+        searchExecutor.execute {
+            val page = search.search(query, offset)
+            main.execute {
+                if (request != memeRequest) return@execute
+                val panel = memePanel ?: return@execute
+                if (page == null) {
+                    panel.showSearchFailed(query)
+                    return@execute
+                }
+                searchResults = (searchResults + page.memes).distinctBy { it.uri }
+                searchNext = page.nextOffset
+                if (searchResults.isEmpty() && page.nextOffset != null) {
+                    loadSearchPage() // this page only had hidden images: try the next one
+                } else {
+                    panel.showSearchResults(query, searchResults, hasMore = page.nextOffset != null)
+                }
+            }
+        }
+    }
+
+    private fun clearSearch() {
+        searchQuery = null
+        searchResults = emptyList()
+        searchNext = null
     }
 
     private fun sendMeme(meme: Meme) {
@@ -420,6 +580,7 @@ class OneHandKeyboardService : InputMethodService() {
      * return 0 from `getCursorCapsMode` and are left alone.
      */
     private fun updateAutoShift() {
+        if (typingSearch) return
         val ic = currentInputConnection ?: return
         val info = currentInputEditorInfo ?: return
         if (layoutManager.currentMode != LayoutMode.LETTERS || info.inputType == InputType.TYPE_NULL) return
@@ -437,7 +598,9 @@ class OneHandKeyboardService : InputMethodService() {
                     if (intent?.action == ThemeManager.ACTION_THEME_CHANGED) {
                         themeManager.refreshTheme()
                         keyboardView?.applyTheme()
-                        memePanel?.applyPalette(KeyboardPalette.from(themeManager.currentTheme.value))
+                        val palette = KeyboardPalette.from(themeManager.currentTheme.value)
+                        memePanel?.applyPalette(palette)
+                        searchBar?.applyPalette(palette)
                     }
                 }
             }
@@ -482,7 +645,7 @@ class OneHandKeyboardService : InputMethodService() {
         if (::keyboardUpdates.isInitialized) keyboardUpdates.shutdown()
         if (::voiceTyping.isInitialized) voiceTyping.cancel()
         memeExecutor.shutdownNow()
-        trendingExecutor.shutdownNow()
+        searchExecutor.shutdownNow()
         super.onDestroy()
     }
 

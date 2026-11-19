@@ -92,14 +92,14 @@ android {
             versionNameSuffix = "-debug"
             // Updates itself from tools/serve_updates.py on the LAN (permissions in src/debug).
             buildConfigField("boolean", "SELF_UPDATE", "true")
-            // Has Internet anyway: also shows Know Your Meme's trending tab.
-            buildConfigField("boolean", "TRENDING_MEMES", "true")
+            // Has Internet anyway: also searches Know Your Meme from the meme panel.
+            buildConfigField("boolean", "MEME_SEARCH", "true")
         }
         release {
             // Same fixed key as debug when available; otherwise Gradle leaves the release APK unsigned.
             signingConfigs.findByName("shared")?.let { signingConfig = it }
             buildConfigField("boolean", "SELF_UPDATE", "false")
-            buildConfigField("boolean", "TRENDING_MEMES", "false")
+            buildConfigField("boolean", "MEME_SEARCH", "false")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -107,13 +107,13 @@ android {
                 "proguard-rules.pro",
             )
         }
-        // Like release, plus Internet for Know Your Meme's trending tab (permission in src/online).
+        // Like release, plus Internet for the Know Your Meme search (permission in src/online).
         // A separate app (.online), so it installs next to the offline one.
         create("online") {
             initWith(getByName("release"))
             applicationIdSuffix = ".online"
             versionNameSuffix = "-online"
-            buildConfigField("boolean", "TRENDING_MEMES", "true")
+            buildConfigField("boolean", "MEME_SEARCH", "true")
             matchingFallbacks += "release"
         }
     }

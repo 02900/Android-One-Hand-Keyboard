@@ -87,7 +87,7 @@ class MemeSenderTest {
     }
 
     @Test
-    fun `a trending meme is downloaded and named after its real type`() {
+    fun `a meme from the search is downloaded and named after its real type`() {
         val downloads = mutableListOf<String>()
         val online =
             MemeSender(context, download = { url, file ->
@@ -109,7 +109,7 @@ class MemeSenderTest {
     }
 
     @Test
-    fun `a trending meme that is not an image, or can't be downloaded, is not sent`() {
+    fun `a meme from the search that is not an image, or can't be downloaded, is not sent`() {
         val meme = Meme("https://i.kym-cdn.com/photos/images/original/1/2/3", "x.jpg", "image/jpeg")
         val html =
             MemeSender(context, download = { _, file ->

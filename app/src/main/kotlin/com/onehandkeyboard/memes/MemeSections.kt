@@ -47,7 +47,7 @@ class MemeSections(
 
     /**
      * Stable identity of the row at [position], used to keep the scroll where it was when the
-     * list changes (e.g. the trending category arrives later).
+     * list changes (e.g. more search results arrive).
      */
     fun keyAt(position: Int): String? =
         when (val row = rows.getOrNull(position)) {

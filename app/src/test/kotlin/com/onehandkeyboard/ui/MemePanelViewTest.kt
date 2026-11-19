@@ -225,7 +225,7 @@ class MemePanelViewTest {
 
         assertEquals(301, grid.findFirstVisibleItemPosition())
 
-        show(category("🔥 Tendencias", 6), category("Risa", 300), category("Amor", 300))
+        show(category("🕘 Recientes", 6), category("Risa", 300), category("Amor", 300))
 
         assertEquals(7 + 301, grid.findFirstVisibleItemPosition()) // still "Amor"'s title
     }
@@ -234,10 +234,54 @@ class MemePanelViewTest {
     fun `at the top, a category arriving later shows up first`() {
         show(category("Risa", 3))
 
-        show(category("🔥 Tendencias", 3), category("Risa", 3))
+        show(category("🕘 Recientes", 3), category("Risa", 3))
 
         assertEquals(0, (list.layoutManager as GridLayoutManager).findFirstVisibleItemPosition())
     }
+
+    @Test
+    fun `search results replace the library, load more near the end and the query tab closes them`() {
+        var loadMore = 0
+        var closed = 0
+        panel.onLoadMore = { loadMore++ }
+        panel.onSearchClosed = { closed++ }
+        show(category("Risa", 3))
+        val grid = list.layoutManager as GridLayoutManager
+        val results = (1..400).map { meme("enel-$it") }
+
+        panel.showSearching("enel face")
+        panel.showSearchResults("enel face", results.take(300), hasMore = true)
+        layOut()
+        idle()
+
+        assertEquals(301, list.adapter!!.itemCount) // its title + the results, without Risa
+        assertEquals(0, loadMore) // the end is far away
+
+        list.scrollToPosition(300)
+        layOut()
+        idle()
+        list.scrollToPosition(299)
+        layOut()
+        idle()
+
+        assertEquals(1, loadMore) // once, until the page arrives
+
+        val browsing = grid.findFirstVisibleItemPosition()
+        assertTrue(browsing > 200)
+        panel.showSearchResults("enel face", results, hasMore = false)
+        layOut()
+
+        assertEquals(401, list.adapter!!.itemCount)
+        assertEquals(browsing, grid.findFirstVisibleItemPosition()) // the new ones go at the end
+
+        val tabs = (find(HorizontalScrollView::class.java).getChildAt(0) as ViewGroup)
+        assertEquals(1, tabs.childCount)
+        assertEquals("✕  enel face", (tabs.getChildAt(0) as TextView).text.toString())
+        tabs.getChildAt(0).performClick()
+        assertEquals(1, closed)
+    }
+
+    private fun idle() = org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
 
     private companion object {
         const val WIDTH = 1080
