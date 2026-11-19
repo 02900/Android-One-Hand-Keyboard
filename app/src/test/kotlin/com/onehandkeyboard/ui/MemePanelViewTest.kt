@@ -6,8 +6,9 @@ import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
-import android.widget.SeekBar
+import android.widget.TextView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
@@ -20,7 +21,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.util.concurrent.Executor
 
@@ -28,13 +28,21 @@ import java.util.concurrent.Executor
 @Config(sdk = [28])
 class MemePanelViewTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
+
     private val sent = mutableListOf<Meme>()
-    private val sizes = mutableListOf<Pair<Float, Boolean>>()
+
+    private val heights = mutableListOf<Int>()
+
     private val panel =
+
         MemePanelView(context, MemeThumbnails(context, Executor { it.run() })).apply {
+
             applyPalette(KeyboardPalette(Color.BLACK, Color.BLUE, Color.DKGRAY, Color.WHITE, Color.LTGRAY))
+
             onMemePicked = { sent += it }
-            onSizeChanged = { fraction, final -> sizes += fraction to final }
+
+            onHeightChosen = { heights += it }
+            setHeightRange(500..1000)
         }
 
     private fun meme(name: String) = Meme("content://memes/$name", "$name.gif", "image/gif")
@@ -49,11 +57,13 @@ class MemePanelViewTest {
             View.MeasureSpec.makeMeasureSpec(WIDTH, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(HEIGHT, View.MeasureSpec.EXACTLY),
         )
+
         panel.layout(0, 0, WIDTH, HEIGHT)
     }
 
     private fun show(vararg categories: MemeCategory) {
         panel.show(MemeLibrary.Result.Loaded(categories.toList()))
+
         layOut()
     }
 
@@ -64,7 +74,9 @@ class MemePanelViewTest {
         type: Class<T>,
     ): T? {
         if (type.isInstance(view)) return type.cast(view)
+
         if (view !is ViewGroup) return null
+
         return (0 until view.childCount).firstNotNullOfOrNull { findIn(view.getChildAt(it), type) }
     }
 
@@ -77,49 +89,67 @@ class MemePanelViewTest {
         y: Float = 10f,
     ) {
         val now = SystemClock.uptimeMillis()
+
         target.dispatchTouchEvent(MotionEvent.obtain(now, now, action, x, y, 0))
     }
 
     @Test
     fun `categories are titles over full-width rows, memes fill the grid`() {
         show(category("Risa", 4), category("Amor", 2))
+
         val grid = list.layoutManager as GridLayoutManager
+
         assertEquals(8, list.adapter!!.itemCount)
+
         assertEquals(grid.spanCount, grid.spanSizeLookup.getSpanSize(0))
+
         assertEquals(1, grid.spanSizeLookup.getSpanSize(1))
+
         assertEquals(grid.spanCount, grid.spanSizeLookup.getSpanSize(5))
     }
 
     @Test
     fun `a tap sends the meme`() {
         show(category("Risa", 2))
+
         val first = list.findViewHolderForAdapterPosition(1)!!.itemView
+
         assertTrue(first is ImageView)
+
         first.performClick()
+
         assertEquals(listOf(meme("Risa-1")), sent)
     }
 
     @Test
     fun `holding a meme shows it big and lifting the finger closes it without sending`() {
         show(category("Risa", 2))
+
         val first = list.findViewHolderForAdapterPosition(1)!!.itemView
+
         first.performLongClick()
+
         val preview = previewTitle()
+
         assertEquals(View.VISIBLE, (preview.parent as View).visibility)
+
         assertEquals("Risa-1", preview.text)
 
         touch(list, MotionEvent.ACTION_UP)
 
         assertEquals(View.GONE, (preview.parent as View).visibility)
+
         assertTrue(sent.isEmpty())
     }
 
     /** The big preview's title: the TextView showing a meme name. */
+
     private fun previewTitle(): android.widget.TextView {
         val all = mutableListOf<android.widget.TextView>()
 
         fun collect(view: View) {
             if (view is android.widget.TextView) all += view
+
             if (view is ViewGroup && view !is RecyclerView) {
                 (0 until view.childCount).forEach {
                     collect(
@@ -128,33 +158,74 @@ class MemePanelViewTest {
                 }
             }
         }
+
         collect(panel)
+
         return all.first { it.text.startsWith("Risa-") }
     }
 
     @Test
-    fun `the slider reports the size while moving and when released`() {
-        val slider = find(SeekBar::class.java)
-        val listener = shadowOf(slider).onSeekBarChangeListener
-        slider.progress = 40
-        listener.onProgressChanged(slider, 40, true)
-        listener.onStopTrackingTouch(slider)
-        assertEquals(listOf(0.4f to false, 0.4f to true), sizes)
+    fun `the grab bar resizes the panel only when released, within its limits`() {
+        show(category("Risa", 2))
+        val handle = find(MemeResizeHandle::class.java)
+        touch(handle, MotionEvent.ACTION_DOWN, y = 100f)
+        touch(handle, MotionEvent.ACTION_MOVE, y = 40f)
+        assertTrue(heights.isEmpty()) // nothing changes while the finger is down
+        assertEquals("▲ 92 %", handle.label(HEIGHT + 60))
+        touch(handle, MotionEvent.ACTION_UP, y = 40f)
+        assertEquals(listOf(HEIGHT + 60), heights)
 
-        panel.setSize(0.25f)
-        assertEquals(25, slider.progress)
-        assertEquals(2, sizes.size) // moving it from code is not reported
+        touch(handle, MotionEvent.ACTION_DOWN, y = 100f)
+        touch(handle, MotionEvent.ACTION_UP, y = 100f + 2000f) // far down: the keys' height
+        touch(handle, MotionEvent.ACTION_DOWN, y = 100f)
+        touch(handle, MotionEvent.ACTION_CANCEL, y = 0f) // cancelled: nothing
+        touch(handle, MotionEvent.ACTION_DOWN, y = 100f)
+        touch(handle, MotionEvent.ACTION_UP, y = 100f) // not moved: nothing
+        assertEquals(listOf(HEIGHT + 60, 500), heights)
+    }
+
+    @Test
+    fun `tabs jump to their category and follow the scroll`() {
+        show(category("Risa", 300), category("Amor", 300))
+
+        val tabs = (find(HorizontalScrollView::class.java).getChildAt(0) as ViewGroup)
+
+        val names = (0 until tabs.childCount).map { (tabs.getChildAt(it) as TextView).text.toString() }
+
+        assertEquals(listOf("Risa", "Amor"), names)
+
+        assertTrue(tabs.getChildAt(0).isSelected)
+
+        tabs.getChildAt(1).performClick()
+
+        layOut()
+
+        assertEquals(301, (list.layoutManager as GridLayoutManager).findFirstVisibleItemPosition())
+
+        assertTrue(tabs.getChildAt(1).isSelected)
+
+        assertTrue(!tabs.getChildAt(0).isSelected)
+
+        list.scrollToPosition(0)
+
+        layOut()
+
+        assertTrue(tabs.getChildAt(0).isSelected)
     }
 
     @Test
     fun `a category arriving later does not move the list being browsed`() {
         show(category("Risa", 300), category("Amor", 300))
+
         val grid = list.layoutManager as GridLayoutManager
+
         grid.scrollToPositionWithOffset(301, 0) // "Amor"'s title: Risa is 0 (title) + 300 memes
+
         layOut()
+
         assertEquals(301, grid.findFirstVisibleItemPosition())
 
-        show(category("🔥 Tendencias", 6), category("Risa", 300), category("Amor", 300))
+        show(category("🕘 Recientes", 6), category("Risa", 300), category("Amor", 300))
 
         assertEquals(7 + 301, grid.findFirstVisibleItemPosition()) // still "Amor"'s title
     }
@@ -162,12 +233,59 @@ class MemePanelViewTest {
     @Test
     fun `at the top, a category arriving later shows up first`() {
         show(category("Risa", 3))
-        show(category("🔥 Tendencias", 3), category("Risa", 3))
+
+        show(category("🕘 Recientes", 3), category("Risa", 3))
+
         assertEquals(0, (list.layoutManager as GridLayoutManager).findFirstVisibleItemPosition())
     }
 
+    @Test
+    fun `search results replace the library, load more near the end and the query tab closes them`() {
+        var loadMore = 0
+        var closed = 0
+        panel.onLoadMore = { loadMore++ }
+        panel.onSearchClosed = { closed++ }
+        show(category("Risa", 3))
+        val grid = list.layoutManager as GridLayoutManager
+        val results = (1..400).map { meme("enel-$it") }
+
+        panel.showSearching("enel face")
+        panel.showSearchResults("enel face", results.take(300), hasMore = true)
+        layOut()
+        idle()
+
+        assertEquals(301, list.adapter!!.itemCount) // its title + the results, without Risa
+        assertEquals(0, loadMore) // the end is far away
+
+        list.scrollToPosition(300)
+        layOut()
+        idle()
+        list.scrollToPosition(299)
+        layOut()
+        idle()
+
+        assertEquals(1, loadMore) // once, until the page arrives
+
+        val browsing = grid.findFirstVisibleItemPosition()
+        assertTrue(browsing > 200)
+        panel.showSearchResults("enel face", results, hasMore = false)
+        layOut()
+
+        assertEquals(401, list.adapter!!.itemCount)
+        assertEquals(browsing, grid.findFirstVisibleItemPosition()) // the new ones go at the end
+
+        val tabs = (find(HorizontalScrollView::class.java).getChildAt(0) as ViewGroup)
+        assertEquals(1, tabs.childCount)
+        assertEquals("✕  enel face", (tabs.getChildAt(0) as TextView).text.toString())
+        tabs.getChildAt(0).performClick()
+        assertEquals(1, closed)
+    }
+
+    private fun idle() = org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+
     private companion object {
         const val WIDTH = 1080
+
         const val HEIGHT = 900
     }
 }

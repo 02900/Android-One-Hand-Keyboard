@@ -4,7 +4,7 @@ The app's screens are in Spanish, so on-screen labels are quoted in Spanish belo
 
 ## Install and enable
 
-1. On the phone, open the [latest release](https://github.com/02900/Android-One-Hand-Keyboard/releases/latest) and install one of the APKs: **debug** updates itself but needs internet permission, **release** has no network access and is updated by hand, **online** is like release plus the trending memes tab (see [UPDATES.md](UPDATES.md)). If you had a build signed with a different key, uninstall it first.
+1. On the phone, open the [latest release](https://github.com/02900/Android-One-Hand-Keyboard/releases/latest) and install one of the APKs: **debug** updates itself but needs internet permission, **release** has no network access and is updated by hand, **online** is like release plus the meme search (see [UPDATES.md](UPDATES.md)). If you had a build signed with a different key, uninstall it first.
 2. In the app, tap **Teclado → Activar** (Keyboard → Enable), or go to **Settings → System → Languages & input → On-screen keyboard**, and enable **OneHandKeyboard**.
 3. In any text field, tap the keyboard icon and choose **OneHandKeyboard**.
 
@@ -57,22 +57,23 @@ Memes/
 
 - Formats: `gif`, `webp` (animated or not), `png`, `jpg`. Anything else is ignored, as are hidden files and folders (`.gitkeep`).
 - Subfolders inside a category count for that category.
-- **The panel:** one list with every category (its title, then its memes in a grid), from top to bottom: **🕘 Recientes** (the last 24 sent), **🔥 Tendencias** (online and debug APKs) and your folders.
-- **Fast scroll:** drag the thin bar on the right edge to move through the list quickly; a bubble shows the category you're passing.
+- **The panel:** one list with every category (its title, then its memes in a grid), from top to bottom: **🕘 Recientes** (the last 24 sent) and your folders. The tabs at the top jump to a category, and the tab of the category you are browsing stays highlighted.
+- **Fast scroll:** drag the thin bar on the right edge to move through the list quickly; the tab of the category you're passing lights up.
 - **See a meme big:** hold your finger on it; slide over others to see them too. Lifting the finger just closes it; a tap sends.
-- **Panel size:** the slider at the top, next to **ABC**, makes the panel taller (up to 70% of the screen). It is remembered for next time, and the keyboard goes back to its normal height when you return to the keys.
+- **Panel size:** drag the grab bar on the panel's top edge up to make it taller (up to 70% of the screen) or down to make it shorter, in a single drag; while you drag, the bar shows the size it will take (0% = the keyboard's height), and the panel changes when you release it. It is remembered for next time, and the keyboard goes back to its normal height when you return to the keys.
 - **How it's sent:** if the app accepts images in that field (WhatsApp, Telegram, Signal…), the meme is inserted directly. Otherwise it is copied to the clipboard and a message asks you to paste it.
 - **Stickers:** still images (png, jpg, webp) are made square with black bars on the short side and sent in the format the app takes: a 512 px WebP sticker in WhatsApp (and Telegram, which receives a WebP), a square JPEG in Instagram. GIFs and animated WebP are sent as they are.
 - To update the pack, just change the files in the folder: it is read again every time you open the panel.
 
-### 🔥 Tendencias (online and debug APKs)
+### 🔍 Search Know Your Meme (online and debug APKs)
 
-The **🔥 Tendencias** category shows the photos trending on [Know Your Meme](https://knowyourmeme.com/photos/trending) right now. It appears a moment after the panel opens (it's downloaded), after **🕘 Recientes**, without moving the list if you are already browsing; it works even without a meme folder.
+Tap **🔍** in the panel's bar: the keys come back with a search box above them, and what you type goes into the box, not into the app. Press **Enter** (or 🔍 in the box) to search [Know Your Meme](https://knowyourmeme.com)'s images; **✕** goes back to the panel.
 
-- The list is refreshed at most every 15 minutes; the previews are small (~15 KB each).
-- The full image is downloaded only when you send it, and goes out like any other meme (sticker, square JPEG or GIF).
-- Photos the site marks as sensitive, NSFW or spoilers are skipped. The rest is whatever is trending, unfiltered.
-- Without a connection the category just doesn't appear. If Know Your Meme changes its page, it may stop showing until the app is updated. Seen big, trending memes use the small preview, so they look softer.
+- The results replace the categories, and more load as you scroll near the end (infinite scroll). The bar shows **✕ <your search>**: tap it to go back to your folders, or 🔍 to change the search.
+- Results are sent like any other meme (sticker, square JPEG or GIF); the full image is downloaded only when you send it. The previews are small (~15 KB each) and load as they scroll into view.
+- Images the site marks as sensitive, NSFW or spoilers are skipped. The rest is whatever the site returns, unfiltered.
+- Without a connection the panel says so. If Know Your Meme changes its site, the search may stop working until the app is updated. Seen big, results use the small preview, so they look softer.
+- It works even without a meme folder. Only the query and the images go over the network: no account or cookies.
 
 ## Voice typing
 

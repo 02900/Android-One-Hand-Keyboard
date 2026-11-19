@@ -24,7 +24,7 @@ import java.io.IOException
  */
 class MemeSender(
     private val context: Context,
-    /** Downloads a trending meme ([Meme.isRemote]) to a file; null in builds without Internet. */
+    /** Downloads a meme from the search ([Meme.isRemote]) to a file; null in builds without Internet. */
     private val download: ((String, File) -> Boolean)? = null,
     /** Shareable URI of a cached copy (the app's FileProvider). */
     private val shareUri: (File) -> Uri = { FileProvider.getUriForFile(context, authority(context), it) },
@@ -62,7 +62,7 @@ class MemeSender(
     }
 
     /**
-     * Downloads a trending meme, named after its real type (apps reading the file from the
+     * Downloads a meme from the search, named after its real type (apps reading the file from the
      * clipboard guess the type from the extension).
      */
     private fun fetch(

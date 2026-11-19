@@ -6,9 +6,9 @@ Every release publishes three APKs:
 |---|---|---|---|
 | `OneHandKeyboard-debug-<commit>.apk` | `com.onehandkeyboard.debug` | Automatic (this page) | Required |
 | `OneHandKeyboard-release-<commit>.apk` | `com.onehandkeyboard` | Manual: install a newer release by hand | Not used |
-| `OneHandKeyboard-online-<commit>.apk` | `com.onehandkeyboard.online` | Manual, like release | Required, only for the trending memes tab |
+| `OneHandKeyboard-online-<commit>.apk` | `com.onehandkeyboard.online` | Manual, like release | Required, only for the meme search |
 
-Only the debug build updates itself; the release build is minified and has no network permission. The online build is the release build plus Internet for the **🔥 Tendencias** meme tab (`app/src/online/AndroidManifest.xml`, `BuildConfig.TRENDING_MEMES`). Both are signed with the same key, so a newer release APK also installs over an older one.
+Only the debug build updates itself; the release build is minified and has no network permission. The online build is the release build plus Internet for the **🔍** meme search (`app/src/online/AndroidManifest.xml`, `BuildConfig.MEME_SEARCH`). Both are signed with the same key, so a newer release APK also installs over an older one.
 
 ## How the app updates
 

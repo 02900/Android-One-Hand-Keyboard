@@ -2,19 +2,19 @@ package com.onehandkeyboard.memes
 
 /**
  * One image of the library. [uri] is the document URI inside the folder the user picked, or
- * the image's https address for a trending meme (downloaded when sent).
+ * the image's https address for a meme found with the search (downloaded when sent).
  */
 data class Meme(
     val uri: String,
     val fileName: String,
     val mimeType: String,
-    /** What the panel shows: the image itself, or a small local preview of a remote one. */
+    /** What the panel shows: the image itself, or a small preview of a remote one. */
     val previewUri: String = uri,
 ) {
     /** File name without extension, used as accessibility text. */
     val title: String get() = fileName.substringBeforeLast('.').ifEmpty { fileName }
 
-    /** True for a trending meme that still has to be downloaded. */
+    /** True for a meme from the search that still has to be downloaded. */
     val isRemote: Boolean get() = uri.startsWith("https://")
 }
 
@@ -44,7 +44,6 @@ data class ScannedFile(
 object MemeCatalog {
     const val LOOSE_CATEGORY = "General"
     const val RECENT_CATEGORY = "🕘 Recientes"
-    const val TRENDING_CATEGORY = "🔥 Tendencias"
     const val MAX_RECENTS = 24
 
     private val TYPES_BY_EXTENSION =
@@ -99,13 +98,6 @@ object MemeCatalog {
         val recents = recentUris.mapNotNull(byUri::get).take(MAX_RECENTS)
         return if (recents.isEmpty()) categories else listOf(MemeCategory(RECENT_CATEGORY, recents)) + categories
     }
-
-    /** Puts the [trending] tab first, when there is one (the recents go before it, see [withRecents]). */
-    fun withTrending(
-        categories: List<MemeCategory>,
-        trending: MemeCategory?,
-    ): List<MemeCategory> =
-        if (trending == null || trending.memes.isEmpty()) categories else listOf(trending) + categories
 
     /** Recents list after sending [uri]: moved to the front, without duplicates, capped. */
     fun pushRecent(

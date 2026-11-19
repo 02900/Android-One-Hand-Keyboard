@@ -11,6 +11,7 @@ import android.os.Build
 import android.util.LruCache
 import android.widget.ImageView
 import java.io.IOException
+import java.nio.ByteBuffer
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -20,11 +21,14 @@ import java.util.concurrent.Executors
  *
  * GIFs and animated WebPs play on Android 9+ ([ImageDecoder]); older versions show the
  * first frame. A small cache keeps the previews of the tab being browsed; [clear] drops
- * everything when the panel closes.
+ * everything when the panel closes. Previews on the web (search results) are fetched with
+ * [fetch] as they scroll into view.
  */
 class MemeThumbnails(
     private val context: Context,
     private val main: Executor,
+    /** Downloads an https preview; null in builds without Internet. */
+    private val fetch: ((String) -> ByteArray?)? = null,
 ) {
     private val workers: ExecutorService = Executors.newFixedThreadPool(THREADS)
 
@@ -55,7 +59,7 @@ class MemeThumbnails(
         }
         val started = generation
         workers.execute {
-            val drawable = decode(Uri.parse(meme.previewUri), sizePx) ?: return@execute
+            val drawable = decode(meme.previewUri, sizePx) ?: return@execute
             main.execute {
                 if (started != generation) return@execute
                 cache.put(key, drawable)
@@ -78,14 +82,16 @@ class MemeThumbnails(
     }
 
     private fun decode(
-        uri: Uri,
+        uri: String,
         sizePx: Int,
     ): Drawable? =
         try {
+            val bytes = if (uri.startsWith("https://")) fetch?.invoke(uri) ?: return null else null
+            val source = bytes?.let(ImageSource::Bytes) ?: ImageSource.Content(Uri.parse(uri))
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                decodeAnimated(uri, sizePx)
+                decodeAnimated(source, sizePx)
             } else {
-                decodeFirstFrame(uri, sizePx)
+                decodeFirstFrame(source, sizePx)
             }
         } catch (_: IOException) {
             null
@@ -99,10 +105,14 @@ class MemeThumbnails(
 
     @androidx.annotation.RequiresApi(Build.VERSION_CODES.P)
     private fun decodeAnimated(
-        uri: Uri,
+        image: ImageSource,
         sizePx: Int,
     ): Drawable {
-        val source = ImageDecoder.createSource(context.contentResolver, uri)
+        val source =
+            when (image) {
+                is ImageSource.Bytes -> ImageDecoder.createSource(ByteBuffer.wrap(image.bytes))
+                is ImageSource.Content -> ImageDecoder.createSource(context.contentResolver, image.uri)
+            }
         val drawable =
             ImageDecoder.decodeDrawable(source) { decoder, info, _ ->
                 val scale = scaleFor(info.size.width, info.size.height, sizePx)
@@ -117,17 +127,35 @@ class MemeThumbnails(
     }
 
     private fun decodeFirstFrame(
-        uri: Uri,
+        image: ImageSource,
         sizePx: Int,
     ): Drawable? {
-        val resolver = context.contentResolver
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+        decodeStream(image, bounds)
         var sample = 1
         while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= sizePx) sample *= 2
-        val options = BitmapFactory.Options().apply { inSampleSize = sample }
-        val bitmap = resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) } ?: return null
+        val bitmap = decodeStream(image, BitmapFactory.Options().apply { inSampleSize = sample }) ?: return null
         return BitmapDrawable(context.resources, bitmap)
+    }
+
+    private fun decodeStream(
+        image: ImageSource,
+        options: BitmapFactory.Options,
+    ) = when (image) {
+        is ImageSource.Bytes -> BitmapFactory.decodeByteArray(image.bytes, 0, image.bytes.size, options)
+        is ImageSource.Content ->
+            context.contentResolver.openInputStream(image.uri)?.use { BitmapFactory.decodeStream(it, null, options) }
+    }
+
+    /** Where a preview's bytes come from: the phone (folder, cache) or the web (already downloaded). */
+    private sealed interface ImageSource {
+        class Content(
+            val uri: Uri,
+        ) : ImageSource
+
+        class Bytes(
+            val bytes: ByteArray,
+        ) : ImageSource
     }
 
     /** Marks animated previews so they are (re)started when shown. */
@@ -146,7 +174,7 @@ class MemeThumbnails(
     }
 
     companion object {
-        private const val THREADS = 2
+        private const val THREADS = 3
         private const val CACHE_BYTES = 32 * 1024 * 1024
         private const val BYTES_PER_PIXEL = 4
 
