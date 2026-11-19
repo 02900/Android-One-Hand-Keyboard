@@ -147,10 +147,7 @@ class OneHandKeyboardService : InputMethodService() {
                     panel.onBack = ::hideMemes
                     panel.onMemePicked = ::sendMeme
                     panel.onOpenSettings = ::openSettings
-                    panel.onSizeChanged = { fraction, final ->
-                        resizeMemes(fraction)
-                        if (final) preferences.memePanelSize = fraction
-                    }
+                    panel.onHeightDragged = ::resizeMemes
                     panel.applyPalette(KeyboardPalette.from(themeManager.currentTheme.value))
                     panel.visibility = View.GONE
                     memePanel = panel
@@ -305,10 +302,10 @@ class OneHandKeyboardService : InputMethodService() {
         val panel = memePanel ?: return
         val keys = keyboardView ?: return
         gestureIntegration.cancelAll()
-        // An exact height (the keys', or taller with the slider): MATCH_PARENT would fill the screen.
-        val size = preferences.memePanelSize
-        panel.setSize(size)
-        panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, memePanelHeight(keys.height, size))
+        // An exact height (the keys', or taller with the grab bar): MATCH_PARENT would fill the screen.
+        val tallest = memePanelTallest(keys.height)
+        val height = keys.height + ((tallest - keys.height) * preferences.memePanelSize).toInt()
+        panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, height)
         keys.visibility = View.INVISIBLE
         panel.visibility = View.VISIBLE
         panel.showLoading()
@@ -338,18 +335,23 @@ class OneHandKeyboardService : InputMethodService() {
     }
 
     /** The panel grows upwards from the keys' height up to [MEME_PANEL_MAX_SCREEN] of the screen. */
-    private fun memePanelHeight(
-        keysHeight: Int,
-        fraction: Float,
-    ): Int {
-        val tallest = maxOf(keysHeight, (resources.displayMetrics.heightPixels * MEME_PANEL_MAX_SCREEN).toInt())
-        return keysHeight + ((tallest - keysHeight) * fraction.coerceIn(0f, 1f)).toInt()
-    }
+    private fun memePanelTallest(keysHeight: Int) =
+        maxOf(keysHeight, (resources.displayMetrics.heightPixels * MEME_PANEL_MAX_SCREEN).toInt())
 
-    private fun resizeMemes(fraction: Float) {
+    /** Grab bar dragged: resizes the panel within its limits and remembers it when released. */
+    private fun resizeMemes(
+        requested: Int,
+        final: Boolean,
+    ) {
         val panel = memePanel ?: return
         val keys = keyboardView ?: return
-        panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, memePanelHeight(keys.height, fraction))
+        val tallest = memePanelTallest(keys.height)
+        val height = requested.coerceIn(keys.height, tallest)
+        panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, height)
+        if (final) {
+            preferences.memePanelSize =
+                if (tallest > keys.height) (height - keys.height).toFloat() / (tallest - keys.height) else 0f
+        }
     }
 
     /** Recents, trending and the folder's tabs; with no usable folder, the trending tab alone. */
