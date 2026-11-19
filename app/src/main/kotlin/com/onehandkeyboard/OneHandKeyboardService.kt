@@ -147,6 +147,10 @@ class OneHandKeyboardService : InputMethodService() {
                     panel.onBack = ::hideMemes
                     panel.onMemePicked = ::sendMeme
                     panel.onOpenSettings = ::openSettings
+                    panel.onSizeChanged = { fraction, final ->
+                        resizeMemes(fraction)
+                        if (final) preferences.memePanelSize = fraction
+                    }
                     panel.applyPalette(KeyboardPalette.from(themeManager.currentTheme.value))
                     panel.visibility = View.GONE
                     memePanel = panel
@@ -301,8 +305,10 @@ class OneHandKeyboardService : InputMethodService() {
         val panel = memePanel ?: return
         val keys = keyboardView ?: return
         gestureIntegration.cancelAll()
-        // Exactly the keys' height: a MATCH_PARENT panel would grow the window to the full screen.
-        panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, keys.height)
+        // An exact height (the keys', or taller with the slider): MATCH_PARENT would fill the screen.
+        val size = preferences.memePanelSize
+        panel.setSize(size)
+        panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, memePanelHeight(keys.height, size))
         keys.visibility = View.INVISIBLE
         panel.visibility = View.VISIBLE
         panel.showLoading()
@@ -329,6 +335,21 @@ class OneHandKeyboardService : InputMethodService() {
                 }
             }
         }
+    }
+
+    /** The panel grows upwards from the keys' height up to [MEME_PANEL_MAX_SCREEN] of the screen. */
+    private fun memePanelHeight(
+        keysHeight: Int,
+        fraction: Float,
+    ): Int {
+        val tallest = maxOf(keysHeight, (resources.displayMetrics.heightPixels * MEME_PANEL_MAX_SCREEN).toInt())
+        return keysHeight + ((tallest - keysHeight) * fraction.coerceIn(0f, 1f)).toInt()
+    }
+
+    private fun resizeMemes(fraction: Float) {
+        val panel = memePanel ?: return
+        val keys = keyboardView ?: return
+        panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, memePanelHeight(keys.height, fraction))
     }
 
     /** Recents, trending and the folder's tabs; with no usable folder, the trending tab alone. */
@@ -469,6 +490,7 @@ class OneHandKeyboardService : InputMethodService() {
 
     private companion object {
         const val TAG = "OneHandKeyboard"
+        const val MEME_PANEL_MAX_SCREEN = 0.7f
         const val FALLBACK_PADDING_DP = 16f
         const val FALLBACK_TEXT_SP = 16f
     }

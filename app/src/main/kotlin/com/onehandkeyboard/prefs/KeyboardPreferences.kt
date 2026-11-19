@@ -50,6 +50,11 @@ class KeyboardPreferences
             get() = prefs.getString(KEY_RECENT_MEMES, null)?.split(LIST_SEPARATOR)?.filter { it.isNotEmpty() }.orEmpty()
             set(value) = prefs.edit().putString(KEY_RECENT_MEMES, value.joinToString(LIST_SEPARATOR)).apply()
 
+        /** Height of the meme panel chosen with its slider: 0 = the keyboard's, 1 = the tallest. */
+        var memePanelSize: Float
+            get() = prefs.getFloat(KEY_MEME_PANEL_SIZE, 0f)
+            set(value) = prefs.edit().putFloat(KEY_MEME_PANEL_SIZE, value.coerceIn(0f, 1f)).apply()
+
         /** Install new builds from the update server by themselves (debug builds). */
         var autoUpdate: Boolean
             get() = prefs.getBoolean(KEY_AUTO_UPDATE, true)
@@ -78,6 +83,7 @@ class KeyboardPreferences
             private const val KEY_LAST_RUN_COMMIT = "last_run_commit"
             private const val KEY_MEME_FOLDER = "meme_folder_uri"
             private const val KEY_RECENT_MEMES = "recent_memes"
+            private const val KEY_MEME_PANEL_SIZE = "meme_panel_size"
             private const val LIST_SEPARATOR = "\n"
             private const val KEY_AUTOCORRECT = "autocorrect_enabled"
             private const val KEY_SUGGESTIONS = "suggestions_enabled"

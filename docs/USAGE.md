@@ -48,28 +48,31 @@ Pack format:
 
 ```
 Memes/
-├── 01-Reacciones/      ← each subfolder is a tab; the number only sets the order and isn't shown
+├── 01-Reacciones/      ← each subfolder is a category; the number only sets the order and isn't shown
 │   ├── aplausos.gif
 │   └── no-puede-ser.webp
 ├── 02-Saludos/
-└── suelto.png          ← loose files go to the "General" tab
+└── suelto.png          ← loose files go to the "General" category
 ```
 
 - Formats: `gif`, `webp` (animated or not), `png`, `jpg`. Anything else is ignored, as are hidden files and folders (`.gitkeep`).
 - Subfolders inside a category count for that category.
-- The **🕘 Recientes** (recent) tab shows the last 24 sent.
+- **The panel:** one list with every category (its title, then its memes in a grid), from top to bottom: **🕘 Recientes** (the last 24 sent), **🔥 Tendencias** (online and debug APKs) and your folders.
+- **Fast scroll:** drag the thin bar on the right edge to move through the list quickly; a bubble shows the category you're passing.
+- **See a meme big:** hold your finger on it; slide over others to see them too. Lifting the finger just closes it; a tap sends.
+- **Panel size:** the slider at the top, next to **ABC**, makes the panel taller (up to 70% of the screen). It is remembered for next time, and the keyboard goes back to its normal height when you return to the keys.
 - **How it's sent:** if the app accepts images in that field (WhatsApp, Telegram, Signal…), the meme is inserted directly. Otherwise it is copied to the clipboard and a message asks you to paste it.
 - **Stickers:** still images (png, jpg, webp) are made square with black bars on the short side and sent in the format the app takes: a 512 px WebP sticker in WhatsApp (and Telegram, which receives a WebP), a square JPEG in Instagram. GIFs and animated WebP are sent as they are.
 - To update the pack, just change the files in the folder: it is read again every time you open the panel.
 
 ### 🔥 Tendencias (online and debug APKs)
 
-The **🔥 Tendencias** tab shows the photos trending on [Know Your Meme](https://knowyourmeme.com/photos/trending) right now. It appears a moment after the panel opens (it's downloaded), after **🕘 Recientes**; it works even without a meme folder.
+The **🔥 Tendencias** category shows the photos trending on [Know Your Meme](https://knowyourmeme.com/photos/trending) right now. It appears a moment after the panel opens (it's downloaded), after **🕘 Recientes**, without moving the list if you are already browsing; it works even without a meme folder.
 
 - The list is refreshed at most every 15 minutes; the previews are small (~15 KB each).
 - The full image is downloaded only when you send it, and goes out like any other meme (sticker, square JPEG or GIF).
 - Photos the site marks as sensitive, NSFW or spoilers are skipped. The rest is whatever is trending, unfiltered.
-- Without a connection the tab just doesn't appear. If Know Your Meme changes its page, the tab may stop showing until the app is updated.
+- Without a connection the category just doesn't appear. If Know Your Meme changes its page, it may stop showing until the app is updated. Seen big, trending memes use the small preview, so they look softer.
 
 ## Voice typing
 
