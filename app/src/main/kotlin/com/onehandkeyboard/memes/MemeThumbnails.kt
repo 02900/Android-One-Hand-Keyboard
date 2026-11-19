@@ -27,7 +27,15 @@ class MemeThumbnails(
     private val main: Executor,
 ) {
     private val workers: ExecutorService = Executors.newFixedThreadPool(THREADS)
-    private val cache = LruCache<String, Drawable>(CACHE_ENTRIES)
+
+    /** Previews by [cacheKey], limited by their size in memory (the big preview is large). */
+    private val cache =
+        object : LruCache<String, Drawable>(CACHE_BYTES) {
+            override fun sizeOf(
+                key: String,
+                value: Drawable,
+            ) = (value.intrinsicWidth.coerceAtLeast(1) * value.intrinsicHeight.coerceAtLeast(1) * BYTES_PER_PIXEL)
+        }
 
     /** Bumped by [clear] so that decodes started before it are dropped. */
     @Volatile private var generation = 0
@@ -37,8 +45,9 @@ class MemeThumbnails(
         sizePx: Int,
         target: ImageView,
     ) {
-        target.tag = meme.uri
-        val cached = cache.get(meme.uri)
+        val key = cacheKey(meme, sizePx)
+        target.tag = key
+        val cached = cache.get(key)
         target.setImageDrawable(cached)
         if (cached != null) {
             (cached as? Animatable)?.start()
@@ -49,8 +58,8 @@ class MemeThumbnails(
             val drawable = decode(Uri.parse(meme.previewUri), sizePx) ?: return@execute
             main.execute {
                 if (started != generation) return@execute
-                cache.put(meme.uri, drawable)
-                if (target.tag == meme.uri) {
+                cache.put(key, drawable)
+                if (target.tag == key) {
                     target.setImageDrawable(drawable)
                     (drawable as? Animatable)?.start()
                 }
@@ -138,7 +147,14 @@ class MemeThumbnails(
 
     companion object {
         private const val THREADS = 2
-        private const val CACHE_ENTRIES = 36
+        private const val CACHE_BYTES = 32 * 1024 * 1024
+        private const val BYTES_PER_PIXEL = 4
+
+        /** A meme decoded at another size (the big preview) is another entry. */
+        fun cacheKey(
+            meme: Meme,
+            sizePx: Int,
+        ) = "${meme.uri}#$sizePx"
 
         /** Scale that fits a [width]×[height] image in a [sizePx] square (never above 1). */
         fun scaleFor(
