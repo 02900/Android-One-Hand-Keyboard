@@ -58,9 +58,9 @@ Memes/
 - Formats: `gif`, `webp` (animated or not), `png`, `jpg`. Anything else is ignored, as are hidden files and folders (`.gitkeep`).
 - Subfolders inside a category count for that category.
 - **The panel:** one list with every category (its title, then its memes in a grid), from top to bottom: **🕘 Recientes** (the last 24 sent), **🔥 Tendencias** (online and debug APKs) and your folders. The tabs at the top jump to a category, and the tab of the category you are browsing stays highlighted.
-- **Fast scroll:** drag the thin bar on the right edge to move through the list quickly; a bubble shows the category you're passing.
+- **Fast scroll:** drag the thin bar on the right edge to move through the list quickly; the tab of the category you're passing lights up.
 - **See a meme big:** hold your finger on it; slide over others to see them too. Lifting the finger just closes it; a tap sends.
-- **Panel size:** drag the grab bar on the panel's top edge up to make it taller (up to 70% of the screen) or down to make it shorter. It is remembered for next time, and the keyboard goes back to its normal height when you return to the keys.
+- **Panel size:** drag the grab bar on the panel's top edge up to make it taller (up to 70% of the screen) or down to make it shorter; while you drag, the bar shows the size it will take (0% = the keyboard's height), and the panel changes when you release it. It is remembered for next time, and the keyboard goes back to its normal height when you return to the keys.
 - **How it's sent:** if the app accepts images in that field (WhatsApp, Telegram, Signal…), the meme is inserted directly. Otherwise it is copied to the clipboard and a message asks you to paste it.
 - **Stickers:** still images (png, jpg, webp) are made square with black bars on the short side and sent in the format the app takes: a 512 px WebP sticker in WhatsApp (and Telegram, which receives a WebP), a square JPEG in Instagram. GIFs and animated WebP are sent as they are.
 - To update the pack, just change the files in the folder: it is read again every time you open the panel.

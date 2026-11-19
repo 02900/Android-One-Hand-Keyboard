@@ -31,7 +31,7 @@ class MemePanelViewTest {
 
     private val sent = mutableListOf<Meme>()
 
-    private val heights = mutableListOf<Pair<Int, Boolean>>()
+    private val heights = mutableListOf<Int>()
 
     private val panel =
 
@@ -41,7 +41,8 @@ class MemePanelViewTest {
 
             onMemePicked = { sent += it }
 
-            onHeightDragged = { height, final -> heights += height to final }
+            onHeightChosen = { heights += it }
+            setHeightRange(500..1000)
         }
 
     private fun meme(name: String) = Meme("content://memes/$name", "$name.gif", "image/gif")
@@ -164,20 +165,23 @@ class MemePanelViewTest {
     }
 
     @Test
-    fun `dragging the grab bar up asks for a taller panel, down for a shorter one`() {
+    fun `the grab bar resizes the panel only when released, within its limits`() {
         show(category("Risa", 2))
-
         val handle = find(MemeResizeHandle::class.java)
+        touch(handle, MotionEvent.ACTION_DOWN, y = 100f)
+        touch(handle, MotionEvent.ACTION_MOVE, y = 40f)
+        assertTrue(heights.isEmpty()) // nothing changes while the finger is down
+        assertEquals("▲ 92 %", handle.label(HEIGHT + 60))
+        touch(handle, MotionEvent.ACTION_UP, y = 40f)
+        assertEquals(listOf(HEIGHT + 60), heights)
 
         touch(handle, MotionEvent.ACTION_DOWN, y = 100f)
-
-        touch(handle, MotionEvent.ACTION_MOVE, y = 40f)
-
-        touch(handle, MotionEvent.ACTION_MOVE, y = 130f)
-
-        touch(handle, MotionEvent.ACTION_UP, y = 130f)
-
-        assertEquals(listOf(HEIGHT + 60 to false, HEIGHT - 30 to false, HEIGHT - 30 to true), heights)
+        touch(handle, MotionEvent.ACTION_UP, y = 100f + 2000f) // far down: the keys' height
+        touch(handle, MotionEvent.ACTION_DOWN, y = 100f)
+        touch(handle, MotionEvent.ACTION_CANCEL, y = 0f) // cancelled: nothing
+        touch(handle, MotionEvent.ACTION_DOWN, y = 100f)
+        touch(handle, MotionEvent.ACTION_UP, y = 100f) // not moved: nothing
+        assertEquals(listOf(HEIGHT + 60, 500), heights)
     }
 
     @Test

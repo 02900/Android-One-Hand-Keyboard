@@ -31,11 +31,12 @@ import kotlin.math.min
 /**
  * Meme library panel shown in place of the keys.
  *
- * - Top edge: a grab bar; drag it up or down to change the panel's height ([onHeightDragged]).
+ * - Top edge: a grab bar; drag it up or down and release to change the panel's height
+ *   ([onHeightChosen]).
  * - Bar: back to the keys and one tab per category. Tapping a tab jumps to that category; the
  *   tab of the category being browsed is highlighted.
  * - One vertical list with every category: its title, then its memes in a grid. A fast-scroll
- *   thumb on the right edge jumps through it, with a bubble naming the category.
+ *   thumb on the right edge jumps through it.
  * - Tap a meme to send it. Hold it to see it big; slide to see others; lifting just closes it.
  */
 @SuppressLint("ViewConstructor") // created in code by the service, never inflated
@@ -51,8 +52,8 @@ class MemePanelView(
     /** Opens the keyboard settings (to pick the folder). */
     var onOpenSettings: () -> Unit = {}
 
-    /** The grab bar was dragged: the height the panel should take. [final] when released. */
-    var onHeightDragged: (heightPx: Int, final: Boolean) -> Unit = { _, _ -> }
+    /** The grab bar was released: the height the panel should take (within [setHeightRange]). */
+    var onHeightChosen: (heightPx: Int) -> Unit = {}
 
     private val density = resources.displayMetrics.density
     private var palette: KeyboardPalette? = null
@@ -81,7 +82,7 @@ class MemePanelView(
 
     init {
         orientation = VERTICAL
-        handle.onHeightDragged = { height, final -> onHeightDragged(height, final) }
+        handle.onHeightChosen = { onHeightChosen(it) }
         addView(handle, LayoutParams(LayoutParams.MATCH_PARENT, dp(MemeResizeHandle.HEIGHT_DP)))
         bar.orientation = HORIZONTAL
         bar.gravity = Gravity.CENTER_VERTICAL
@@ -153,11 +154,16 @@ class MemePanelView(
         message.setTextColor(palette.secondaryText)
         messageAction.setTextColor(palette.secondaryText)
         messageAction.background = rounded(palette.secondaryFill)
-        scroller.setColors(palette.secondaryText, palette.primaryFill, palette.primaryText)
+        scroller.setColor(palette.secondaryText)
         preview.setBackgroundColor(ColorUtils.setAlphaComponent(palette.root, PREVIEW_DIM_ALPHA))
         previewTitle.setTextColor(palette.secondaryText)
         adapter.notifyDataSetChanged()
         styleTabs()
+    }
+
+    /** Heights the grab bar can choose: from the keys' height to the tallest allowed. */
+    fun setHeightRange(range: IntRange) {
+        handle.heightRange = range
     }
 
     fun showLoading() {
