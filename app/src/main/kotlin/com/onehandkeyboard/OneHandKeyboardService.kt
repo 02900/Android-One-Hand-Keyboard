@@ -154,20 +154,7 @@ class OneHandKeyboardService : InputMethodService() {
                     view.updateWaiting = keyboardUpdates.waiting
                     keyboardView = view
                 }
-            val panel =
-                MemePanelView(this, memeThumbnails).also { panel ->
-                    panel.onBack = ::hideMemes
-                    panel.onMemePicked = ::sendMeme
-                    panel.onOpenSettings = ::openSettings
-                    panel.onHeightChosen = ::resizeMemes
-                    panel.searchEnabled = memeSearch != null
-                    panel.onSearchTapped = ::openSearchBox
-                    panel.onSearchClosed = ::showMemes
-                    panel.onLoadMore = ::loadSearchPage
-                    panel.applyPalette(KeyboardPalette.from(themeManager.currentTheme.value))
-                    panel.visibility = View.GONE
-                    memePanel = panel
-                }
+            val panel = createMemePanel()
             val search =
                 MemeSearchBar(this).also { bar ->
                     bar.onSearch = ::runSearch
@@ -188,6 +175,7 @@ class OneHandKeyboardService : InputMethodService() {
             FrameLayout(this).apply {
                 addView(column, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT, Gravity.BOTTOM))
                 addView(panel, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT, Gravity.BOTTOM))
+                panel.previewHost = this // the big preview floats above the panel, clear of the finger
                 inputRoot = this
             }
         } catch (e: Exception) {
@@ -254,6 +242,45 @@ class OneHandKeyboardService : InputMethodService() {
         outInsets.touchableRegion.set(0, top, root.width, bottom)
     }
 
+    private fun createActionProcessor() =
+        KeyboardActionProcessor(
+            service = this,
+            configManager = layoutManager,
+            onLayoutSwitch = {
+                spellEngines.preload(layoutManager.currentLanguage)
+                keyboardView?.showCurrentLayout()
+            },
+            onCaseSwitch = { keyboardView?.refreshLabels() },
+            corrector = autoCorrector,
+            onShowMemes = ::showMemes,
+            onVoiceInput = {
+                // Dictation writes into the app, not into the search box.
+                if (!typingSearch) {
+                    autoCorrector.invalidate()
+                    voiceTyping.start()
+                }
+            },
+            connection = { if (typingSearch) searchBar?.connection else currentInputConnection },
+            editor = { if (typingSearch) searchBar?.editorInfo else currentInputEditorInfo },
+            cleanPastedLinks = { preferences.cleanPastedLinks },
+        )
+
+    private fun createMemePanel() =
+        MemePanelView(this, memeThumbnails).also { panel ->
+            panel.onBack = ::hideMemes
+            panel.onMemePicked = ::sendMeme
+            panel.onOpenSettings = ::openSettings
+            panel.onHeightChanging = { resizeMemes(it, remember = false) }
+            panel.onHeightChosen = { resizeMemes(it, remember = true) }
+            panel.searchEnabled = memeSearch != null
+            panel.onSearchTapped = ::openSearchBox
+            panel.onSearchClosed = ::showMemes
+            panel.onLoadMore = ::loadSearchPage
+            panel.applyPalette(KeyboardPalette.from(themeManager.currentTheme.value))
+            panel.visibility = View.GONE
+            memePanel = panel
+        }
+
     /**
      * Initializes all components that require the service context. Runs once per service
      * instance, so their state survives input view re-creations.
@@ -282,27 +309,7 @@ class OneHandKeyboardService : InputMethodService() {
         autoCorrector.onSuggestions = { keyboardView?.suggestions = it }
         spellEngines.preload(layoutManager.currentLanguage)
 
-        actionProcessor =
-            KeyboardActionProcessor(
-                service = this,
-                configManager = layoutManager,
-                onLayoutSwitch = {
-                    spellEngines.preload(layoutManager.currentLanguage)
-                    keyboardView?.showCurrentLayout()
-                },
-                onCaseSwitch = { keyboardView?.refreshLabels() },
-                corrector = autoCorrector,
-                onShowMemes = ::showMemes,
-                onVoiceInput = {
-                    // Dictation writes into the app, not into the search box.
-                    if (!typingSearch) {
-                        autoCorrector.invalidate()
-                        voiceTyping.start()
-                    }
-                },
-                connection = { if (typingSearch) searchBar?.connection else currentInputConnection },
-                editor = { if (typingSearch) searchBar?.editorInfo else currentInputEditorInfo },
-            )
+        actionProcessor = createActionProcessor()
 
         voiceTyping =
             VoiceTyping(this, { currentInputConnection }, ::voiceLanguageTag).apply {
@@ -434,13 +441,22 @@ class OneHandKeyboardService : InputMethodService() {
     private fun memePanelTallest(keysHeight: Int) =
         maxOf(keysHeight, (resources.displayMetrics.heightPixels * MEME_PANEL_MAX_SCREEN).toInt())
 
-    /** Grab bar released: resizes the panel and remembers the size for next time. */
-    private fun resizeMemes(requested: Int) {
+    /**
+     * Grab bar: resizes the panel while it is dragged (the window already reaches the top of the
+     * screen, so only the panel changes) and, once released, remembers the size for next time.
+     */
+    private fun resizeMemes(
+        requested: Int,
+        remember: Boolean,
+    ) {
         val panel = memePanel ?: return
         val keys = keyboardView ?: return
         val tallest = memePanelTallest(keys.height)
         val height = requested.coerceIn(keys.height, tallest)
-        panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, height, Gravity.BOTTOM)
+        if (panel.layoutParams?.height != height) {
+            panel.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, height, Gravity.BOTTOM)
+        }
+        if (!remember) return
         preferences.memePanelSize =
             if (tallest > keys.height) (height - keys.height).toFloat() / (tallest - keys.height) else 0f
     }

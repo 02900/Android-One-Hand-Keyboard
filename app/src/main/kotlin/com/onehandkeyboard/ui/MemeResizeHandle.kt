@@ -14,11 +14,11 @@ import kotlin.math.roundToInt
 
 /**
  * The grab bar on the meme panel's top edge: drag it up to make the panel taller, down to
- * make it shorter. The panel keeps its size while the finger is down (the bar shows the size it
- * will take) and changes once, when the finger is lifted ([onHeightChosen]).
+ * make it shorter. The panel follows the finger ([onHeightChanging]) and the size is kept when
+ * the finger is lifted ([onHeightChosen]); a cancelled drag puts the panel back as it was.
  *
- * The finger is tracked in screen coordinates, so it keeps working when it leaves the keyboard
- * window. TalkBack resizes it with the scroll actions.
+ * The finger is tracked in screen coordinates, so the panel moving under it doesn't change the
+ * size it asks for. TalkBack resizes it with the scroll actions.
  */
 @SuppressLint("ViewConstructor") // created in code by MemePanelView
 class MemeResizeHandle(
@@ -26,7 +26,10 @@ class MemeResizeHandle(
     /** Current height of the panel being resized. */
     private val panelHeight: () -> Int,
 ) : View(context) {
-    /** The height the panel should take, when the finger is lifted (already within [heightRange]). */
+    /** While dragging: the height the panel should show now (within [heightRange]). */
+    var onHeightChanging: (heightPx: Int) -> Unit = {}
+
+    /** The finger was lifted: the height to keep (within [heightRange]). */
     var onHeightChosen: (heightPx: Int) -> Unit = {}
 
     /** Heights the panel can take: from the keys' height to the tallest allowed. */
@@ -43,7 +46,7 @@ class MemeResizeHandle(
     private var downRawY = 0f
     private var startHeight = 0
 
-    /** Height the panel will take when released, or null when not dragging. */
+    /** Height the panel is showing while dragging, or null when not dragging. */
     private var target: Int? = null
 
     init {
@@ -98,17 +101,28 @@ class MemeResizeHandle(
                 target = startHeight
                 invalidate()
             }
-            MotionEvent.ACTION_MOVE -> if (target != null) target = heightFor(event).also { invalidate() }
+            MotionEvent.ACTION_MOVE -> if (target != null) moveTo(heightFor(event))
             MotionEvent.ACTION_UP -> {
                 if (target != null) {
                     val chosen = heightFor(event)
+                    moveTo(chosen)
                     if (chosen != startHeight) onHeightChosen(chosen)
                 }
                 endDrag()
             }
-            MotionEvent.ACTION_CANCEL -> endDrag()
+            MotionEvent.ACTION_CANCEL -> {
+                if (target != null) moveTo(startHeight)
+                endDrag()
+            }
         }
         return true
+    }
+
+    private fun moveTo(height: Int) {
+        if (height == target) return
+        target = height
+        onHeightChanging(height)
+        invalidate()
     }
 
     /** Moving the finger up (smaller rawY) makes the panel taller. */

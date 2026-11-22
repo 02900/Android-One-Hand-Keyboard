@@ -22,7 +22,7 @@ The control column:
 | Space (12–14) | space (double = ". ") | drag ↔ = cursor · ↑/↓ = language (types a space while English is disabled) |
 | Enter (15) | the field's action (↵ 🔍 ➤ ✓) | → send |
 
-**Clean links:** pasting with the keyboard removes tracking from links. Instagram, X, TikTok, Facebook, YouTube, Threads, Reddit, LinkedIn, Spotify and similar sites lose everything after `?`, except what names the post (YouTube's `v` and `t`, Facebook's `story_fbid`…). Other sites only lose known trackers (`utm_*`, `fbclid`, `gclid`…). Pasting from the app's own long-press menu doesn't go through the keyboard, so those links stay as they are.
+**Clean links:** pasting with the keyboard removes tracking from links. Instagram, X, TikTok, Facebook, YouTube, Threads, Reddit, LinkedIn, Spotify and similar sites lose everything after `?`, except what names the post (YouTube's `v` and `t`, Facebook's `story_fbid`…). Other sites only lose known trackers (`utm_*`, `fbclid`, `gclid`…). Pasting from the app's own long-press menu doesn't go through the keyboard, so those links stay as they are. Turn it off in settings with **Limpiar enlaces al pegar** (on by default).
 
 ## Autocorrect
 
@@ -61,8 +61,8 @@ Memes/
 - Subfolders inside a category count for that category.
 - **The panel:** one list with every category (its title, then its memes in a grid), from top to bottom: **🕘 Recientes** (the last 24 sent) and your folders. The tabs at the top jump to a category, and the tab of the category you are browsing stays highlighted.
 - **Fast scroll:** drag the thin bar on the right edge to move through the list quickly; the tab of the category you're passing lights up.
-- **See a meme big:** hold your finger on it; slide over others to see them too. Lifting the finger just closes it; a tap sends.
-- **Panel size:** drag the grab bar on the panel's top edge up to make it taller (up to 70% of the screen) or down to make it shorter, in a single drag; while you drag, the bar shows the size it will take (0% = the keyboard's height), and the panel changes when you release it. It is remembered for next time, and the keyboard goes back to its normal height when you return to the keys.
+- **See a meme big:** hold your finger on it; slide over others to see them too. It floats above the keyboard, where your finger doesn't cover it (over the list when there is no room above, as in landscape, or with TalkBack). Lifting the finger just closes it; a tap sends.
+- **Panel size:** drag the grab bar on the panel's top edge up to make it taller (up to 70% of the screen) or down to make it shorter, in a single drag; the panel follows your finger and the bar shows its size (0% = the keyboard's height). It is remembered for next time, and the keyboard goes back to its normal height when you return to the keys.
 - **How it's sent:** if the app accepts images in that field (WhatsApp, Telegram, Signal…), the meme is inserted directly. Otherwise it is copied to the clipboard and a message asks you to paste it.
 - **Stickers:** still images (png, jpg, webp) are made square with black bars on the short side and sent in the format the app takes: a 512 px WebP sticker in WhatsApp (and Telegram, which receives a WebP), a square JPEG in Instagram. GIFs and animated WebP are sent as they are.
 - To update the pack, just change the files in the folder: it is read again every time you open the panel.

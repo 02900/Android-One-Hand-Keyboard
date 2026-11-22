@@ -218,6 +218,13 @@ private fun WritingSettings(
             preferences.suggestionsEnabled = it
         })
     }
+    var cleanLinks by remember { mutableStateOf(preferences.cleanPastedLinks) }
+    SettingRow("Limpiar enlaces al pegar", "Quita el rastreo (?igsh=, ?si=, utm_…) de Instagram, X, TikTok…") {
+        Switch(checked = cleanLinks, onCheckedChange = {
+            cleanLinks = it
+            preferences.cleanPastedLinks = it
+        })
+    }
     var expertMode by remember { mutableStateOf(preferences.expertMode) }
     SettingRow("Modo experto") {
         Switch(checked = expertMode, onCheckedChange = {

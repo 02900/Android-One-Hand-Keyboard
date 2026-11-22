@@ -3,9 +3,11 @@ package com.onehandkeyboard.ui
 import android.content.Context
 import android.graphics.Color
 import android.os.SystemClock
+import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.TextView
@@ -144,7 +146,7 @@ class MemePanelViewTest {
 
     /** The big preview's title: the TextView showing a meme name. */
 
-    private fun previewTitle(): android.widget.TextView {
+    private fun previewTitle(root: View = panel): android.widget.TextView {
         val all = mutableListOf<android.widget.TextView>()
 
         fun collect(view: View) {
@@ -159,26 +161,65 @@ class MemePanelViewTest {
             }
         }
 
-        collect(panel)
+        collect(root)
 
         return all.first { it.text.startsWith("Risa-") }
     }
 
     @Test
-    fun `the grab bar resizes the panel only when released, within its limits`() {
+    fun `the big preview floats above the panel, where the finger doesn't cover it`() {
+        val host = FrameLayout(context)
+        host.addView(panel, FrameLayout.LayoutParams(WIDTH, HEIGHT, Gravity.BOTTOM))
+        panel.previewHost = host
+        panel.show(MemeLibrary.Result.Loaded(listOf(category("Risa", 2))))
+        val layOutHost = {
+            host.measure(
+                View.MeasureSpec.makeMeasureSpec(WIDTH, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(SCREEN, View.MeasureSpec.EXACTLY),
+            )
+            host.layout(0, 0, WIDTH, SCREEN)
+        }
+        layOutHost()
+
+        list.findViewHolderForAdapterPosition(1)!!.itemView.performLongClick()
+        layOutHost()
+
+        val preview = previewTitle(host).parent as View
+        assertTrue(preview.parent === host)
+        assertEquals(View.VISIBLE, preview.visibility)
+        assertTrue(preview.bottom <= panel.top) // all of it above the panel
+        assertTrue(preview.top >= 0)
+
+        touch(list, MotionEvent.ACTION_UP)
+        assertEquals(View.GONE, preview.visibility)
+        assertTrue(sent.isEmpty())
+    }
+
+    @Test
+    fun `the panel follows the grab bar while dragging and keeps the size where it is released`() {
+        val live = mutableListOf<Int>()
+        panel.onHeightChanging = { live += it }
         show(category("Risa", 2))
         val handle = find(MemeResizeHandle::class.java)
         touch(handle, MotionEvent.ACTION_DOWN, y = 100f)
+        touch(handle, MotionEvent.ACTION_MOVE, y = 70f)
         touch(handle, MotionEvent.ACTION_MOVE, y = 40f)
-        assertTrue(heights.isEmpty()) // nothing changes while the finger is down
+        touch(handle, MotionEvent.ACTION_MOVE, y = 40f) // same place: no new size
+        assertEquals(listOf(HEIGHT + 30, HEIGHT + 60), live) // during the drag
+        assertTrue(heights.isEmpty()) // kept only when released
         assertEquals("▲ 92 %", handle.label(HEIGHT + 60))
         touch(handle, MotionEvent.ACTION_UP, y = 40f)
         assertEquals(listOf(HEIGHT + 60), heights)
 
+        live.clear()
         touch(handle, MotionEvent.ACTION_DOWN, y = 100f)
         touch(handle, MotionEvent.ACTION_UP, y = 100f + 2000f) // far down: the keys' height
+        assertEquals(listOf(500), live)
+        live.clear()
         touch(handle, MotionEvent.ACTION_DOWN, y = 100f)
-        touch(handle, MotionEvent.ACTION_CANCEL, y = 0f) // cancelled: nothing
+        touch(handle, MotionEvent.ACTION_MOVE, y = 0f)
+        touch(handle, MotionEvent.ACTION_CANCEL, y = 0f) // cancelled: back to where it was
+        assertEquals(listOf(HEIGHT + 100, HEIGHT), live)
         touch(handle, MotionEvent.ACTION_DOWN, y = 100f)
         touch(handle, MotionEvent.ACTION_UP, y = 100f) // not moved: nothing
         assertEquals(listOf(HEIGHT + 60, 500), heights)
@@ -287,5 +328,7 @@ class MemePanelViewTest {
         const val WIDTH = 1080
 
         const val HEIGHT = 900
+
+        const val SCREEN = 2400
     }
 }

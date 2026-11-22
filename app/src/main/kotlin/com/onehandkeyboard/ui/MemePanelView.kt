@@ -10,6 +10,7 @@ import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.accessibility.AccessibilityManager
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
@@ -17,6 +18,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.onehandkeyboard.memes.Meme
@@ -31,8 +33,8 @@ import kotlin.math.min
 /**
  * Meme library panel shown in place of the keys.
  *
- * - Top edge: a grab bar; drag it up or down and release to change the panel's height
- *   ([onHeightChosen]).
+ * - Top edge: a grab bar; the panel follows it up or down while dragging ([onHeightChanging])
+ *   and keeps the size where it is released ([onHeightChosen]).
  * - Bar: back to the keys, search (in builds with Internet) and one tab per category. Tapping a
  *   tab jumps to that category; the tab of the category being browsed is highlighted.
  * - Search results replace the categories: the bar shows the query (tap it to go back to the
@@ -54,7 +56,10 @@ class MemePanelView(
     /** Opens the keyboard settings (to pick the folder). */
     var onOpenSettings: () -> Unit = {}
 
-    /** The grab bar was released: the height the panel should take (within [setHeightRange]). */
+    /** The grab bar is being dragged: the height the panel should show now (within [setHeightRange]). */
+    var onHeightChanging: (heightPx: Int) -> Unit = {}
+
+    /** The grab bar was released: the height to keep (within [setHeightRange]). */
     var onHeightChosen: (heightPx: Int) -> Unit = {}
 
     /** The search button: type a query. */
@@ -65,6 +70,12 @@ class MemePanelView(
 
     /** The search results are near their end: load the next page (answered with [showSearchResults]). */
     var onLoadMore: () -> Unit = {}
+
+    /**
+     * The keyboard window's root, as tall as the screen: the big preview floats in its transparent
+     * part above the panel, where the finger doesn't cover it. Null: over the list.
+     */
+    var previewHost: FrameLayout? = null
 
     /** Shows the search button (builds with Internet). */
     var searchEnabled: Boolean
@@ -95,6 +106,7 @@ class MemePanelView(
     private val preview = LinearLayout(context)
     private val previewImage = ImageView(context)
     private val previewTitle = TextView(context)
+    private val content = FrameLayout(context)
 
     /** The meme shown big while a finger holds the list, or null. */
     private var previewing: Meme? = null
@@ -106,6 +118,7 @@ class MemePanelView(
 
     init {
         orientation = VERTICAL
+        handle.onHeightChanging = { onHeightChanging(it) }
         handle.onHeightChosen = { onHeightChosen(it) }
         addView(handle, LayoutParams(LayoutParams.MATCH_PARENT, dp(MemeResizeHandle.HEIGHT_DP)))
         bar.orientation = HORIZONTAL
@@ -162,10 +175,10 @@ class MemePanelView(
         preview.addView(previewImage, LayoutParams(0, 0))
         previewTitle.gravity = Gravity.CENTER
         previewTitle.maxLines = 1
+        previewTitle.ellipsize = android.text.TextUtils.TruncateAt.END
         previewTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, MESSAGE_TEXT_SP)
         preview.addView(previewTitle, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
-        val content = FrameLayout(context)
         content.addView(grid, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
         content.addView(scroller, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
         content.addView(messageBox, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
@@ -185,7 +198,6 @@ class MemePanelView(
         messageAction.setTextColor(palette.secondaryText)
         messageAction.background = rounded(palette.secondaryFill)
         scroller.setColor(palette.secondaryText)
-        preview.setBackgroundColor(ColorUtils.setAlphaComponent(palette.root, PREVIEW_DIM_ALPHA))
         previewTitle.setTextColor(palette.secondaryText)
         adapter.notifyDataSetChanged()
         styleTabs()
@@ -400,14 +412,75 @@ class MemePanelView(
     private fun showPreview(meme: Meme) {
         if (previewing == meme) return
         previewing = meme
-        val content = preview.parent as ViewGroup
-        val size = (min(content.width, content.height - dp(PREVIEW_TITLE_DP)) * PREVIEW_SCALE).toInt().coerceAtLeast(1)
+        val size = placePreviewAbove() ?: placePreviewOverList()
         previewImage.layoutParams = LayoutParams(size, size)
         previewTitle.text = meme.title
         preview.visibility = VISIBLE
         preview.announceForAccessibility(meme.title)
         thumbnails.load(meme, size, previewImage)
     }
+
+    /**
+     * Floats the preview above the panel, in the window's transparent part, when there is room for
+     * it. Not with TalkBack: there is no finger to hide it, and it must stay reachable to close it.
+     * Returns the image's size, or null when it doesn't fit there.
+     */
+    private fun placePreviewAbove(): Int? {
+        val host = previewHost ?: return null
+        if (touchExploration()) return null
+        val panelTop = topIn(host)
+        val statusBar =
+            ViewCompat
+                .getRootWindowInsets(host)
+                ?.getInsets(WindowInsetsCompat.Type.statusBars())
+                ?.top ?: 0
+        val margin = dp(PREVIEW_MARGIN_DP)
+        val padding = dp(PREVIEW_PADDING_DP)
+        val room = panelTop - statusBar - 2 * margin - 2 * padding - dp(PREVIEW_TITLE_DP)
+        val size = min((host.width * PREVIEW_SCALE).toInt(), room)
+        if (size < dp(MIN_FLOATING_PREVIEW_DP)) return null
+        val params =
+            FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+        params.bottomMargin = host.height - panelTop + margin
+        movePreview(host, params)
+        preview.setPadding(padding, padding, padding, 0)
+        preview.background = palette?.let { rounded(it.root) }
+        preview.elevation = dp(PREVIEW_ELEVATION_DP).toFloat()
+        return size
+    }
+
+    /** The preview over the list, dimming it (no room above the panel, or TalkBack). */
+    private fun placePreviewOverList(): Int {
+        movePreview(content, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+        preview.setPadding(0, 0, 0, 0)
+        preview.background = null
+        palette?.let { preview.setBackgroundColor(ColorUtils.setAlphaComponent(it.root, PREVIEW_DIM_ALPHA)) }
+        preview.elevation = 0f
+        val size = min(content.width, content.height - dp(PREVIEW_TITLE_DP)) * PREVIEW_SCALE
+        return size.toInt().coerceAtLeast(1)
+    }
+
+    private fun movePreview(
+        parent: FrameLayout,
+        params: FrameLayout.LayoutParams,
+    ) {
+        if (preview.parent !== parent) {
+            (preview.parent as? ViewGroup)?.removeView(preview)
+            parent.addView(preview, params)
+        } else {
+            preview.layoutParams = params
+        }
+    }
+
+    /** This panel's top edge, measured from [host]'s top. */
+    private fun topIn(host: ViewGroup): Int =
+        generateSequence<android.view.View>(this) { it.parent as? android.view.View }
+            .takeWhile { it !== host }
+            .sumOf { it.top }
+
+    private fun touchExploration() =
+        (context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager)
+            ?.isTouchExplorationEnabled == true
 
     private fun endPreview() {
         if (previewing == null) return
@@ -585,5 +658,9 @@ class MemePanelView(
         const val PREVIEW_SCALE = 0.85f
         const val PREVIEW_TITLE_DP = 32f
         const val PREVIEW_DIM_ALPHA = 0xE6
+        const val PREVIEW_MARGIN_DP = 8f
+        const val PREVIEW_PADDING_DP = 8f
+        const val PREVIEW_ELEVATION_DP = 8f
+        const val MIN_FLOATING_PREVIEW_DP = 96f
     }
 }

@@ -35,6 +35,11 @@ class KeyboardPreferences
             get() = prefs.getBoolean(KEY_SUGGESTIONS, true)
             set(value) = prefs.edit().putBoolean(KEY_SUGGESTIONS, value).apply()
 
+        /** Pasting removes tracking parameters from links (see LinkCleaner). */
+        var cleanPastedLinks: Boolean
+            get() = prefs.getBoolean(KEY_CLEAN_PASTED_LINKS, true)
+            set(value) = prefs.edit().putBoolean(KEY_CLEAN_PASTED_LINKS, value).apply()
+
         /** Keys without labels or preview, for users who know the layout by heart. */
         var expertMode: Boolean
             get() = prefs.getBoolean(KEY_EXPERT_MODE, false)
@@ -87,6 +92,7 @@ class KeyboardPreferences
             private const val LIST_SEPARATOR = "\n"
             private const val KEY_AUTOCORRECT = "autocorrect_enabled"
             private const val KEY_SUGGESTIONS = "suggestions_enabled"
+            private const val KEY_CLEAN_PASTED_LINKS = "clean_pasted_links"
             private const val PREFS_NAME = "keyboard_prefs"
             private const val KEY_HAPTICS = "haptics_enabled"
             private const val KEY_SOUND = "sound_enabled"
