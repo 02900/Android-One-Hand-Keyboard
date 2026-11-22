@@ -3,7 +3,7 @@
 Source: https://github.com/hermitdave/FrequencyWords (content/2018/<lang>/<lang>_50k.txt),
 data licensed CC-BY-SA 4.0. Run once and commit the output:
 
-    python tools/build_dictionary.py <es_50k.txt> es app/src/main/assets/dict/es.tsv
+    python tools/build_dictionary.py <es_50k.txt> es app/src/main/assets/dict/es.tsv <diccionario-espanol.txt>
     python tools/build_dictionary.py <en_50k.txt> en app/src/main/assets/dict/en.tsv
 
 Subtitle text contains common misspellings ("tambien", "cancion", "dont"). They must not be in
@@ -18,7 +18,9 @@ A 50k list misses the rarer forms of common verbs: it has "elimina" and "elimina
 "eliminaba", which then looked like a typo (or two words, "elimina ba"). Spanish therefore also
 gets the regular forms of the verbs in the list (add_verb_forms_es): only the tenses that are
 regular for every verb of their kind, only for words that are verbs in the list, and with a
-frequency below any listed word, so they never outrank a real entry.
+frequency below any listed word, so they never outrank a real entry. Given a full word list
+(the one build_word_set.py uses), a derived form is only kept if that list has it too; forms
+with a pronoun attached (eliminarlo) are not in such lists and are kept as they are.
 """
 
 import sys
@@ -146,9 +148,13 @@ def is_verb_es(stem, ar, freq):
     return len(only) >= 1 and len(only) + len(other) >= 2
 
 
-def add_verb_forms_es(freq):
-    """Adds the regular forms of the listed verbs that the list is missing (see the docstring)."""
+def add_verb_forms_es(freq, valid=None):
+    """Adds the regular forms of the listed verbs that the list is missing (see the docstring).
+
+    [valid]: folded words of a full word list, to drop derived forms it doesn't have.
+    """
     derived = set()
+    with_pronoun = set()
     for infinitive in list(freq):
         stem, ending = infinitive[:-2], infinitive[-2:]
         if len(stem) < 2 or not stem.isalpha() or ending not in ('ar', 'er', 'ir', 'ír'):
@@ -165,30 +171,32 @@ def add_verb_forms_es(freq):
                 derived.update(stem + e for e in ER_IR_IMPERFECT)
             if not infinitive.endswith(IRREGULAR_FUTURE):
                 derived.update(infinitive.replace('í', 'i') + e for e in FUTURE_ENDINGS)
-        derived.update(infinitive + c for c in CLITICS)
+        with_pronoun.update(infinitive + c for c in CLITICS)
         # The listed gerund with a pronoun (eliminándolo, haciéndolo, leyéndolo).
         for gerund in [stem + 'ando'] if ar else [stem + 'iendo', stem + 'yendo']:
             if gerund in freq:
                 accented = gerund[:-4] + {'a': 'á', 'e': 'é'}[gerund[-4]] + 'ndo'
-                derived.update(accented + c for c in GERUND_CLITICS)
+                with_pronoun.update(accented + c for c in GERUND_CLITICS)
         # A listed participle in its other genders and numbers (eliminado → eliminada, eliminados…).
         participle = stem + ('ado' if ar else 'ido')
         if participle in freq:
             derived.update(participle[:-1] + e for e in ('a', 'os', 'as'))
+    unconfirmed = {w for w in derived if valid is not None and fold(w) not in valid}
     added = 0
-    for word in derived:
+    for word in (derived - unconfirmed) | with_pronoun:
         if word not in freq:
             freq[word] = DERIVED_FREQUENCY
             added += 1
-    print(f'es: {added} verb forms added')
+    print(f'es: {added} verb forms added, {len(unconfirmed)} not in the word list dropped')
     return freq
 
 
 def main():
     source, lang, out = sys.argv[1:4]
+    valid = {fold(w) for w in open(sys.argv[4], encoding='utf-8').read().split()} if len(sys.argv) > 4 else None
     freq = read(source)
     freq = {w: c for w, c in freq.items() if len(w) > 1 or w in SINGLE_LETTERS[lang]}
-    freq = add_verb_forms_es(clean_es(freq)) if lang == 'es' else clean_en(freq)
+    freq = add_verb_forms_es(clean_es(freq), valid) if lang == 'es' else clean_en(freq)
     with open(out, 'w', encoding='utf-8', newline='\n') as f:
         for word, count in sorted(freq.items(), key=lambda item: (-item[1], item[0])):
             f.write(f'{word}\t{count}\n')

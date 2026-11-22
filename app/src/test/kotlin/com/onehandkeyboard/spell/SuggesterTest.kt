@@ -16,7 +16,11 @@ class SuggesterTest {
         val asset = if (language == Language.SPANISH) "es" else "en"
         val dictionary = File("src/main/assets/dict/$asset.tsv").useLines { WordDictionary.parse(it) }
         val config = KeyboardConfigurationFactory().getConfiguration(language, LayoutMode.LETTERS)
-        return Suggester(dictionary, UserDictionary(null), ErrorModel.fromLayout(config))
+        val allWords =
+            File(
+                "src/main/assets/dict/${asset}_words.bin",
+            ).takeIf { it.exists() }?.inputStream()?.use(WordSet::read)
+        return Suggester(dictionary, UserDictionary(null), ErrorModel.fromLayout(config), allWords)
     }
 
     private val spanish by lazy { suggester(Language.SPANISH) }
@@ -87,6 +91,17 @@ class SuggesterTest {
         }
         assertEquals("eliminaba", spanish.suggest("eliminsba").autoCorrect) // and typos in them are fixed
         assertFalse("not a verb form", spanish.isKnown("estó"))
+    }
+
+    @Test
+    fun `rare real words are not forced into a common one, typos of common words still are`() {
+        // Not in the 90k dictionary, but real: they used to become chicago, posadero, "levi amos".
+        for (word in listOf("chilango", "botadero", "levitamos", "electronegativa")) {
+            assertNull(word, spanish.suggest(word).autoCorrect)
+        }
+        assertEquals("bueno", spanish.suggest("pueno").autoCorrect)
+        assertEquals("canción", spanish.suggest("cancion").autoCorrect) // accents still added
+        assertEquals("estado", spanish.suggest("estsdo").autoCorrect)
     }
 
     @Test

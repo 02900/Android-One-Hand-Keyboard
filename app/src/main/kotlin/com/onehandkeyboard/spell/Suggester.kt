@@ -51,11 +51,17 @@ data class Suggestions(
  * Besides accents and typos, it detects a missed space: either it was not typed at all
  * ("nopuede" is "no puede") or a tap just above the space bar typed the letter of that cell
  * ("enemexico" is "en méxico", "lesscaen" is "les caen").
+ *
+ * A typed word missing from [dictionary] but in [allWords] is real, only rare ("grafito"): it
+ * counts as a word of [RARE_WORD_FREQUENCY], so only a fix far more likely than it (a typo of
+ * a very common word) is applied; missing accents are still added.
  */
 class Suggester(
     private val dictionary: WordDictionary,
     private val userDictionary: UserDictionary?,
     private val model: ErrorModel,
+    /** Every word of the language, for the ones too rare for [dictionary] (Spanish only). */
+    private val allWords: WordSet? = null,
 ) {
     fun isKnown(word: String): Boolean = dictionary.isWord(word) || userDictionary?.isLearned(word) == true
 
@@ -184,7 +190,9 @@ class Suggester(
         // Same letters, only accents/apostrophes missing: that is what the user meant.
         val accentFix = ranked.firstOrNull { it.entry.cost == 0f }
         val maxCost = if (typed.length >= LONG_WORD) 2f else 1f
-        val runnerUp = ranked.getOrNull(1)?.score ?: Double.NEGATIVE_INFINITY
+        val typedAsWord =
+            if (allWords?.contains(typed) == true) score(RARE_WORD_FREQUENCY, 0f) else Double.NEGATIVE_INFINITY
+        val runnerUp = maxOf(ranked.getOrNull(1)?.score ?: Double.NEGATIVE_INFINITY, typedAsWord)
         val typoFix =
             ranked.firstOrNull()?.takeIf {
                 typed.length >= MIN_TYPO_LENGTH && it.entry.cost <= maxCost && it.score - runnerUp >= AUTO_MARGIN
@@ -226,6 +234,9 @@ class Suggester(
         private const val COMPLETION_PENALTY = 1.5
         private const val COMPLETIONS = 3
         private const val LEARNED_FREQUENCY = 5_000L
+
+        /** A rare real word: as frequent as the dictionary's derived verb forms. */
+        private const val RARE_WORD_FREQUENCY = 100L
 
         /** Copies the capitalization pattern of [typed] onto [word] ("Cancion" → "Canción"). */
         fun matchCase(

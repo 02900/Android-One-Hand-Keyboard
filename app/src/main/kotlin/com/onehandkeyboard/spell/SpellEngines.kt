@@ -17,7 +17,7 @@ import javax.inject.Singleton
 /**
  * Loads and keeps one [Suggester] per language.
  *
- * Dictionaries (~50k words) are parsed on a background thread the first time a language is
+ * Dictionaries (~50-90k words) are parsed on a background thread the first time a language is
  * needed; until then [suggester] returns null and the keyboard simply does not correct.
  * Shared by the keyboard service and the settings screen (for "forget learned words").
  */
@@ -65,13 +65,21 @@ class SpellEngines
                         context.assets.open("dict/${assetName(language)}.tsv").bufferedReader().useLines {
                             WordDictionary.parse(it)
                         }
-                    suggesters[language] = Suggester(dictionary, userDictionary(language), model)
+                    suggesters[language] = Suggester(dictionary, userDictionary(language), model, allWords(language))
                 } catch (e: IOException) {
                     Log.w(TAG, "Dictionary for $language could not be loaded", e)
                     loading.remove(language)
                 }
             }
         }
+
+        /** The language's full word list (dict/<lang>_words.bin), if it has one. */
+        private fun allWords(language: Language): WordSet? =
+            try {
+                context.assets.open("dict/${assetName(language)}_words.bin").use(WordSet::read)
+            } catch (_: IOException) {
+                null // English has none: only its dictionary is used
+            }
 
         /** Forgets every learned word in every language. */
         fun clearLearnedWords() {

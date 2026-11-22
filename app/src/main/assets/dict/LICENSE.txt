@@ -10,6 +10,14 @@ International (CC BY-SA 4.0): https://creativecommons.org/licenses/by-sa/4.0/
 
 Changes: non-alphabetic tokens and stray single letters removed; Spanish words without an
 accent removed when the accented spelling is far more frequent (common misspellings such as
-"tambien"); regular forms of the listed Spanish verbs added ("eliminaba", "eliminarlo");
+"tambien"); regular forms of the listed Spanish verbs added ("eliminaba", "eliminarlo"),
+kept only when the full word list below has them;
 English contractions restored ("don't", "I'm"). See tools/build_dictionary.py.
 These derived files are distributed under the same CC BY-SA 4.0 license.
+
+Spanish word set (es_words.bin)
+
+A Bloom filter (tools/build_word_set.py) over a full Spanish word list without accents
+(639,292 forms) from an open-source Scrabble project, as included in
+https://github.com/02900/boggle (public/diccionario-espanol.txt). It only tells whether a
+word exists; it is distributed under that list's open-source terms.
