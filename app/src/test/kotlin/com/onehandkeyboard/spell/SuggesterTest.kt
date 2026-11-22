@@ -80,6 +80,28 @@ class SuggesterTest {
     }
 
     @Test
+    fun `regular forms of listed verbs are known, not split or fixed`() {
+        for (word in listOf("eliminaba", "eliminábamos", "eliminarán", "eliminándolo", "contestaste", "volvía")) {
+            assertTrue(word, spanish.isKnown(word))
+            assertNull(word, spanish.suggest(word).autoCorrect)
+        }
+        assertEquals("eliminaba", spanish.suggest("eliminsba").autoCorrect) // and typos in them are fixed
+        assertFalse("not a verb form", spanish.isKnown("estó"))
+    }
+
+    @Test
+    fun `rare 2-letter tokens are not split off the end of a word`() {
+        // The subtitle list has junk like "ba" (as in "elimina ba"); real 2-letter words still split.
+        val dictionary =
+            WordDictionary.of(listOf("elimina" to 1_345L, "ba" to 1_949L, "no" to 12_000_000L, "puede" to 500_000L))
+        val suggester = Suggester(dictionary, UserDictionary(null), ErrorModel.UNIFORM)
+        val suggestions = suggester.suggest("eliminaba")
+        assertFalse(suggestions.toString(), suggestions.autoCorrect == "elimina ba")
+        assertFalse(suggestions.toString(), suggestions.slots.any { it?.text == "elimina ba" })
+        assertEquals("no puede", suggester.suggest("nopuede").autoCorrect)
+    }
+
+    @Test
     fun `a close call between a split and a one-word fix is only offered`() {
         val suggestions = spanish.suggest("aydios")
         assertNull("not forced to adiós", suggestions.autoCorrect)

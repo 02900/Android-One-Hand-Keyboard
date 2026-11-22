@@ -10,5 +10,6 @@ International (CC BY-SA 4.0): https://creativecommons.org/licenses/by-sa/4.0/
 
 Changes: non-alphabetic tokens and stray single letters removed; Spanish words without an
 accent removed when the accented spelling is far more frequent (common misspellings such as
-"tambien"); English contractions restored ("don't", "I'm"). See tools/build_dictionary.py.
+"tambien"); regular forms of the listed Spanish verbs added ("eliminaba", "eliminarlo");
+English contractions restored ("don't", "I'm"). See tools/build_dictionary.py.
 These derived files are distributed under the same CC BY-SA 4.0 license.

@@ -111,7 +111,10 @@ class Suggester(
 
     /**
      * Two words with the space missing ("no" + "puede") or replaced by the letter typed by a
-     * tap just above the space bar ("en" + e + "méxico"). Each part needs 2+ letters.
+     * tap just above the space bar ("en" + e + "méxico"). Each part needs 2+ letters, and a
+     * 2-letter part must be a common word ("no", "de", "ya"): the list also has rare 2-letter
+     * tokens from subtitles ("ba", "io", "ia"), and with them the end of almost any unknown
+     * word looked like a second word ("eliminaba" → "elimina ba").
      *
      * Scored from both word frequencies (halfway between the rarer one and their geometric
      * mean, so a common word cannot carry a junk one like "con" + "go") minus [SPLIT_PENALTY].
@@ -136,13 +139,16 @@ class Suggester(
         cost: Float,
     ): Scored? {
         if (left.length < MIN_PART_LENGTH || right.length < MIN_PART_LENGTH) return null
-        val first = knownForm(left) ?: return null
-        val second = knownForm(right) ?: return null
+        val first = knownForm(left)?.takeIf(::canBeSplitPart) ?: return null
+        val second = knownForm(right)?.takeIf(::canBeSplitPart) ?: return null
         val a = ln(first.frequency + 1.0)
         val b = ln(second.frequency + 1.0)
         val score = (min(a, b) + (a + b) / 2) / 2 - SPLIT_PENALTY - COST_WEIGHT * cost
         return Scored(WordDictionary.Entry("${first.word} ${second.word}", 0, cost), score)
     }
+
+    private fun canBeSplitPart(part: WordDictionary.Entry) =
+        part.word.length > MIN_PART_LENGTH || part.frequency >= MIN_SHORT_PART_FREQUENCY
 
     /** The word as typed if it exists, else its most frequent accented form, else a learned word. */
     private fun knownForm(part: String): WordDictionary.Entry? {
@@ -202,6 +208,12 @@ class Suggester(
         /** Both words of a split need 2+ letters ("vio" is not "vi o"). */
         private const val MIN_PART_LENGTH = 2
         private const val MIN_SPLIT_LENGTH = 2 * MIN_PART_LENGTH
+
+        /**
+         * A 2-letter part of a split must be at least this frequent: every real one is ("di"
+         * 72k, "ok" 92k, "de" 14M), the subtitle junk is not ("io" 41k, "ja" 13k, "ba" 2k).
+         */
+        private const val MIN_SHORT_PART_FREQUENCY = 50_000L
 
         /** Two words typed together are less likely than either word alone. */
         private const val SPLIT_PENALTY = 1.5
