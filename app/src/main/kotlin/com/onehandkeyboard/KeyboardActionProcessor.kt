@@ -6,6 +6,8 @@ import android.content.Context
 import android.inputmethodservice.InputMethodService
 import android.os.SystemClock
 import android.util.Log
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
 import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
 import com.onehandkeyboard.enums.LayoutMode
@@ -28,9 +30,12 @@ class KeyboardActionProcessor(
     private val corrector: AutoCorrector? = null,
     private val onShowMemes: () -> Unit = {},
     private val onVoiceInput: () -> Unit = {},
+    /** Where the keys write: the app's field, or the keyboard's own meme search box. */
+    private val connection: () -> InputConnection? = { service.currentInputConnection },
+    private val editor: () -> EditorInfo? = { service.currentInputEditorInfo },
 ) {
-    private val ic get() = service.currentInputConnection
-    private val editorInfo get() = service.currentInputEditorInfo
+    private val ic get() = connection()
+    private val editorInfo get() = editor()
 
     fun processKeyboardOutput(output: KeyboardOutput) {
         when (output) {

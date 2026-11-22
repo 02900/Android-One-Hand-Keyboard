@@ -5,7 +5,6 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
-import android.graphics.Typeface
 import android.view.MotionEvent
 import android.view.View
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,7 +13,7 @@ import com.onehandkeyboard.memes.MemeSections
 
 /**
  * Fast scroll for the meme list: a thin thumb on the right edge that follows the scroll and
- * can be dragged; while dragging, a bubble next to it shows the category being passed.
+ * can be dragged (the tabs show the category being passed; TalkBack announces it).
  *
  * It lies over the whole list but only takes touches that start on the right edge, so the
  * rest of the list scrolls and taps as usual.
@@ -24,17 +23,11 @@ class MemeFastScroller(
     context: Context,
     private val list: RecyclerView,
 ) : View(context) {
-    /** Name of the category of the row at a position (the bubble's text). */
+    /** Name of the category of the row at a position (announced to TalkBack while dragging). */
     var sectionNameAt: (Int) -> String? = { null }
 
     private val density = resources.displayMetrics.density
     private val thumbPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val bubblePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val textPaint =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = BUBBLE_TEXT_SP * resources.displayMetrics.scaledDensity
-            typeface = Typeface.DEFAULT_BOLD
-        }
     private val rect = RectF()
 
     /** Thumb position while dragging (0..1), or null when following the list. */
@@ -55,14 +48,8 @@ class MemeFastScroller(
         )
     }
 
-    fun setColors(
-        thumb: Int,
-        bubble: Int,
-        text: Int,
-    ) {
+    fun setColor(thumb: Int) {
         thumbPaint.color = thumb
-        bubblePaint.color = bubble
-        textPaint.color = text
         invalidate()
     }
 
@@ -86,24 +73,6 @@ class MemeFastScroller(
         val right = width - dp(EDGE_MARGIN_DP)
         rect.set(right - thumbWidth, top, right, top + thumbHeight())
         canvas.drawRoundRect(rect, thumbWidth / 2, thumbWidth / 2, thumbPaint)
-        if (isDragging) drawBubble(canvas, top + thumbHeight() / 2)
-    }
-
-    private fun drawBubble(
-        canvas: Canvas,
-        centerY: Float,
-    ) {
-        val name = sectionNameAt(currentPosition()) ?: return
-        val padding = dp(BUBBLE_PADDING_DP)
-        val bubbleHeight = dp(BUBBLE_HEIGHT_DP)
-        val textWidth = textPaint.measureText(name)
-        val right = width - dp(BUBBLE_GAP_DP)
-        val left = (right - textWidth - 2 * padding).coerceAtLeast(0f)
-        val top = (centerY - bubbleHeight / 2).coerceIn(0f, (height - bubbleHeight).coerceAtLeast(0f))
-        rect.set(left, top, right, top + bubbleHeight)
-        canvas.drawRoundRect(rect, bubbleHeight / 2, bubbleHeight / 2, bubblePaint)
-        val baseline = rect.centerY() - (textPaint.ascent() + textPaint.descent()) / 2
-        canvas.drawText(name, left + padding, baseline, textPaint)
     }
 
     private fun currentPosition(): Int {
@@ -154,9 +123,5 @@ class MemeFastScroller(
         const val THUMB_WIDTH_DRAGGING_DP = 8f
         const val EDGE_MARGIN_DP = 3f
         const val TOUCH_WIDTH_DP = 28f
-        const val BUBBLE_HEIGHT_DP = 40f
-        const val BUBBLE_PADDING_DP = 16f
-        const val BUBBLE_GAP_DP = 24f
-        const val BUBBLE_TEXT_SP = 16f
     }
 }
