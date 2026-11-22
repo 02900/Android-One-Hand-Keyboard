@@ -16,7 +16,11 @@ class SuggesterTest {
         val asset = if (language == Language.SPANISH) "es" else "en"
         val dictionary = File("src/main/assets/dict/$asset.tsv").useLines { WordDictionary.parse(it) }
         val config = KeyboardConfigurationFactory().getConfiguration(language, LayoutMode.LETTERS)
-        return Suggester(dictionary, UserDictionary(null), ErrorModel.fromLayout(config))
+        val allWords =
+            File(
+                "src/main/assets/dict/${asset}_words.bin",
+            ).takeIf { it.exists() }?.inputStream()?.use(WordSet::read)
+        return Suggester(dictionary, UserDictionary(null), ErrorModel.fromLayout(config), allWords)
     }
 
     private val spanish by lazy { suggester(Language.SPANISH) }
@@ -77,6 +81,39 @@ class SuggesterTest {
         assertEquals("méxico como", spanish.suggest("mexicocomo").autoCorrect)
         assertEquals("bien bueno", spanish.suggest("bienbueno").autoCorrect)
         assertEquals("don't know", english.suggest("dontknow").autoCorrect)
+    }
+
+    @Test
+    fun `regular forms of listed verbs are known, not split or fixed`() {
+        for (word in listOf("eliminaba", "eliminábamos", "eliminarán", "eliminándolo", "contestaste", "volvía")) {
+            assertTrue(word, spanish.isKnown(word))
+            assertNull(word, spanish.suggest(word).autoCorrect)
+        }
+        assertEquals("eliminaba", spanish.suggest("eliminsba").autoCorrect) // and typos in them are fixed
+        assertFalse("not a verb form", spanish.isKnown("estó"))
+    }
+
+    @Test
+    fun `rare real words are not forced into a common one, typos of common words still are`() {
+        // Not in the 90k dictionary, but real: they used to become chicago, posadero, "levi amos".
+        for (word in listOf("chilango", "botadero", "levitamos", "electronegativa")) {
+            assertNull(word, spanish.suggest(word).autoCorrect)
+        }
+        assertEquals("bueno", spanish.suggest("pueno").autoCorrect)
+        assertEquals("canción", spanish.suggest("cancion").autoCorrect) // accents still added
+        assertEquals("estado", spanish.suggest("estsdo").autoCorrect)
+    }
+
+    @Test
+    fun `rare 2-letter tokens are not split off the end of a word`() {
+        // The subtitle list has junk like "ba" (as in "elimina ba"); real 2-letter words still split.
+        val dictionary =
+            WordDictionary.of(listOf("elimina" to 1_345L, "ba" to 1_949L, "no" to 12_000_000L, "puede" to 500_000L))
+        val suggester = Suggester(dictionary, UserDictionary(null), ErrorModel.UNIFORM)
+        val suggestions = suggester.suggest("eliminaba")
+        assertFalse(suggestions.toString(), suggestions.autoCorrect == "elimina ba")
+        assertFalse(suggestions.toString(), suggestions.slots.any { it?.text == "elimina ba" })
+        assertEquals("no puede", suggester.suggest("nopuede").autoCorrect)
     }
 
     @Test
