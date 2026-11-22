@@ -10,6 +10,7 @@ import com.onehandkeyboard.core.domain.model.KeyAction
 import com.onehandkeyboard.core.domain.model.KeyboardOutput
 import com.onehandkeyboard.enums.LayoutMode
 import com.onehandkeyboard.input.InputCommitter
+import com.onehandkeyboard.input.LinkCleaner
 import com.onehandkeyboard.spell.AutoCorrector
 import com.onehandkeyboard.spell.Suggestion
 
@@ -127,7 +128,7 @@ class KeyboardActionProcessor(
         val clipboard = service.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
         val clipText = clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(service)
         if (!clipText.isNullOrEmpty()) {
-            committer.commitText(ic, clipText)
+            committer.commitText(ic, LinkCleaner.clean(clipText))
             if (configManager.onCharacterWritten()) onCaseSwitch()
         }
     }

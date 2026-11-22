@@ -17,10 +17,12 @@ The control column:
 | Key | Tap | Swipe |
 |---|---|---|
 | Layer (3) | ABC ↔ 123 | ← voice typing · ↓ memes |
-| Shift (7) | once / double tap = caps lock | ↑ copy all · ↓ paste |
+| Shift (7) | once / double tap = caps lock | ↑ copy all · ↓ paste (links without tracking, see below) |
 | Backspace (11) | delete (hold = repeat) | ← word · ↑ everything · → undo |
 | Space (12–14) | space (double = ". ") | drag ↔ = cursor · ↑/↓ = language (types a space while English is disabled) |
 | Enter (15) | the field's action (↵ 🔍 ➤ ✓) | → send |
+
+**Clean links:** pasting with the keyboard removes tracking from links. Instagram, X, TikTok, Facebook, YouTube, Threads, Reddit, LinkedIn, Spotify and similar sites lose everything after `?`, except what names the post (YouTube's `v` and `t`, Facebook's `story_fbid`…). Other sites only lose known trackers (`utm_*`, `fbclid`, `gclid`…). Pasting from the app's own long-press menu doesn't go through the keyboard, so those links stay as they are.
 
 ## Autocorrect
 
