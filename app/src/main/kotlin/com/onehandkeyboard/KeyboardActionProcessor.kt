@@ -34,6 +34,8 @@ class KeyboardActionProcessor(
     /** Where the keys write: the app's field, or the keyboard's own meme search box. */
     private val connection: () -> InputConnection? = { service.currentInputConnection },
     private val editor: () -> EditorInfo? = { service.currentInputEditorInfo },
+    /** Whether pasted links lose their tracking parameters (a setting, on by default). */
+    private val cleanPastedLinks: () -> Boolean = { true },
 ) {
     private val ic get() = connection()
     private val editorInfo get() = editor()
@@ -133,7 +135,7 @@ class KeyboardActionProcessor(
         val clipboard = service.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
         val clipText = clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(service)
         if (!clipText.isNullOrEmpty()) {
-            committer.commitText(ic, LinkCleaner.clean(clipText))
+            committer.commitText(ic, if (cleanPastedLinks()) LinkCleaner.clean(clipText) else clipText)
             if (configManager.onCharacterWritten()) onCaseSwitch()
         }
     }
