@@ -81,6 +81,30 @@ class MemeFormatTest {
     }
 
     @Test
+    fun `a png with transparency keeps it in the sticker, with transparent bars`() {
+        assumeNativeGraphics()
+        val meme = pngMeme(width = 200, height = 100, transparentLeft = true)
+        val prepared = MemeSender(context) { Uri.parse("content://share/${it.name}") }.prepare(meme, telegram)
+
+        assertEquals("image/webp", prepared!!.mimeType)
+        val sticker = BitmapFactory.decodeFile(prepared.file.path)
+        assertEquals("bar", 0, Color.alpha(sticker.getPixel(256, 20)))
+        assertEquals("transparent half", 0, Color.alpha(sticker.getPixel(64, 256)))
+        assertEquals(Color.RED, opaque(sticker.getPixel(448, 256)))
+    }
+
+    @Test
+    fun `a png with transparency still gets a black background as a jpeg`() {
+        assumeNativeGraphics()
+        val meme = pngMeme(width = 100, height = 100, transparentLeft = true)
+        val prepared = MemeSender(context) { Uri.parse("content://share/${it.name}") }.prepare(meme, instagram)
+
+        assertEquals("image/jpeg", prepared!!.mimeType)
+        val square = BitmapFactory.decodeFile(prepared.file.path)
+        assertEquals(Color.BLACK, opaque(square.getPixel(10, 50)))
+    }
+
+    @Test
     fun `instagram gets a square jpeg`() {
         assumeNativeGraphics()
         val meme = pngMeme(width = 100, height = 300)
@@ -102,15 +126,21 @@ class MemeFormatTest {
         return Color.rgb(snap(Color.red(pixel)), snap(Color.green(pixel)), snap(Color.blue(pixel)))
     }
 
+    /** A red PNG; with [transparentLeft], its left half is fully transparent. */
     private fun pngMeme(
         width: Int,
         height: Int,
+        transparentLeft: Boolean = false,
     ): Meme {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
+        if (transparentLeft) {
+            for (x in 0 until width / 2) for (y in 0 until height) bitmap.setPixel(x, y, Color.TRANSPARENT)
+        }
         val bytes = ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
-        val uri = Uri.parse("content://memes.test/document/rojo-${width}x$height.png")
+        val name = "rojo-${width}x$height${if (transparentLeft) "-transparente" else ""}.png"
+        val uri = Uri.parse("content://memes.test/document/$name")
         shadowOf(context.contentResolver).registerInputStreamSupplier(uri) { ByteArrayInputStream(bytes) }
-        return Meme(uri.toString(), "rojo-${width}x$height.png", "image/png")
+        return Meme(uri.toString(), name, "image/png")
     }
 
     private fun webpHeader(flags: Int): File {

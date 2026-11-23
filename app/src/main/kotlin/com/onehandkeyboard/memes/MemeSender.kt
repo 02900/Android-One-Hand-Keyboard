@@ -98,7 +98,8 @@ class MemeSender(
     ): Prepared {
         val format = MemeFormat.choose(meme.mimeType, fieldTypes)
         if (format == MemeFormat.ORIGINAL || MemeFormat.isAnimatedWebp(original.file)) return original
-        val name = "${safeFileName(meme.title)}.${format.name.lowercase()}.${format.extension}"
+        // CONVERSION_VERSION: copies converted by an older build (black instead of transparent) are not reused.
+        val name = "${safeFileName(meme.title)}.${format.name.lowercase()}$CONVERSION_VERSION.${format.extension}"
         val converted = File(original.file.parentFile, name)
         val ready = isCached(converted) || MemeConverter.convert(original.file, format, converted)
         return if (ready) Prepared(converted, checkNotNull(format.mimeType)) else original
@@ -176,6 +177,7 @@ class MemeSender(
 
     companion object {
         private const val CACHE_DIR = "memes"
+        private const val CONVERSION_VERSION = "-v2"
         private const val CACHE_TTL_MS = 24L * 60 * 60 * 1000
         private val EXTENSIONS =
             mapOf("gif" to "image/gif", "webp" to "image/webp", "png" to "image/png", "jpg" to "image/jpeg")

@@ -23,7 +23,9 @@ import kotlin.math.roundToInt
  * - [SQUARE_JPEG]: any other field that takes JPEG (Instagram…) → square JPEG.
  * - [ORIGINAL]: the file as it is (GIFs, or a field that takes none of the above).
  *
- * Every converted meme is made 1:1 with black bars on the short side.
+ * Every converted meme is made 1:1 with black bars on the short side. A sticker (WebP) of an
+ * image with transparent parts (an Emoji Kitchen mix, a cut-out PNG) keeps them, with
+ * transparent bars; a JPEG can't, so it gets black.
  */
 enum class MemeFormat(
     val mimeType: String?,
@@ -132,6 +134,7 @@ internal object MemeConverter {
     private const val START_QUALITY = 90
     private const val MIN_QUALITY = 30
     private const val QUALITY_STEP = 10
+    private const val OPAQUE = 255
 
     /** Writes [source] as [format] to [dest]; false if the image cannot be read. */
     fun convert(
@@ -155,14 +158,25 @@ internal object MemeConverter {
         dest: File,
     ): Boolean {
         val square = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+        val transparent = format != MemeFormat.SQUARE_JPEG && hasTransparency(image)
         Canvas(square).apply {
-            drawColor(Color.BLACK)
+            if (!transparent) drawColor(Color.BLACK)
             drawBitmap(image, null, MemeFormat.fit(image.width, image.height, side), Paint(Paint.FILTER_BITMAP_FLAG))
         }
         image.recycle()
         val written = write(square, format, dest)
         square.recycle()
         return written
+    }
+
+    /** True if some pixel of [image] is not fully opaque (decoders mark many opaque images as alpha). */
+    private fun hasTransparency(image: Bitmap): Boolean {
+        if (!image.hasAlpha()) return false
+        val row = IntArray(image.width)
+        return (0 until image.height).any { y ->
+            image.getPixels(row, 0, image.width, 0, y, image.width, 1)
+            row.any { Color.alpha(it) < OPAQUE }
+        }
     }
 
     /** Lowers the quality until the file fits [MemeFormat.maxBytes] (WhatsApp's sticker limit). */
