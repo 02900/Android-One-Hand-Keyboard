@@ -30,6 +30,7 @@ class KeyboardActionProcessor(
     private val committer: InputCommitter = InputCommitter(),
     private val corrector: AutoCorrector? = null,
     private val onShowMemes: () -> Unit = {},
+    private val onShowEmojis: () -> Unit = {},
     private val onVoiceInput: () -> Unit = {},
     /** Where the keys write: the app's field, or the keyboard's own meme search box. */
     private val connection: () -> InputConnection? = { service.currentInputConnection },
@@ -126,6 +127,7 @@ class KeyboardActionProcessor(
                     onLayoutSwitch()
                 }
             is KeyAction.ShowMemes -> onShowMemes()
+            is KeyAction.ShowEmojis -> onShowEmojis()
             is KeyAction.VoiceInput -> onVoiceInput()
             else -> Log.d(TAG, "Action not implemented: ${action::class.simpleName}")
         }

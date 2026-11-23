@@ -16,7 +16,7 @@ The control column:
 
 | Key | Tap | Swipe |
 |---|---|---|
-| Layer (3) | ABC ↔ 123 | ← voice typing · ↓ memes |
+| Layer (3) | ABC ↔ 123 | ← voice typing · ↓ memes · → emojis |
 | Shift (7) | once / double tap = caps lock | ↑ copy all · ↓ paste (links without tracking, see below) |
 | Backspace (11) | delete (hold = repeat) | ← word · ↑ everything · → undo |
 | Space (12–14) | space (double = ". ") | drag ↔ = cursor · ↑/↓ = language (types a space while English is disabled) |
@@ -77,6 +77,15 @@ Tap **🔍** in the panel's bar: the keys come back with a search box above them
 - Images the site marks as sensitive, NSFW or spoilers are skipped. The rest is whatever the site returns, unfiltered.
 - Without a connection the panel says so. If Know Your Meme changes its site, the search may stop working until the app is updated. Seen big, results use the small preview, so they look softer.
 - It works even without a meme folder. Only the query and the images go over the network: no account or cookies.
+
+## Emojis and Emoji Kitchen
+
+Swipe **→ on the 123 / ABC key** to open the emoji panel; **ABC** goes back to the keys.
+
+- **The panel:** every emoji by group (🕘 Recientes, the last 32 you typed, then faces, people, animals, food, travel, activities, objects, symbols and flags). The tabs at the top jump to a group; **⌫** deletes. Emojis your phone can't draw (too new for its font) are hidden. Skin tones are not offered yet (the default one is typed).
+- **Mix two emojis (online and debug APKs):** like Gboard's Emoji Kitchen. Tap two emojis and, if Google made a mix of that pair, the strip under the bar shows it; tap it to send it as a sticker, and the two emojis you typed are replaced by it. The strip mixes the last two emojis you tapped and tells you when a pair doesn't mix (about 600 emojis mix, in 147,000 pairs).
+- **How the mix is sent:** like a meme: inserted as a sticker where the app accepts images (WhatsApp, Telegram…), otherwise copied to the clipboard (and the emojis stay).
+- **Where the mixes come from:** the images are Google's, downloaded from its servers (`www.gstatic.com`) when they are shown; only the list of which pairs exist ships in the app (`app/src/main/assets/emoji/`, built with `tools/build_emoji.py`, see its [`LICENSE.txt`](../app/src/main/assets/emoji/LICENSE.txt)). The release APK has no network access, so it has the emoji panel without the mixes.
 
 ## Voice typing
 

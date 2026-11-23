@@ -47,6 +47,7 @@ fun KeyAction.label(ctx: LabelContext): String =
         KeyAction.DeleteWord -> "⇤"
         KeyAction.SwitchLanguage -> ctx.languageLabel
         KeyAction.ShowMemes -> "🖼️"
+        KeyAction.ShowEmojis -> "😀"
         KeyAction.VoiceInput -> "🎤"
         is KeyAction.DeadKey -> accent.toString()
         is KeyAction.Custom -> "?"
@@ -78,6 +79,7 @@ private fun KeyAction.spokenName(ctx: LabelContext): String =
         KeyAction.DeleteWord -> "borrar palabra"
         KeyAction.SwitchLanguage -> "cambiar idioma"
         KeyAction.ShowMemes -> "memes"
+        KeyAction.ShowEmojis -> "emojis"
         KeyAction.VoiceInput -> "dictar por voz"
         KeyAction.CursorLeft -> "cursor a la izquierda"
         KeyAction.CursorRight -> "cursor a la derecha"
