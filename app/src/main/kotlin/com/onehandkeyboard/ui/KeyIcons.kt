@@ -57,6 +57,7 @@ class KeyIcons(
                 "🗑️" to R.drawable.ic_key_delete,
                 "↶" to R.drawable.ic_key_undo,
                 "🖼️" to R.drawable.ic_key_memes,
+                "😀" to R.drawable.ic_key_emoji,
                 "🎤" to R.drawable.ic_key_mic,
                 "◂" to R.drawable.ic_key_cursor_left,
                 "▸" to R.drawable.ic_key_cursor_right,

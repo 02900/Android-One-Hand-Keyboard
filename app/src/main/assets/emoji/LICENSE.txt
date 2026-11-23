@@ -1,0 +1,14 @@
+Emoji panel data (emoji.tsv, kitchen.bin), built with tools/build_emoji.py
+
+emoji.tsv: the list of emojis and their groups, from Unicode's emoji-test.txt
+(https://unicode.org/Public/emoji/latest/emoji-test.txt), © Unicode, Inc., distributed under
+the Unicode License V3 (https://www.unicode.org/license.txt). Changes: only fully-qualified
+emojis, without skin tone and hair variants nor the component group; Spanish group names.
+
+kitchen.bin: which pairs of emojis have an Emoji Kitchen mix and the date in its image's
+address, taken from the metadata of https://github.com/xsalazar/emoji-kitchen-backend
+(the data behind https://emojikitchen.dev). It is only a list of which images exist.
+
+The mix images themselves are Google's (Emoji Kitchen, Gboard). They are not bundled: the
+keyboard downloads each one from Google's servers (www.gstatic.com) when it shows it, in the
+builds with Internet access only.

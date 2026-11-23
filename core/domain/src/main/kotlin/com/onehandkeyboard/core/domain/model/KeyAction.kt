@@ -105,6 +105,11 @@ sealed class KeyAction {
     object ShowMemes : KeyAction()
 
     /**
+     * Open the emoji panel (tapping two emojis offers their Emoji Kitchen mix)
+     */
+    object ShowEmojis : KeyAction()
+
+    /**
      * Voice typing: speak and the recognized text is typed
      */
     object VoiceInput : KeyAction()

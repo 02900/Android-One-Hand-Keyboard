@@ -1,5 +1,6 @@
 package com.onehandkeyboard.memes
 
+import com.onehandkeyboard.emoji.EmojiKitchen
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.File
@@ -68,6 +69,7 @@ object MemeSearchParser {
  * - Previews are fetched by the panel as they scroll into view ([fetch]); the full image is
  *   downloaded only when a meme is sent ([download]).
  * - Nothing is sent to the site besides the query itself (no account, no cookies).
+ * - The emoji panel also gets its Emoji Kitchen mixes through [fetch] and [download].
  *
  * Blocking: call everything off the main thread.
  */
@@ -90,7 +92,7 @@ class MemeSearch(
 
     /** The bytes of a preview, or null. */
     fun fetch(url: String): ByteArray? {
-        if (!url.startsWith(CDN)) return null
+        if (!isImage(url)) return null
         return try {
             get(url, MAX_PREVIEW_BYTES)
         } catch (_: IOException) {
@@ -103,7 +105,7 @@ class MemeSearch(
         url: String,
         dest: File,
     ): Boolean {
-        if (!url.startsWith(CDN)) return false
+        if (!isImage(url)) return false
         return try {
             dest.parentFile?.mkdirs()
             dest.writeBytes(get(url, MAX_IMAGE_BYTES))
@@ -113,6 +115,9 @@ class MemeSearch(
             false
         }
     }
+
+    /** Images come only from Know Your Meme's CDN and Emoji Kitchen's mixes (the emoji panel). */
+    private fun isImage(url: String) = url.startsWith(CDN) || url.startsWith(EmojiKitchen.IMAGE_HOST)
 
     private fun get(
         url: String,

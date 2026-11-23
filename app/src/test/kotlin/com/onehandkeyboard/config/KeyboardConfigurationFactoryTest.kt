@@ -107,10 +107,13 @@ class KeyboardConfigurationFactoryTest {
     }
 
     @Test
-    fun `layout key (123 and ABC) swipes left to dictate and down to the memes`() {
+    fun `layout key (123 and ABC) swipes left to dictate, down to the memes and right to the emojis`() {
         allConfigurations().forEach { config ->
             val layoutKey = config.cells.first { it.cellIndex == 3 }
-            assertEquals(setOf(Direction.W, Direction.S), layoutKey.getDirectionsFor(GestureType.SWIPE).toSet())
+            assertEquals(
+                setOf(Direction.W, Direction.S, Direction.E),
+                layoutKey.getDirectionsFor(GestureType.SWIPE).toSet(),
+            )
             assertEquals(
                 ActionConfig.Action(KeyAction.VoiceInput),
                 layoutKey.getActionFor(GestureType.SWIPE, Direction.W),
@@ -118,6 +121,10 @@ class KeyboardConfigurationFactoryTest {
             assertEquals(
                 ActionConfig.Action(KeyAction.ShowMemes),
                 layoutKey.getActionFor(GestureType.SWIPE, Direction.S),
+            )
+            assertEquals(
+                ActionConfig.Action(KeyAction.ShowEmojis),
+                layoutKey.getActionFor(GestureType.SWIPE, Direction.E),
             )
         }
     }

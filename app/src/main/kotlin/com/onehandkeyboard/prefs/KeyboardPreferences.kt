@@ -55,6 +55,15 @@ class KeyboardPreferences
             get() = prefs.getString(KEY_RECENT_MEMES, null)?.split(LIST_SEPARATOR)?.filter { it.isNotEmpty() }.orEmpty()
             set(value) = prefs.edit().putString(KEY_RECENT_MEMES, value.joinToString(LIST_SEPARATOR)).apply()
 
+        /** The last emojis typed from the emoji panel, most recent first. */
+        var recentEmojis: List<String>
+            get() =
+                prefs.getString(
+                    KEY_RECENT_EMOJIS,
+                    null,
+                )?.split(LIST_SEPARATOR)?.filter { it.isNotEmpty() }.orEmpty()
+            set(value) = prefs.edit().putString(KEY_RECENT_EMOJIS, value.joinToString(LIST_SEPARATOR)).apply()
+
         /** Height of the meme panel chosen with its slider: 0 = the keyboard's, 1 = the tallest. */
         var memePanelSize: Float
             get() = prefs.getFloat(KEY_MEME_PANEL_SIZE, 0f)
@@ -89,6 +98,7 @@ class KeyboardPreferences
             private const val KEY_MEME_FOLDER = "meme_folder_uri"
             private const val KEY_RECENT_MEMES = "recent_memes"
             private const val KEY_MEME_PANEL_SIZE = "meme_panel_size"
+            private const val KEY_RECENT_EMOJIS = "recent_emojis"
             private const val LIST_SEPARATOR = "\n"
             private const val KEY_AUTOCORRECT = "autocorrect_enabled"
             private const val KEY_SUGGESTIONS = "suggestions_enabled"
