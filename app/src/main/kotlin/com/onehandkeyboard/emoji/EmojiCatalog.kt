@@ -27,7 +27,7 @@ object EmojiCatalog {
     ): List<EmojiGroup> =
         lines
             .mapNotNull { line ->
-                val fields = line.split('\t')
+                val fields = line.trimEnd('\r').split('\t') // a Windows checkout may add \r
                 if (fields.size < FIELDS) return@mapNotNull null
                 val emojis = fields[2].split(' ').filter { it.isNotEmpty() && canShow(it) }
                 EmojiGroup(fields[0], fields[1], emojis).takeIf { emojis.isNotEmpty() }

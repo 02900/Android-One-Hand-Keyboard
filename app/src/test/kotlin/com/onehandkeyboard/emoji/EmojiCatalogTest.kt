@@ -25,7 +25,7 @@ class EmojiCatalogTest {
 
     @Test
     fun `emojis the phone can't draw are hidden and empty groups dropped`() {
-        val lines = sequenceOf("😀\tCaras\t😀 🫠 😂", "🔣\tSímbolos\t🫟", "bad line")
+        val lines = sequenceOf("😀\tCaras\t😀 🫠 😂\r", "🔣\tSímbolos\t🫟", "bad line")
         val groups = EmojiCatalog.parse(lines) { it != "🫠" && it != "🫟" }
         assertEquals(listOf(EmojiGroup("😀", "Caras", listOf("😀", "😂"))), groups)
     }
